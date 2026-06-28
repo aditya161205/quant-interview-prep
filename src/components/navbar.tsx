@@ -17,6 +17,24 @@ const links = [
 export function Navbar() {
   const pathname = usePathname();
 
+  // On the login gate, show just the brand — no nav, no auth controls.
+  if (pathname === "/login") {
+    return (
+      <header className="sticky top-0 z-40 border-b border-border bg-background/80 backdrop-blur">
+        <div className="mx-auto flex h-14 max-w-6xl items-center px-4">
+          <span className="flex items-center gap-2 font-semibold">
+            <span className="grid h-7 w-7 place-items-center rounded-md bg-accent text-accent-foreground">
+              <Activity className="h-4 w-4" />
+            </span>
+            <span className="tracking-tight">
+              Quant<span className="text-accent">Prep</span>
+            </span>
+          </span>
+        </div>
+      </header>
+    );
+  }
+
   return (
     <header className="sticky top-0 z-40 border-b border-border bg-background/80 backdrop-blur">
       <div className="mx-auto flex h-14 max-w-6xl items-center gap-6 px-4">
