@@ -45,7 +45,11 @@ export function AuthButton() {
   }
 
   const avatar = user.user_metadata?.avatar_url as string | undefined;
-  const name = (user.user_metadata?.name as string | undefined) ?? user.email ?? "Account";
+  const name =
+    (user.user_metadata?.name as string | undefined) ??
+    (user.user_metadata?.full_name as string | undefined) ??
+    user.email ??
+    "Account";
 
   return (
     <div className="flex items-center gap-2">
@@ -57,8 +61,10 @@ export function AuthButton() {
           {name.charAt(0).toUpperCase()}
         </span>
       )}
-      <Button variant="outline" size="sm" aria-label="Sign out" onClick={() => supabase.auth.signOut()} className="w-9 px-0">
+      <span className="hidden max-w-[120px] truncate text-sm text-muted sm:inline">{name}</span>
+      <Button variant="outline" size="sm" onClick={() => supabase.auth.signOut()}>
         <LogOut className="h-4 w-4" />
+        <span className="hidden sm:inline">Sign out</span>
       </Button>
     </div>
   );

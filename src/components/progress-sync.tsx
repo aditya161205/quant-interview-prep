@@ -27,30 +27,37 @@ export function ProgressSync() {
     });
   }, [supabase]);
 
-  // Pull on sign-in, then push the merged result up.
+  // On sign-in, REPLACE local state with this user's own row (or empty for a
+  // new account) so progress never bleeds across accounts in the same browser.
   React.useEffect(() => {
     if (!supabase) return;
-    const onUser = async (user: User | null) => {
+
+    const applyUser = async (user: User | null) => {
       userRef.current = user;
-      if (!user) return;
+      if (!user) return; // anonymous: leave local storage as-is, don't clear
       const { data } = await supabase
         .from("progress")
         .select("solved,bookmarked,activity,games")
         .eq("user_id", user.id)
         .maybeSingle();
-      if (data) {
-        usePracticeStore.getState().load({
-          solved: data.solved ?? {},
-          bookmarked: data.bookmarked ?? {},
-          activity: data.activity ?? {},
-          games: data.games ?? 0,
-        });
-      }
-      await push();
+      usePracticeStore.getState().setAll({
+        solved: data?.solved ?? {},
+        bookmarked: data?.bookmarked ?? {},
+        activity: data?.activity ?? {},
+        games: data?.games ?? 0,
+      });
+      await push(); // ensure the row exists for a brand-new account
     };
 
-    supabase.auth.getUser().then(({ data }) => onUser(data.user));
-    const { data: sub } = supabase.auth.onAuthStateChange((_e, session) => onUser(session?.user ?? null));
+    supabase.auth.getUser().then(({ data }) => applyUser(data.user));
+    const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === "SIGNED_OUT") {
+        userRef.current = null;
+        usePracticeStore.getState().setAll({}); // clear so the next user starts fresh
+        return;
+      }
+      applyUser(session?.user ?? null);
+    });
     return () => sub.subscription.unsubscribe();
   }, [supabase, push]);
 

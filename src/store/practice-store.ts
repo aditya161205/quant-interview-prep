@@ -17,8 +17,8 @@ interface PracticeState {
   toggleSolved: (id: string) => void;
   toggleBookmark: (id: string) => void;
   recordGame: () => void;
-  /** Merge server-stored progress in (used on sign-in). */
-  load: (data: Partial<Pick<PracticeState, "solved" | "bookmarked" | "activity" | "games">>) => void;
+  /** Replace all progress (used on sign-in/out so accounts never bleed together). */
+  setAll: (data: Partial<Pick<PracticeState, "solved" | "bookmarked" | "activity" | "games">>) => void;
 }
 
 const bump = (activity: Record<string, number>) => {
@@ -45,13 +45,13 @@ export const usePracticeStore = create<PracticeState>()(
       toggleBookmark: (id) =>
         set((s) => ({ bookmarked: { ...s.bookmarked, [id]: !s.bookmarked[id] } })),
       recordGame: () => set((s) => ({ games: s.games + 1, activity: bump(s.activity) })),
-      load: (data) =>
-        set((s) => ({
-          solved: { ...s.solved, ...(data.solved ?? {}) },
-          bookmarked: { ...s.bookmarked, ...(data.bookmarked ?? {}) },
-          activity: { ...s.activity, ...(data.activity ?? {}) },
-          games: Math.max(s.games, data.games ?? 0),
-        })),
+      setAll: (data) =>
+        set({
+          solved: data.solved ?? {},
+          bookmarked: data.bookmarked ?? {},
+          activity: data.activity ?? {},
+          games: data.games ?? 0,
+        }),
     }),
     { name: "quantprep-practice" },
   ),
