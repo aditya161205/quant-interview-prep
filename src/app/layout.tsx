@@ -41,11 +41,11 @@ export default function RootLayout({
         >
           <ProgressSync />
           <Navbar />
-          <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-6">
+          <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8">
             {children}
           </main>
-          <footer className="border-t border-border py-6 text-center text-xs text-muted">
-            QuantPrep · MVP · Built for interview practice
+          <footer className="mt-8 border-t border-border py-8 text-center text-xs uppercase tracking-widest text-muted">
+            QuantPrep
           </footer>
         </ThemeProvider>
       </body>

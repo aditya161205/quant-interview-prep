@@ -8,11 +8,11 @@ export default function DashboardPage() {
   return (
     <div className="space-y-12">
       {/* Hero */}
-      <section className="obsidian-glow relative overflow-hidden rounded-3xl border border-border bg-surface px-6 py-14 sm:px-10 sm:py-20">
-        <Badge tone="accent" className="mb-5">
+      <section className="pb-4 pt-10 sm:pt-16">
+        <Badge tone="accent" className="mb-6">
           Quant Interview Practice
         </Badge>
-        <h1 className="max-w-4xl text-4xl font-black uppercase leading-[0.95] tracking-tight sm:text-6xl">
+        <h1 className="max-w-4xl text-5xl font-black uppercase leading-[0.92] tracking-tight sm:text-7xl">
           Crack the
           <br />
           <span className="text-accent">trading desk</span> interview
@@ -23,12 +23,12 @@ export default function DashboardPage() {
         </p>
         <div className="mt-8 flex flex-wrap gap-3">
           <Link href="/practice">
-            <Button size="lg" className="rounded-full">
+            <Button size="lg">
               Practice problems <ArrowRight className="h-4 w-4" />
             </Button>
           </Link>
           <Link href="/market-making">
-            <Button size="lg" variant="outline" className="rounded-full">
+            <Button size="lg" variant="outline">
               Play the games
             </Button>
           </Link>
