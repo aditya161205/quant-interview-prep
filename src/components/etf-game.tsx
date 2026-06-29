@@ -64,7 +64,7 @@ function Intro() {
     <Card className="obsidian-glow mx-auto max-w-2xl">
       <CardContent className="space-y-7 py-10">
         <div className="flex flex-col items-center gap-3 text-center">
-          <span className="grid h-14 w-14 place-items-center rounded-2xl bg-accent text-accent-foreground shadow-lg">
+          <span className="grid h-14 w-14 place-items-center rounded-2xl bg-emerald-500 text-white shadow-lg">
             <TrendingUp className="h-6 w-6" />
           </span>
           <h2 className="text-2xl font-black uppercase tracking-tight">ETF Arbitrage Game</h2>
