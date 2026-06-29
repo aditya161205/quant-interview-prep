@@ -2,7 +2,10 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { Search, Bookmark, Check, ChevronRight, X } from "lucide-react";
+import {
+  Search, Bookmark, Check, X, ArrowUpRight,
+  Percent, Sigma, Lightbulb, Boxes, type LucideIcon,
+} from "lucide-react";
 import type { Difficulty, Problem, Topic } from "@/data/problems";
 import { usePracticeStore, useMounted } from "@/store/practice-store";
 import { DifficultyBadge } from "@/components/difficulty-badge";
@@ -21,6 +24,13 @@ const TOPICS: TopicFilter[] = [
   "Brainteaser",
   "Combinatorics",
 ];
+
+const TOPIC_STYLE: Record<Topic, { tile: string; Icon: LucideIcon }> = {
+  Probability: { tile: "bg-violet-600", Icon: Percent },
+  "Expected Value": { tile: "bg-emerald-500", Icon: Sigma },
+  Brainteaser: { tile: "bg-amber-500", Icon: Lightbulb },
+  Combinatorics: { tile: "bg-rose-500", Icon: Boxes },
+};
 
 export function ProblemBrowser({ problems }: { problems: Problem[] }) {
   const mounted = useMounted();
@@ -88,64 +98,70 @@ export function ProblemBrowser({ problems }: { problems: Problem[] }) {
         <span>{solvedCount} solved</span>
       </div>
 
-      {/* List */}
+      {/* Grid */}
       {filtered.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-border py-16 text-center text-sm text-muted">
           No problems match your filters.
         </div>
       ) : (
-        <div className="overflow-hidden rounded-2xl border border-border bg-surface">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {filtered.map((p) => {
             const done = isSolved(p.id);
             const marked = isBookmarked(p.id);
-            const number = problems.indexOf(p) + 1;
+            const { tile, Icon } = TOPIC_STYLE[p.topic];
             return (
               <div
                 key={p.id}
-                className="group flex items-center gap-3 border-b border-border px-3 py-3 transition-colors last:border-b-0 hover:bg-surface-2/60 sm:px-4"
+                className="group relative flex h-full flex-col overflow-hidden rounded-2xl border border-border bg-surface p-5 transition-colors hover:border-foreground/25"
               >
-                <button
-                  onClick={() => toggleSolved(p.id)}
-                  title={done ? "Mark as unsolved" : "Mark as solved"}
-                  aria-label={done ? "Mark as unsolved" : "Mark as solved"}
-                  className={cn(
-                    "grid h-9 w-9 shrink-0 place-items-center rounded-lg border font-mono text-sm transition-colors",
-                    done
-                      ? "border-emerald-500/40 bg-emerald-500/15 text-emerald-500"
-                      : "border-border bg-surface-2 text-muted hover:border-accent/50 hover:text-accent",
-                  )}
-                >
-                  {done ? <Check className="h-4 w-4" /> : String(number).padStart(2, "0")}
-                </button>
+                <Link href={`/practice/${p.id}`} className="absolute inset-0" aria-label={p.title} />
+                <div className={cn("pointer-events-none absolute -right-12 -top-12 h-40 w-40 rounded-full opacity-25 blur-3xl", tile)} />
 
-                <Link href={`/practice/${p.id}`} className="min-w-0 flex-1">
-                  <div className="truncate font-medium transition-colors group-hover:text-accent">
-                    {p.title}
+                <div className="pointer-events-none relative flex flex-1 flex-col">
+                  <div className="flex items-start justify-between">
+                    <span className={cn("grid h-11 w-11 place-items-center rounded-xl text-white shadow-lg", tile)}>
+                      <Icon className="h-5 w-5" />
+                    </span>
+                    <span className="grid h-9 w-9 place-items-center rounded-full bg-surface-2 text-foreground transition-colors group-hover:bg-foreground group-hover:text-background">
+                      <ArrowUpRight className="h-4 w-4" />
+                    </span>
                   </div>
-                  <div className="text-sm text-muted">{p.topic}</div>
-                </Link>
 
-                <DifficultyBadge difficulty={p.difficulty} className="hidden sm:inline-flex" />
+                  <h3 className="mt-5 text-base font-bold leading-snug">{p.title}</h3>
 
-                <button
-                  onClick={() => toggleBookmark(p.id)}
-                  title={marked ? "Remove bookmark" : "Bookmark"}
-                  aria-label={marked ? "Remove bookmark" : "Bookmark"}
-                  className={cn(
-                    "grid h-9 w-9 shrink-0 place-items-center rounded-lg transition-colors",
-                    marked ? "text-accent" : "text-muted hover:text-foreground",
-                  )}
-                >
-                  <Bookmark className={cn("h-[18px] w-[18px]", marked && "fill-accent")} />
-                </button>
-
-                <Link
-                  href={`/practice/${p.id}`}
-                  aria-label={`Open ${p.title}`}
-                  className="shrink-0 text-muted transition-transform group-hover:translate-x-0.5 group-hover:text-foreground"
-                >
-                  <ChevronRight className="h-4 w-4" />
-                </Link>
+                  <div className="mt-auto flex items-center justify-between pt-5">
+                    <div className="flex items-center gap-2">
+                      <DifficultyBadge difficulty={p.difficulty} />
+                      <span className="hidden text-[11px] font-semibold uppercase tracking-wider text-muted sm:inline">
+                        {p.topic}
+                      </span>
+                    </div>
+                    <div className="pointer-events-auto flex items-center gap-1">
+                      <button
+                        onClick={() => toggleSolved(p.id)}
+                        title={done ? "Mark as unsolved" : "Mark as solved"}
+                        aria-label={done ? "Mark as unsolved" : "Mark as solved"}
+                        className={cn(
+                          "grid h-8 w-8 place-items-center rounded-full transition-colors",
+                          done ? "bg-emerald-500/15 text-emerald-500" : "text-muted hover:text-foreground",
+                        )}
+                      >
+                        <Check className="h-4 w-4" />
+                      </button>
+                      <button
+                        onClick={() => toggleBookmark(p.id)}
+                        title={marked ? "Remove bookmark" : "Bookmark"}
+                        aria-label={marked ? "Remove bookmark" : "Bookmark"}
+                        className={cn(
+                          "grid h-8 w-8 place-items-center rounded-full transition-colors",
+                          marked ? "text-accent" : "text-muted hover:text-foreground",
+                        )}
+                      >
+                        <Bookmark className={cn("h-4 w-4", marked && "fill-accent")} />
+                      </button>
+                    </div>
+                  </div>
+                </div>
               </div>
             );
           })}

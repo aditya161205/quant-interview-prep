@@ -84,7 +84,7 @@ body {
   /* translucent frosted: a faint top sheen over a semi-opaque base */
   background:
     linear-gradient(color-mix(in srgb, var(--foreground) 7%, transparent), transparent),
-    color-mix(in srgb, var(--surface) 78%, transparent);
+    color-mix(in srgb, var(--surface) 94%, transparent);
   backdrop-filter: blur(20px) saturate(180%);
   -webkit-backdrop-filter: blur(20px) saturate(180%);
   border: 1px solid color-mix(in srgb, var(--foreground) 12%, transparent);
