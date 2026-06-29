@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { BettingGame } from "@/components/betting-game";
+import { HowToPlay } from "@/components/how-to-play";
+import { BettingRules } from "@/components/game-rules";
 import { Badge } from "@/components/ui/badge";
 
 export const metadata = {
@@ -21,7 +23,7 @@ export default function ProbabilityBettingPage() {
         <Badge tone="accent" className="mb-3">
           Probability &amp; Edge
         </Badge>
-        <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
+        <h1 className="text-2xl font-black uppercase tracking-tight sm:text-4xl">
           Probability Betting Game
         </h1>
         <p className="mt-2 max-w-2xl text-muted">
@@ -30,6 +32,9 @@ export default function ProbabilityBettingPage() {
         </p>
       </header>
 
+      <HowToPlay subtitle="Price the events, find the edge, size with Kelly.">
+        <BettingRules />
+      </HowToPlay>
       <BettingGame />
     </div>
   );

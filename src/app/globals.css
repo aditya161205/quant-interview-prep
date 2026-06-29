@@ -23,17 +23,17 @@
 }
 
 .dark {
-  --background: #08080a;     /* near-black obsidian */
-  --surface: #0e0e12;       /* card surface */
-  --surface-2: #16161c;     /* elevated / inputs */
-  --border: #232330;
-  --foreground: #ededf2;
-  --muted: #8b8b98;
-  --accent: #8b5cf6;        /* glowing deep purple */
+  --background: #000000;     /* true black canvas */
+  --surface: #0d0d0f;       /* card surface */
+  --surface-2: #1a1a1d;     /* elevated / inputs */
+  --border: #26262a;
+  --foreground: #fafafa;
+  --muted: #8b8b92;
+  --accent: #8b5cf6;        /* electric violet */
   --accent-foreground: #ffffff;
-  --positive: #22c55e;
-  --negative: #f43f5e;
-  --ring: #7c3aed;
+  --positive: #34d399;
+  --negative: #fb5b6e;
+  --ring: #8b5cf6;
 }
 
 /* Expose tokens to Tailwind's utility engine */

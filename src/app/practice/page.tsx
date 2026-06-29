@@ -11,7 +11,7 @@ export default function PracticePage() {
     <div className="space-y-8">
       <header className="space-y-2">
         <Badge tone="accent">Practice</Badge>
-        <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
+        <h1 className="text-3xl font-black uppercase tracking-tight sm:text-5xl">
           Quant Interview Problems
         </h1>
         <p className="max-w-2xl text-muted">

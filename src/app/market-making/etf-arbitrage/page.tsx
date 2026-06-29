@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { EtfGame } from "@/components/etf-game";
+import { HowToPlay } from "@/components/how-to-play";
+import { EtfArbitrageRules } from "@/components/game-rules";
 import { Badge } from "@/components/ui/badge";
 
 export const metadata = {
@@ -18,7 +20,7 @@ export default function EtfArbitragePage() {
       </Link>
 
       <header className="flex flex-wrap items-center gap-x-3 gap-y-1">
-        <h1 className="text-xl font-bold tracking-tight sm:text-2xl">ETF Arbitrage Game</h1>
+        <h1 className="text-2xl font-black uppercase tracking-tight sm:text-3xl">ETF Arbitrage Game</h1>
         <Badge tone="accent">Market Taking</Badge>
         <p className="w-full text-sm text-muted">
           Compute the NAV from the basket, compare it to the ETF&apos;s bid/ask,
@@ -26,6 +28,9 @@ export default function EtfArbitragePage() {
         </p>
       </header>
 
+      <HowToPlay subtitle="Spot the ETF mispricing and take the edge.">
+        <EtfArbitrageRules />
+      </HowToPlay>
       <EtfGame />
     </div>
   );

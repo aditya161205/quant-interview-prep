@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { MarketOfCardsGame } from "@/components/market-of-cards-game";
+import { HowToPlay } from "@/components/how-to-play";
+import { MarketOfCardsRules } from "@/components/game-rules";
 import { Badge } from "@/components/ui/badge";
 
 export const metadata = {
@@ -21,7 +23,7 @@ export default function MarketOfCardsPage() {
         <Badge tone="accent" className="mb-3">
           Group market making
         </Badge>
-        <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
+        <h1 className="text-2xl font-black uppercase tracking-tight sm:text-4xl">
           Market of Cards
         </h1>
         <p className="mt-2 max-w-2xl text-muted">
@@ -31,6 +33,9 @@ export default function MarketOfCardsPage() {
         </p>
       </header>
 
+      <HowToPlay subtitle="Quote the 11-card total, trade the AIs, settle at the truth.">
+        <MarketOfCardsRules />
+      </HowToPlay>
       <MarketOfCardsGame />
     </div>
   );

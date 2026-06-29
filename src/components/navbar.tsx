@@ -47,7 +47,7 @@ export function Navbar() {
           </span>
         </Link>
 
-        <nav className="hidden items-center gap-1 sm:flex">
+        <nav className="hidden items-center gap-1 rounded-full border border-border bg-surface-2/40 p-1 sm:flex">
           {links.map((l) => {
             const active =
               l.href === "/" ? pathname === "/" : pathname.startsWith(l.href);
@@ -56,9 +56,9 @@ export function Navbar() {
                 key={l.href}
                 href={l.href}
                 className={cn(
-                  "rounded-md px-3 py-1.5 text-sm transition-colors",
+                  "rounded-full px-3.5 py-1.5 text-xs font-semibold uppercase tracking-wider transition-colors",
                   active
-                    ? "bg-surface-2 text-foreground"
+                    ? "bg-foreground text-background"
                     : "text-muted hover:text-foreground",
                 )}
               >
