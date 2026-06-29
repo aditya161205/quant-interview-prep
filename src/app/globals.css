@@ -81,7 +81,10 @@ body {
 /*  Liquid glass — translucent frosted material with a specular edge   */
 /* ------------------------------------------------------------------ */
 .glass {
-  background: color-mix(in srgb, var(--foreground) 5%, transparent);
+  /* translucent frosted: a faint top sheen over a semi-opaque base */
+  background:
+    linear-gradient(color-mix(in srgb, var(--foreground) 7%, transparent), transparent),
+    color-mix(in srgb, var(--surface) 78%, transparent);
   backdrop-filter: blur(20px) saturate(180%);
   -webkit-backdrop-filter: blur(20px) saturate(180%);
   border: 1px solid color-mix(in srgb, var(--foreground) 12%, transparent);

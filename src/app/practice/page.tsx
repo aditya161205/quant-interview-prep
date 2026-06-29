@@ -1,6 +1,6 @@
 import { problems } from "@/data/problems";
-import { Badge } from "@/components/ui/badge";
 import { ProblemBrowser } from "@/components/problem-browser";
+import { PageHeader } from "@/components/page-header";
 
 export const metadata = {
   title: "Practice Problems — QuantPrep",
@@ -8,18 +8,12 @@ export const metadata = {
 
 export default function PracticePage() {
   return (
-    <div className="space-y-8">
-      <header className="space-y-2">
-        <Badge tone="accent">Practice</Badge>
-        <h1 className="text-3xl font-black uppercase tracking-tight sm:text-5xl">
-          Quant Interview Problems
-        </h1>
-        <p className="max-w-2xl text-muted">
-          Search and filter the set, mark problems solved, and bookmark the ones
-          worth revisiting. Open any problem to reveal its worked solution.
-        </p>
-      </header>
-
+    <div className="space-y-6">
+      <PageHeader
+        kicker="Practice"
+        title="Quant Interview Problems"
+        description="Search and filter the set, mark problems solved, and bookmark the ones worth revisiting. Open any problem to reveal its worked solution."
+      />
       <ProblemBrowser problems={problems} />
     </div>
   );

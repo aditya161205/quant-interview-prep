@@ -120,7 +120,7 @@ function Segmented<T extends number>({
             key={opt}
             onClick={() => onChange(opt)}
             className={cn(
-              "h-9 min-w-11 rounded-lg border px-3 font-mono text-sm transition-colors",
+              "h-9 min-w-11 rounded-xl border px-3 font-mono text-sm transition-colors",
               value === opt
                 ? "border-accent bg-accent/15 text-accent"
                 : "border-border bg-surface text-muted hover:text-foreground",
@@ -369,7 +369,7 @@ function MakeMarket() {
   return (
     <form onSubmit={submit} className="animate-pop space-y-4">
       <Countdown seconds={makeSeconds} onExpire={timeoutRound} />
-      <div className="rounded-lg border border-border bg-surface-2/50 px-4 py-3 text-sm text-foreground">
+      <div className="rounded-xl border border-border bg-surface-2/50 px-4 py-3 text-sm text-foreground">
         You&apos;re the market maker. Quote a bid &amp; ask on the total sum — the
         bots will trade against you and your PnL is settled automatically.
       </div>
@@ -407,7 +407,7 @@ function PriceInput({
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
-        className="h-11 w-full rounded-lg border border-border bg-surface-2 px-3 font-mono text-lg outline-none focus:ring-2 focus:ring-ring"
+        className="h-11 w-full rounded-xl border border-border bg-surface-2 px-3 font-mono text-lg outline-none focus:ring-2 focus:ring-ring"
       />
     </label>
   );
@@ -432,7 +432,7 @@ function TradePhase() {
   return (
     <div className="animate-pop space-y-4">
       <Countdown seconds={tradeSeconds} onExpire={timeoutRound} />
-      <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border bg-surface-2/50 px-4 py-3 text-sm text-foreground">
+      <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-border bg-surface-2/50 px-4 py-3 text-sm text-foreground">
         <span>Lift the offer if it&apos;s cheap, hit the bid if it&apos;s rich, or skip.</span>
         <span className="font-mono text-muted">balance {balance}</span>
       </div>
@@ -486,7 +486,7 @@ function RevealPanel() {
   return (
     <div className="animate-pop space-y-4">
       <Countdown seconds={REVEAL_SECONDS} onExpire={finishReveal} label="Memorise — hiding in" />
-      <div className="flex items-center gap-2 rounded-lg border border-accent/30 bg-accent/5 px-4 py-3 text-sm">
+      <div className="flex items-center gap-2 rounded-xl border border-accent/30 bg-accent/5 px-4 py-3 text-sm">
         <Eye className="h-4 w-4 shrink-0 text-accent" />
         <span>
           Cards are face-up — <strong className="text-foreground">memorise them</strong>.
@@ -524,7 +524,7 @@ function SettlePanel() {
 
   return (
     <form onSubmit={submit} className="animate-pop space-y-4">
-      <div className="flex items-center gap-2 rounded-lg border border-border bg-surface-2/50 px-4 py-3 text-sm">
+      <div className="flex items-center gap-2 rounded-xl border border-border bg-surface-2/50 px-4 py-3 text-sm">
         <EyeOff className="h-4 w-4 shrink-0 text-muted" />
         <span>
           Cards hidden. From memory: what was the{" "}
@@ -646,7 +646,7 @@ function BotTrades({ trades }: { trades: BotTrade[] }) {
 
 function Stat({ label, value, ok }: { label: string; value: string; ok?: boolean }) {
   return (
-    <div className="rounded-lg border border-border bg-surface-2/40 px-3 py-2">
+    <div className="rounded-xl border border-border bg-surface-2/40 px-3 py-2">
       <div className="text-[11px] uppercase tracking-wider text-muted">{label}</div>
       <div
         className={cn(
@@ -683,7 +683,7 @@ function GameOver() {
             {ranked.map((p, i) => (
               <li
                 key={p.id}
-                className={cn("flex items-center justify-between rounded-lg border px-4 py-3", p.isYou ? "border-accent/50 bg-accent/5" : "border-border bg-surface-2/40")}
+                className={cn("flex items-center justify-between rounded-xl border px-4 py-3", p.isYou ? "border-accent/50 bg-accent/5" : "border-border bg-surface-2/40")}
               >
                 <span className="flex items-center gap-3">
                   <span className="font-mono text-sm text-muted">#{i + 1}</span>
@@ -749,7 +749,7 @@ function RecapRow({ record }: { record: RoundRecord }) {
         : `${action} ${qty} @ ${action === "buy" ? quote?.ask : quote?.bid}`;
 
   return (
-    <div className="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-lg border border-border bg-surface-2/40 px-3 py-2.5 text-sm">
+    <div className="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-xl border border-border bg-surface-2/40 px-3 py-2.5 text-sm">
       <span className="font-mono text-muted">R{round}</span>
       <Badge tone={role === "maker" ? "accent" : "outline"}>{role === "maker" ? "Maker" : "Trader"}</Badge>
       <div className="flex gap-1.5">

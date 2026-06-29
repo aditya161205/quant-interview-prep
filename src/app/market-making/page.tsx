@@ -1,6 +1,6 @@
 import { Spade, TrendingUp, Dices, Users } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
 import { IconCard, type CardColor } from "@/components/icon-card";
+import { PageHeader } from "@/components/page-header";
 
 export const metadata = {
   title: "Market Making Games — QuantPrep",
@@ -60,16 +60,11 @@ const games: {
 export default function MarketMakingHub() {
   return (
     <div className="space-y-8">
-      <header className="space-y-3">
-        <Badge tone="accent">Market Making</Badge>
-        <h1 className="text-3xl font-black uppercase tracking-tight sm:text-5xl">
-          Market Making Games
-        </h1>
-        <p className="max-w-2xl text-muted">
-          Interactive trading games that drill the mental math and decision-making
-          behind a real trading desk. Pick one to play.
-        </p>
-      </header>
+      <PageHeader
+        kicker="Market Making"
+        title="Market Making Games"
+        description="Interactive trading games that drill the mental math and decision-making behind a real trading desk. Pick one to play."
+      />
 
       <div className="grid gap-5 md:grid-cols-2">
         {games.map((g) => (
