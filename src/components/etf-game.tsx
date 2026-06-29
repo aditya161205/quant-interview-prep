@@ -64,10 +64,10 @@ function Intro() {
     <Card className="obsidian-glow mx-auto max-w-2xl">
       <CardContent className="space-y-7 py-10">
         <div className="flex flex-col items-center gap-3 text-center">
-          <span className="grid h-12 w-12 place-items-center rounded-xl bg-accent/15 text-accent">
+          <span className="grid h-14 w-14 place-items-center rounded-2xl bg-accent text-accent-foreground shadow-lg">
             <TrendingUp className="h-6 w-6" />
           </span>
-          <h2 className="text-xl font-semibold">ETF Arbitrage Game</h2>
+          <h2 className="text-2xl font-black uppercase tracking-tight">ETF Arbitrage Game</h2>
           <p className="max-w-lg text-muted">
             Each round, compute the ETF&apos;s fair value (NAV = Σ weight × price)
             and compare it to the quoted bid/ask. Buy when it&apos;s cheap, sell
@@ -504,10 +504,10 @@ function GameOver() {
       <Card className="obsidian-glow">
         <CardContent className="space-y-6 py-10">
           <div className="flex flex-col items-center gap-2 text-center">
-            <span className="grid h-12 w-12 place-items-center rounded-xl bg-accent/15 text-accent">
+            <span className="grid h-14 w-14 place-items-center rounded-2xl bg-accent text-accent-foreground shadow-lg">
               <Trophy className="h-6 w-6" />
             </span>
-            <h2 className="text-xl font-semibold">
+            <h2 className="text-2xl font-black uppercase tracking-tight">
               You finished {ordinal(youRank)} · {total$(youTotal)}
             </h2>
           </div>

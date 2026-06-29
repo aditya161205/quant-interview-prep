@@ -107,10 +107,10 @@ function Intro() {
     <UICard className="obsidian-glow mx-auto max-w-2xl">
       <CardContent className="space-y-7 py-10">
         <div className="flex flex-col items-center gap-3 text-center">
-          <span className="grid h-12 w-12 place-items-center rounded-xl bg-accent/15 text-accent">
+          <span className="grid h-14 w-14 place-items-center rounded-2xl bg-accent text-accent-foreground shadow-lg">
             <Crown className="h-6 w-6" />
           </span>
-          <h2 className="text-xl font-semibold">Market of Cards</h2>
+          <h2 className="text-2xl font-black uppercase tracking-tight">Market of Cards</h2>
           <p className="max-w-md text-muted">
             You and three AI traders each hold two hidden cards; three more sit
             face-down on the table — 11 cards in all. Quote a two-way market on
@@ -441,10 +441,10 @@ function GameOver() {
       <UICard className="obsidian-glow">
         <CardContent className="space-y-6 py-10">
           <div className="flex flex-col items-center gap-2 text-center">
-            <span className="grid h-12 w-12 place-items-center rounded-xl bg-accent/15 text-accent">
+            <span className="grid h-14 w-14 place-items-center rounded-2xl bg-accent text-accent-foreground shadow-lg">
               <Trophy className="h-6 w-6" />
             </span>
-            <h2 className="text-xl font-semibold">Settlement</h2>
+            <h2 className="text-2xl font-black uppercase tracking-tight">Settlement</h2>
             <p className="text-sm text-muted">The 11 cards summed to <span className="font-mono font-semibold text-foreground">{trueSum}</span>.</p>
             <div className={cn("font-mono text-3xl font-bold", youPnl > 0 ? "text-positive" : youPnl < 0 ? "text-negative" : "text-foreground")}>
               {formatSigned(youPnl)}

@@ -48,10 +48,10 @@ function Intro() {
     <Card className="obsidian-glow mx-auto max-w-2xl">
       <CardContent className="space-y-7 py-10">
         <div className="flex flex-col items-center gap-3 text-center">
-          <span className="grid h-12 w-12 place-items-center rounded-xl bg-accent/15 text-accent">
+          <span className="grid h-14 w-14 place-items-center rounded-2xl bg-accent text-accent-foreground shadow-lg">
             <Dices className="h-6 w-6" />
           </span>
-          <h2 className="text-xl font-semibold">Probability Betting Game</h2>
+          <h2 className="text-2xl font-black uppercase tracking-tight">Probability Betting Game</h2>
           <p className="max-w-md text-muted">
             Each round the house quotes fractional odds on dice, card and coin
             events — but the odds are skewed off the true probability. Compute the
@@ -486,10 +486,10 @@ function GameOver() {
       <Card className="obsidian-glow">
         <CardContent className="space-y-6 py-10">
           <div className="flex flex-col items-center gap-2 text-center">
-            <span className="grid h-12 w-12 place-items-center rounded-xl bg-accent/15 text-accent">
+            <span className="grid h-14 w-14 place-items-center rounded-2xl bg-accent text-accent-foreground shadow-lg">
               <Trophy className="h-6 w-6" />
             </span>
-            <h2 className="text-xl font-semibold">Final bankroll</h2>
+            <h2 className="text-2xl font-black uppercase tracking-tight">Final bankroll</h2>
             <div className="font-mono text-4xl font-bold">{bankroll}</div>
             <div className={cn("font-mono text-sm font-semibold", net > 0 ? "text-positive" : net < 0 ? "text-negative" : "text-muted")}>
               {formatSigned(net)} net · peak {peak}
