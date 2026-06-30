@@ -13,7 +13,10 @@ export async function GET() {
   if (!user) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
 
   const admin = getAdminClient();
-  const { data, error } = await admin.from("problems").select("topic, difficulty, asked_in");
+  const { data, error } = await admin
+    .from("problems")
+    .select("topic, difficulty, asked_in")
+    .range(0, 99999); // override PostgREST's default 1000-row cap
   if (error) return NextResponse.json({ error: "query failed" }, { status: 500 });
 
   const categories = new Set<string>();

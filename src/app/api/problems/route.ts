@@ -20,7 +20,8 @@ export async function GET(request: Request) {
   let query = admin
     .from("problems")
     .select("id, question_name, topic, difficulty, asked_in")
-    .order("id", { ascending: true });
+    .order("id", { ascending: true })
+    .range(0, 99999); // override PostgREST's default 1000-row cap
 
   if (difficulty) query = query.eq("difficulty", difficulty);
   if (category) query = query.eq("topic", category);

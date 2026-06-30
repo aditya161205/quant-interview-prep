@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { Search, X } from "lucide-react";
+import { Search, X, ChevronLeft, ChevronRight } from "lucide-react";
 import { usePracticeStore, useMounted } from "@/store/practice-store";
 import { DifficultyBadge } from "@/components/difficulty-badge";
 import type { Difficulty, ProblemMeta } from "@/lib/problems";
@@ -33,6 +33,8 @@ export function ProblemBrowser() {
   const [category, setCategory] = React.useState("All");
   const [company, setCompany] = React.useState("All");
   const [status, setStatus] = React.useState<StatusFilter>("All");
+  const [pageSize, setPageSize] = React.useState(25);
+  const [page, setPage] = React.useState(1);
 
   React.useEffect(() => {
     fetch("/api/problems/facets")
@@ -77,6 +79,15 @@ export function ProblemBrowser() {
     return true;
   });
 
+  const pageCount = Math.max(1, Math.ceil(rows.length / pageSize));
+  const safePage = Math.min(page, pageCount);
+  const pageRows = rows.slice((safePage - 1) * pageSize, safePage * pageSize);
+
+  // Reset to page 1 whenever the result set or page size changes.
+  React.useEffect(() => {
+    setPage(1);
+  }, [difficulty, category, company, status, debounced, pageSize]);
+
   return (
     <div className="space-y-4">
       {/* Toolbar */}
@@ -104,8 +115,20 @@ export function ProblemBrowser() {
         </div>
       </div>
 
-      <div className="px-1 text-xs text-muted">
-        {loading ? "Loading…" : `${rows.length} problem${rows.length === 1 ? "" : "s"}`}
+      <div className="flex flex-wrap items-center justify-between gap-3 px-1 text-xs text-muted">
+        <span>{loading ? "Loading…" : `${rows.length} problem${rows.length === 1 ? "" : "s"}`}</span>
+        <label className="flex items-center gap-2">
+          <span className="uppercase tracking-wider">Per page</span>
+          <select
+            value={pageSize}
+            onChange={(e) => setPageSize(Number(e.target.value))}
+            className="h-7 rounded-full border border-border bg-surface px-2.5 font-mono text-foreground outline-none focus:ring-2 focus:ring-ring"
+          >
+            {[25, 50, 75, 100].map((n) => (
+              <option key={n} value={n}>{n}</option>
+            ))}
+          </select>
+        </label>
       </div>
 
       {/* Table */}
@@ -122,13 +145,13 @@ export function ProblemBrowser() {
             <span className="hidden sm:block">Company</span>
             <span className="text-right">Level</span>
           </div>
-          {rows.map((p, i) => (
+          {pageRows.map((p, i) => (
             <Link
               key={p.id}
               href={`/practice/${p.id}`}
               className="grid grid-cols-[3rem_1fr_8rem_5rem] items-center gap-3 border-b border-border px-4 py-3 text-sm transition-colors last:border-b-0 hover:bg-surface-2/40 sm:grid-cols-[3.5rem_1fr_10rem_12rem_6rem]"
             >
-              <span className="font-mono text-muted">{i + 1}</span>
+              <span className="font-mono text-muted">{(safePage - 1) * pageSize + i + 1}</span>
               <span className="min-w-0">
                 <span className="block truncate font-medium">{p.title}</span>
                 {isSolved(p.id) && <span className="text-[11px] font-semibold uppercase tracking-wider text-emerald-500">Solved</span>}
@@ -141,6 +164,28 @@ export function ProblemBrowser() {
               </span>
             </Link>
           ))}
+        </div>
+      )}
+
+      {!loading && pageCount > 1 && (
+        <div className="flex items-center justify-between gap-3 pt-1">
+          <button
+            onClick={() => setPage((p) => Math.max(1, p - 1))}
+            disabled={safePage <= 1}
+            className="inline-flex h-9 items-center gap-1.5 rounded-full border border-border px-4 text-sm transition-colors hover:border-accent/50 hover:text-accent disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            <ChevronLeft className="h-4 w-4" /> Prev
+          </button>
+          <span className="text-xs font-medium uppercase tracking-wider text-muted">
+            Page {safePage} of {pageCount}
+          </span>
+          <button
+            onClick={() => setPage((p) => Math.min(pageCount, p + 1))}
+            disabled={safePage >= pageCount}
+            className="inline-flex h-9 items-center gap-1.5 rounded-full border border-border px-4 text-sm transition-colors hover:border-accent/50 hover:text-accent disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            Next <ChevronRight className="h-4 w-4" />
+          </button>
         </div>
       )}
     </div>
