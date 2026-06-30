@@ -2,7 +2,7 @@
 
 import { create } from "zustand";
 import {
-  PROPOSITIONS,
+  generateProps,
   rollOutcome,
   skewedOdds,
   betPnl,
@@ -57,6 +57,7 @@ export interface ResolvedLine {
   category: Category | "Special";
   stake: number;
   b: number;
+  trueProb: number | null; // null for special bets
   won: boolean;
   voided: boolean;
   pnl: number;
@@ -94,21 +95,14 @@ interface BettingState {
   reset: () => void;
 }
 
-function shuffle<T>(arr: T[]): T[] {
-  const a = [...arr];
-  for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [a[i], a[j]] = [a[j], a[i]];
-  }
-  return a;
-}
 
 function buildBoard(perCat: number): BoardProp[] {
   const cats: Category[] = ["Dice", "Cards", "Coins"];
   const out: BoardProp[] = [];
   for (const cat of cats) {
-    const pool = PROPOSITIONS.filter((p) => p.category === cat);
-    for (const prop of shuffle(pool).slice(0, perCat)) {
+    for (const prop of generateProps(cat, perCat)) {
+      // unique id per round position so taken bets map cleanly
+      prop.id = `${cat}-${out.length}`;
       out.push({ prop, odds: skewedOdds(prop.trueProb) });
     }
   }
@@ -194,18 +188,19 @@ export const useBettingStore = create<BettingState>((set, get) => {
       }),
 
     resolve: () => {
-      const { bets, specials, bankroll, peak, history } = get();
+      const { bets, specials, board, bankroll, peak, history } = get();
       const outcome = rollOutcome();
       const lines: ResolvedLine[] = [];
 
       let normalPnl = 0;
       const normalBets = Object.values(bets);
       for (const bet of normalBets) {
-        const prop = PROPOSITIONS.find((p) => p.id === bet.id)!;
+        const prop = board.find((bp) => bp.prop.id === bet.id)?.prop;
+        if (!prop) continue;
         const won = prop.evaluate(outcome);
         const pnl = betPnl(won, bet.stake, bet.b);
         normalPnl += pnl;
-        lines.push({ id: bet.id, label: bet.label, category: bet.category, stake: bet.stake, b: bet.b, won, voided: false, pnl });
+        lines.push({ id: bet.id, label: bet.label, category: bet.category, stake: bet.stake, b: bet.b, trueProb: prop.trueProb, won, voided: false, pnl });
       }
 
       const settleSpecial = (kind: SpecialKind, label: string, winsWhen: boolean) => {
@@ -214,7 +209,7 @@ export const useBettingStore = create<BettingState>((set, get) => {
         const voided = normalBets.length === 0;
         const won = !voided && winsWhen;
         const pnl = voided ? 0 : betPnl(won, s.stake, s.b);
-        lines.push({ id: kind, label, category: "Special", stake: s.stake, b: s.b, won, voided, pnl });
+        lines.push({ id: kind, label, category: "Special", stake: s.stake, b: s.b, trueProb: null, won, voided, pnl });
       };
       settleSpecial("put", "Put — other bets net negative", normalPnl < 0);
       settleSpecial("call", "Call — other bets net positive", normalPnl > 0);

@@ -16,7 +16,6 @@ import {
   type RoundResult,
 } from "@/store/betting-store";
 import {
-  PROPOSITIONS,
   type Category,
   type RoundOutcome,
 } from "@/lib/betting-game";
@@ -439,10 +438,9 @@ function ResultView() {
 }
 
 function ResultLine({ line }: { line: ResolvedLine }) {
-  const prop = PROPOSITIONS.find((p) => p.id === line.id);
-  const trueProb = prop?.trueProb;
+  const trueProb = line.trueProb;
   const implied = 1 / (line.b + 1);
-  const hadEdge = trueProb !== undefined && implied < trueProb;
+  const hadEdge = trueProb !== null && implied < trueProb;
 
   return (
     <div className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-lg border border-border bg-surface-2/40 px-3 py-2 text-sm">
@@ -456,7 +454,7 @@ function ResultLine({ line }: { line: ResolvedLine }) {
         <span className="block truncate">{line.label}</span>
         <span className="text-xs text-muted">
           stake {line.stake} @ {line.b.toFixed(2)}:1
-          {trueProb !== undefined && (
+          {trueProb !== null && (
             <>
               {" · "}true {(trueProb * 100).toFixed(0)}% vs implied {(implied * 100).toFixed(0)}%
               {" · "}
