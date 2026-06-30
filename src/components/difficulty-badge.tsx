@@ -1,4 +1,4 @@
-import type { Difficulty } from "@/data/problems";
+import type { Difficulty } from "@/lib/problems";
 import { cn } from "@/lib/utils";
 
 const styles: Record<Difficulty, string> = {
@@ -17,19 +17,20 @@ export function DifficultyBadge({
   difficulty,
   className,
 }: {
-  difficulty: Difficulty;
+  difficulty: Difficulty | string;
   className?: string;
 }) {
+  const key = (["Easy", "Medium", "Hard"].includes(difficulty) ? difficulty : "Medium") as Difficulty;
   return (
     <span
       className={cn(
         "inline-flex w-[92px] shrink-0 items-center justify-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium",
-        styles[difficulty],
+        styles[key],
         className,
       )}
     >
-      <span className={cn("h-1.5 w-1.5 rounded-full", dot[difficulty])} />
-      {difficulty}
+      <span className={cn("h-1.5 w-1.5 rounded-full", dot[key])} />
+      {difficulty || "—"}
     </span>
   );
 }

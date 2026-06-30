@@ -66,3 +66,21 @@ gh repo create quant-interview-prep --private --source=. --remote=origin --push
 
 Create `.env.local` (copy from `.env.example`) and fill in the two values, then
 `npm run dev`. Without the file, the app simply uses local storage.
+
+---
+
+## Problems bank (locked down)
+
+The 1,082 interview problems live in Supabase and are **never sent to the
+browser**. The table is RLS-locked (no client access); only the server `/api`
+routes read it, using a service-role key, and answers are checked server-side.
+
+1. **Create the table:** Supabase → SQL Editor → run [`supabase/problems.sql`](supabase/problems.sql).
+2. **Import the data:** Supabase → Table Editor → `problems` → **Insert → Import
+   data from CSV** → upload `merged_problems.csv` (columns map 1:1).
+3. **Add the secret key:** Supabase → Project Settings → API → copy the
+   **`service_role`** (secret) key. In **Vercel → Settings → Environment
+   Variables** add:
+   - `SUPABASE_SERVICE_ROLE_KEY` = that key  *(never expose it client-side)*
+4. **Redeploy** (Vercel → Deployments → Redeploy) so the new env var is picked
+   up. For local dev, add the same key to `.env.local`.

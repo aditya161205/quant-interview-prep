@@ -1,4 +1,3 @@
-import { problems } from "@/data/problems";
 import { ProblemBrowser } from "@/components/problem-browser";
 import { PageHeader } from "@/components/page-header";
 
@@ -12,9 +11,9 @@ export default function PracticePage() {
       <PageHeader
         kicker="Practice"
         title="Quant Interview Problems"
-        description="Search and filter the set, mark problems solved, and bookmark the ones worth revisiting. Open any problem to reveal its worked solution."
+        description="Filter by category, company, and difficulty. Open a problem to check your answer or reveal the worked solution."
       />
-      <ProblemBrowser problems={problems} />
+      <ProblemBrowser />
     </div>
   );
 }

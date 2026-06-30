@@ -3,7 +3,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { CircleCheck, Bookmark, Gamepad2, Flame, ArrowRight } from "lucide-react";
-import { problems, type Difficulty, type Topic } from "@/data/problems";
+import type { Difficulty, ProblemMeta } from "@/lib/problems";
 import { usePracticeStore, useMounted, dayKey } from "@/store/practice-store";
 import { DifficultyBadge } from "@/components/difficulty-badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -18,14 +18,24 @@ export function ProfileView() {
   const activity = usePracticeStore((s) => s.activity);
   const games = usePracticeStore((s) => s.games);
 
+  const [problems, setProblems] = React.useState<ProblemMeta[]>([]);
+  React.useEffect(() => {
+    fetch("/api/problems")
+      .then((r) => r.json())
+      .then((d: { problems: ProblemMeta[] }) => setProblems(d.problems ?? []))
+      .catch(() => {});
+  }, []);
+
   // Only trust persisted values after mount.
   const solved = mounted ? solvedMap : {};
   const booked = mounted ? bookmarkedMap : {};
   const acts = mounted ? activity : {};
   const gamesPlayed = mounted ? games : 0;
+  const isSolved = (id: number) => !!solved[String(id)];
+  const isBooked = (id: number) => !!booked[String(id)];
 
-  const solvedList = problems.filter((p) => solved[p.id]);
-  const bookmarkedList = problems.filter((p) => booked[p.id]);
+  const solvedList = problems.filter((p) => isSolved(p.id));
+  const bookmarkedList = problems.filter((p) => isBooked(p.id));
 
   const byDifficulty: Record<Difficulty, { total: number; done: number }> = {
     Easy: { total: 0, done: 0 },
@@ -34,11 +44,12 @@ export function ProfileView() {
   };
   const byTopic: Record<string, { total: number; done: number }> = {};
   for (const p of problems) {
-    byDifficulty[p.difficulty].total++;
-    if (solved[p.id]) byDifficulty[p.difficulty].done++;
-    byTopic[p.topic] ??= { total: 0, done: 0 };
-    byTopic[p.topic].total++;
-    if (solved[p.id]) byTopic[p.topic].done++;
+    const d = (["Easy", "Medium", "Hard"].includes(p.difficulty) ? p.difficulty : "Medium") as Difficulty;
+    byDifficulty[d].total++;
+    if (isSolved(p.id)) byDifficulty[d].done++;
+    byTopic[p.category] ??= { total: 0, done: 0 };
+    byTopic[p.category].total++;
+    if (isSolved(p.id)) byTopic[p.category].done++;
   }
 
   const { current, best } = streaks(acts);
@@ -102,7 +113,7 @@ export function ProfileView() {
               {bookmarkedList.map((p) => (
                 <Link key={p.id} href={`/practice/${p.id}`} className="group flex items-center gap-3 rounded-lg border border-border bg-surface-2/40 px-3 py-2.5 transition-colors hover:border-accent/50">
                   <span className="min-w-0 flex-1 truncate text-sm font-medium group-hover:text-accent">{p.title}</span>
-                  {solved[p.id] && <CircleCheck className="h-4 w-4 shrink-0 text-emerald-500" />}
+                  {isSolved(p.id) && <CircleCheck className="h-4 w-4 shrink-0 text-emerald-500" />}
                   <DifficultyBadge difficulty={p.difficulty} className="hidden sm:inline-flex" />
                 </Link>
               ))}

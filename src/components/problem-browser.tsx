@@ -2,64 +2,80 @@
 
 import * as React from "react";
 import Link from "next/link";
-import {
-  Search, Bookmark, Check, X, ArrowUpRight,
-  Percent, Sigma, Lightbulb, Boxes, type LucideIcon,
-} from "lucide-react";
-import type { Difficulty, Problem, Topic } from "@/data/problems";
+import { Search, X } from "lucide-react";
 import { usePracticeStore, useMounted } from "@/store/practice-store";
 import { DifficultyBadge } from "@/components/difficulty-badge";
+import type { Difficulty, ProblemMeta } from "@/lib/problems";
 import { cn } from "@/lib/utils";
 
-type DiffFilter = "All" | Difficulty;
 type StatusFilter = "All" | "Solved" | "Unsolved" | "Bookmarked";
-type TopicFilter = "All" | Topic;
-
-const DIFFS: DiffFilter[] = ["All", "Easy", "Medium", "Hard"];
 const STATUSES: StatusFilter[] = ["All", "Solved", "Unsolved", "Bookmarked"];
-const TOPICS: TopicFilter[] = [
-  "All",
-  "Probability",
-  "Expected Value",
-  "Brainteaser",
-  "Combinatorics",
-];
+const DIFFS = ["All", "Easy", "Medium", "Hard"];
 
-const TOPIC_STYLE: Record<Topic, { tile: string; Icon: LucideIcon }> = {
-  Probability: { tile: "bg-violet-600", Icon: Percent },
-  "Expected Value": { tile: "bg-emerald-500", Icon: Sigma },
-  Brainteaser: { tile: "bg-amber-500", Icon: Lightbulb },
-  Combinatorics: { tile: "bg-rose-500", Icon: Boxes },
-};
+interface Facets {
+  categories: string[];
+  companies: string[];
+  difficulties: string[];
+}
 
-export function ProblemBrowser({ problems }: { problems: Problem[] }) {
+export function ProblemBrowser() {
   const mounted = useMounted();
-  const solved = usePracticeStore((s) => s.solved);
-  const bookmarked = usePracticeStore((s) => s.bookmarked);
-  const toggleSolved = usePracticeStore((s) => s.toggleSolved);
-  const toggleBookmark = usePracticeStore((s) => s.toggleBookmark);
+  const solvedMap = usePracticeStore((s) => s.solved);
+  const bookmarkedMap = usePracticeStore((s) => s.bookmarked);
+
+  const [facets, setFacets] = React.useState<Facets>({ categories: [], companies: [], difficulties: [] });
+  const [items, setItems] = React.useState<ProblemMeta[] | null>(null);
+  const [loading, setLoading] = React.useState(true);
 
   const [query, setQuery] = React.useState("");
-  const [diff, setDiff] = React.useState<DiffFilter>("All");
-  const [topic, setTopic] = React.useState<TopicFilter>("All");
+  const [debounced, setDebounced] = React.useState("");
+  const [difficulty, setDifficulty] = React.useState("All");
+  const [category, setCategory] = React.useState("All");
+  const [company, setCompany] = React.useState("All");
   const [status, setStatus] = React.useState<StatusFilter>("All");
 
-  // Persisted state is only trusted after mount to avoid hydration mismatch.
-  const isSolved = (id: string) => mounted && !!solved[id];
-  const isBookmarked = (id: string) => mounted && !!bookmarked[id];
+  React.useEffect(() => {
+    fetch("/api/problems/facets")
+      .then((r) => r.json())
+      .then((d: Facets) => setFacets(d))
+      .catch(() => {});
+  }, []);
 
-  const filtered = problems.filter((p) => {
-    const q = query.trim().toLowerCase();
-    if (q && !`${p.title} ${p.topic}`.toLowerCase().includes(q)) return false;
-    if (diff !== "All" && p.difficulty !== diff) return false;
-    if (topic !== "All" && p.topic !== topic) return false;
+  React.useEffect(() => {
+    const t = setTimeout(() => setDebounced(query.trim()), 250);
+    return () => clearTimeout(t);
+  }, [query]);
+
+  React.useEffect(() => {
+    const params = new URLSearchParams();
+    if (difficulty !== "All") params.set("difficulty", difficulty);
+    if (category !== "All") params.set("category", category);
+    if (company !== "All") params.set("company", company);
+    if (debounced) params.set("q", debounced);
+
+    setLoading(true);
+    const ctrl = new AbortController();
+    fetch(`/api/problems?${params}`, { signal: ctrl.signal })
+      .then((r) => r.json())
+      .then((d: { problems: ProblemMeta[] }) => {
+        setItems(d.problems ?? []);
+        setLoading(false);
+      })
+      .catch((e) => {
+        if (e.name !== "AbortError") setLoading(false);
+      });
+    return () => ctrl.abort();
+  }, [difficulty, category, company, debounced]);
+
+  const isSolved = (id: number) => mounted && !!solvedMap[String(id)];
+  const isBookmarked = (id: number) => mounted && !!bookmarkedMap[String(id)];
+
+  const rows = (items ?? []).filter((p) => {
     if (status === "Solved" && !isSolved(p.id)) return false;
     if (status === "Unsolved" && isSolved(p.id)) return false;
     if (status === "Bookmarked" && !isBookmarked(p.id)) return false;
     return true;
   });
-
-  const solvedCount = mounted ? problems.filter((p) => solved[p.id]).length : 0;
 
   return (
     <div className="space-y-4">
@@ -74,105 +90,64 @@ export function ProblemBrowser({ problems }: { problems: Problem[] }) {
             className="h-11 w-full rounded-xl border border-border bg-surface pl-9 pr-9 text-sm outline-none focus:ring-2 focus:ring-ring"
           />
           {query && (
-            <button
-              onClick={() => setQuery("")}
-              aria-label="Clear search"
-              className="absolute right-2.5 top-1/2 -translate-y-1/2 rounded-md p-1 text-muted hover:text-foreground"
-            >
+            <button onClick={() => setQuery("")} aria-label="Clear search" className="absolute right-2.5 top-1/2 -translate-y-1/2 rounded-md p-1 text-muted hover:text-foreground">
               <X className="h-4 w-4" />
             </button>
           )}
         </div>
 
         <div className="flex flex-wrap items-center gap-x-5 gap-y-3">
-          <FilterRow label="Category" options={TOPICS} value={topic} onChange={setTopic} />
-          <FilterRow label="Difficulty" options={DIFFS} value={diff} onChange={setDiff} />
-          <FilterRow label="Status" options={STATUSES} value={status} onChange={setStatus} />
+          <Chips label="Difficulty" options={DIFFS} value={difficulty} onChange={setDifficulty} />
+          <Chips label="Status" options={STATUSES} value={status} onChange={(v) => setStatus(v as StatusFilter)} />
+          <Select label="Category" value={category} onChange={setCategory} options={facets.categories} />
+          <Select label="Company" value={company} onChange={setCompany} options={facets.companies} />
         </div>
       </div>
 
-      <div className="flex items-center justify-between px-1 text-xs text-muted">
-        <span>
-          Showing {filtered.length} of {problems.length}
-        </span>
-        <span>{solvedCount} solved</span>
+      <div className="px-1 text-xs text-muted">
+        {loading ? "Loading…" : `${rows.length} problem${rows.length === 1 ? "" : "s"}`}
       </div>
 
-      {/* List */}
-      {filtered.length === 0 ? (
+      {/* Table */}
+      {!loading && rows.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-border py-16 text-center text-sm text-muted">
           No problems match your filters.
         </div>
       ) : (
         <div className="overflow-hidden rounded-2xl border border-border bg-surface">
-          {filtered.map((p) => {
-            const done = isSolved(p.id);
-            const marked = isBookmarked(p.id);
-            const { tile, Icon } = TOPIC_STYLE[p.topic];
-            return (
-              <div
-                key={p.id}
-                className="group relative flex items-center gap-3 border-b border-border px-3 py-3 transition-colors last:border-b-0 hover:bg-surface-2/40 sm:gap-4 sm:px-4"
-              >
-                <Link href={`/practice/${p.id}`} className="absolute inset-0" aria-label={p.title} />
-
-                <span className={cn("grid h-10 w-10 shrink-0 place-items-center rounded-xl text-white", tile)}>
-                  <Icon className="h-5 w-5" />
-                </span>
-
-                <div className="pointer-events-none min-w-0 flex-1">
-                  <div className="truncate font-semibold transition-colors group-hover:text-foreground">{p.title}</div>
-                  <div className="text-[11px] font-semibold uppercase tracking-wider text-muted">{p.topic}</div>
-                </div>
-
-                <DifficultyBadge difficulty={p.difficulty} className="hidden sm:inline-flex" />
-
-                <div className="pointer-events-auto flex items-center gap-0.5">
-                  <button
-                    onClick={() => toggleSolved(p.id)}
-                    title={done ? "Mark as unsolved" : "Mark as solved"}
-                    aria-label={done ? "Mark as unsolved" : "Mark as solved"}
-                    className={cn(
-                      "grid h-8 w-8 place-items-center rounded-full transition-colors",
-                      done ? "bg-emerald-500/15 text-emerald-500" : "text-muted hover:text-foreground",
-                    )}
-                  >
-                    <Check className="h-4 w-4" />
-                  </button>
-                  <button
-                    onClick={() => toggleBookmark(p.id)}
-                    title={marked ? "Remove bookmark" : "Bookmark"}
-                    aria-label={marked ? "Remove bookmark" : "Bookmark"}
-                    className={cn(
-                      "grid h-8 w-8 place-items-center rounded-full transition-colors",
-                      marked ? "text-accent" : "text-muted hover:text-foreground",
-                    )}
-                  >
-                    <Bookmark className={cn("h-4 w-4", marked && "fill-accent")} />
-                  </button>
-                </div>
-
-                <ArrowUpRight className="h-4 w-4 shrink-0 text-muted transition-colors group-hover:text-foreground" />
-              </div>
-            );
-          })}
+          <div className="grid grid-cols-[3rem_1fr_8rem_5rem] gap-3 border-b border-border px-4 py-3 text-[11px] font-semibold uppercase tracking-wider text-muted sm:grid-cols-[3.5rem_1fr_10rem_12rem_6rem]">
+            <span>#</span>
+            <span>Problem</span>
+            <span className="hidden sm:block">Category</span>
+            <span className="hidden sm:block">Company</span>
+            <span className="text-right">Level</span>
+          </div>
+          {rows.map((p, i) => (
+            <Link
+              key={p.id}
+              href={`/practice/${p.id}`}
+              className="grid grid-cols-[3rem_1fr_8rem_5rem] items-center gap-3 border-b border-border px-4 py-3 text-sm transition-colors last:border-b-0 hover:bg-surface-2/40 sm:grid-cols-[3.5rem_1fr_10rem_12rem_6rem]"
+            >
+              <span className="font-mono text-muted">{i + 1}</span>
+              <span className="min-w-0">
+                <span className="block truncate font-medium">{p.title}</span>
+                {isSolved(p.id) && <span className="text-[11px] font-semibold uppercase tracking-wider text-emerald-500">Solved</span>}
+                <span className="block truncate text-xs text-muted sm:hidden">{p.category}</span>
+              </span>
+              <span className="hidden truncate text-muted sm:block">{p.category}</span>
+              <span className="hidden truncate text-muted sm:block">{p.companies.join(", ") || "—"}</span>
+              <span className="flex justify-end">
+                <DifficultyBadge difficulty={p.difficulty as Difficulty} />
+              </span>
+            </Link>
+          ))}
         </div>
       )}
     </div>
   );
 }
 
-function FilterRow<T extends string>({
-  label,
-  options,
-  value,
-  onChange,
-}: {
-  label: string;
-  options: readonly T[];
-  value: T;
-  onChange: (v: T) => void;
-}) {
+function Chips({ label, options, value, onChange }: { label: string; options: string[]; value: string; onChange: (v: string) => void }) {
   return (
     <div className="flex items-center gap-2">
       <span className="text-xs font-medium uppercase tracking-wider text-muted">{label}</span>
@@ -182,10 +157,8 @@ function FilterRow<T extends string>({
             key={opt}
             onClick={() => onChange(opt)}
             className={cn(
-              "h-8 rounded-lg border px-3 text-xs font-medium transition-colors",
-              value === opt
-                ? "border-accent bg-accent/15 text-accent"
-                : "border-border bg-surface text-muted hover:text-foreground",
+              "h-8 rounded-full border px-3 text-xs font-semibold transition-colors",
+              value === opt ? "border-accent bg-accent/15 text-accent" : "border-border bg-surface text-muted hover:text-foreground",
             )}
           >
             {opt}
@@ -193,5 +166,23 @@ function FilterRow<T extends string>({
         ))}
       </div>
     </div>
+  );
+}
+
+function Select({ label, value, onChange, options }: { label: string; value: string; onChange: (v: string) => void; options: string[] }) {
+  return (
+    <label className="flex items-center gap-2">
+      <span className="text-xs font-medium uppercase tracking-wider text-muted">{label}</span>
+      <select
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="h-8 rounded-full border border-border bg-surface px-3 text-xs font-semibold text-foreground outline-none focus:ring-2 focus:ring-ring"
+      >
+        <option value="All">All</option>
+        {options.map((o) => (
+          <option key={o} value={o}>{o}</option>
+        ))}
+      </select>
+    </label>
   );
 }

@@ -2,8 +2,8 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { SUPABASE_URL, SUPABASE_ANON_KEY, supabaseEnabled } from "@/lib/supabase/config";
 
-// Routes reachable without a session.
-const PUBLIC_PATHS = ["/login", "/auth"];
+// Routes the page-gate redirect must not touch (/api handles its own auth).
+const PUBLIC_PATHS = ["/login", "/auth", "/api"];
 
 export async function middleware(request: NextRequest) {
   // Without Supabase configured there's no auth, so the app stays open.
