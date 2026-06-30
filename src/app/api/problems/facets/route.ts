@@ -13,19 +13,24 @@ export async function GET() {
   if (!user) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
 
   const admin = getAdminClient();
-  const { data, error } = await admin
-    .from("problems")
-    .select("topic, difficulty, asked_in")
-    .range(0, 99999); // override PostgREST's default 1000-row cap
-  if (error) return NextResponse.json({ error: "query failed" }, { status: 500 });
-
   const categories = new Set<string>();
   const companies = new Set<string>();
   const difficulties = new Set<string>();
-  for (const r of data ?? []) {
-    if (r.topic) categories.add(r.topic as string);
-    if (r.difficulty) difficulties.add(r.difficulty as string);
-    for (const c of splitCompanies(r.asked_in as string | null)) companies.add(c);
+
+  const PAGE = 1000;
+  for (let from = 0; ; from += PAGE) {
+    const { data, error } = await admin
+      .from("problems")
+      .select("topic, difficulty, asked_in")
+      .order("id", { ascending: true })
+      .range(from, from + PAGE - 1);
+    if (error) return NextResponse.json({ error: "query failed" }, { status: 500 });
+    for (const r of data ?? []) {
+      if (r.topic) categories.add(r.topic as string);
+      if (r.difficulty) difficulties.add(r.difficulty as string);
+      for (const c of splitCompanies(r.asked_in as string | null)) companies.add(c);
+    }
+    if (!data || data.length < PAGE) break;
   }
 
   return NextResponse.json({

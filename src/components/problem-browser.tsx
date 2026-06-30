@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { Search, X, ChevronLeft, ChevronRight } from "lucide-react";
+import { Search, X, ChevronLeft, ChevronRight, Check } from "lucide-react";
 import { usePracticeStore, useMounted } from "@/store/practice-store";
 import { DifficultyBadge } from "@/components/difficulty-badge";
 import type { Difficulty, ProblemMeta } from "@/lib/problems";
@@ -22,6 +22,7 @@ export function ProblemBrowser() {
   const mounted = useMounted();
   const solvedMap = usePracticeStore((s) => s.solved);
   const bookmarkedMap = usePracticeStore((s) => s.bookmarked);
+  const toggleSolved = usePracticeStore((s) => s.toggleSolved);
 
   const [facets, setFacets] = React.useState<Facets>({ categories: [], companies: [], difficulties: [] });
   const [items, setItems] = React.useState<ProblemMeta[] | null>(null);
@@ -138,32 +139,51 @@ export function ProblemBrowser() {
         </div>
       ) : (
         <div className="overflow-hidden rounded-2xl border border-border bg-surface">
-          <div className="grid grid-cols-[3rem_1fr_8rem_5rem] gap-3 border-b border-border px-4 py-3 text-[11px] font-semibold uppercase tracking-wider text-muted sm:grid-cols-[3.5rem_1fr_10rem_12rem_6rem]">
+          <div className="grid grid-cols-[2.25rem_1fr_5rem_2.25rem] gap-3 border-b border-border px-4 py-3 text-[11px] font-semibold uppercase tracking-wider text-muted sm:grid-cols-[3rem_1fr_9rem_11rem_5.5rem_2.5rem]">
             <span>#</span>
             <span>Problem</span>
             <span className="hidden sm:block">Category</span>
             <span className="hidden sm:block">Company</span>
             <span className="text-right">Level</span>
+            <span className="text-right">Done</span>
           </div>
-          {pageRows.map((p, i) => (
-            <Link
-              key={p.id}
-              href={`/practice/${p.id}`}
-              className="grid grid-cols-[3rem_1fr_8rem_5rem] items-center gap-3 border-b border-border px-4 py-3 text-sm transition-colors last:border-b-0 hover:bg-surface-2/40 sm:grid-cols-[3.5rem_1fr_10rem_12rem_6rem]"
-            >
-              <span className="font-mono text-muted">{(safePage - 1) * pageSize + i + 1}</span>
-              <span className="min-w-0">
-                <span className="block truncate font-medium">{p.title}</span>
-                {isSolved(p.id) && <span className="text-[11px] font-semibold uppercase tracking-wider text-emerald-500">Solved</span>}
-                <span className="block truncate text-xs text-muted sm:hidden">{p.category}</span>
-              </span>
-              <span className="hidden truncate text-muted sm:block">{p.category}</span>
-              <span className="hidden truncate text-muted sm:block">{p.companies.join(", ") || "—"}</span>
-              <span className="flex justify-end">
-                <DifficultyBadge difficulty={p.difficulty as Difficulty} />
-              </span>
-            </Link>
-          ))}
+          {pageRows.map((p, i) => {
+            const done = isSolved(p.id);
+            return (
+              <div
+                key={p.id}
+                className="group relative grid grid-cols-[2.25rem_1fr_5rem_2.25rem] items-center gap-3 border-b border-border px-4 py-3 text-sm transition-colors last:border-b-0 hover:bg-surface-2/40 sm:grid-cols-[3rem_1fr_9rem_11rem_5.5rem_2.5rem]"
+              >
+                <Link href={`/practice/${p.id}`} className="absolute inset-0" aria-label={p.title} />
+                <span className="pointer-events-none font-mono text-muted">{(safePage - 1) * pageSize + i + 1}</span>
+                <span className="pointer-events-none min-w-0">
+                  <span className="block truncate font-medium">{p.title}</span>
+                  <span className="block truncate text-xs text-muted sm:hidden">{p.category}</span>
+                </span>
+                <span className="pointer-events-none hidden truncate text-muted sm:block">{p.category}</span>
+                <span className="pointer-events-none hidden truncate text-muted sm:block">{p.companies.join(", ") || "—"}</span>
+                <span className="pointer-events-none flex justify-end">
+                  <DifficultyBadge difficulty={p.difficulty as Difficulty} />
+                </span>
+                <span className="flex justify-end">
+                  <button
+                    onClick={() => toggleSolved(String(p.id))}
+                    title={done ? "Mark as unsolved" : "Mark as done"}
+                    aria-label={done ? "Mark as unsolved" : "Mark as done"}
+                    aria-pressed={done}
+                    className={cn(
+                      "grid h-6 w-6 place-items-center rounded-md border transition-colors",
+                      done
+                        ? "border-emerald-500 bg-emerald-500 text-white"
+                        : "border-border text-transparent hover:border-emerald-500/60 hover:text-emerald-500/40",
+                    )}
+                  >
+                    <Check className="h-4 w-4" />
+                  </button>
+                </span>
+              </div>
+            );
+          })}
         </div>
       )}
 
