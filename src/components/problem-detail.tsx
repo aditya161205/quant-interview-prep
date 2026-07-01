@@ -3,7 +3,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { ArrowLeft, ArrowRight, Check, X, Lightbulb, Loader2, HelpCircle, Timer, Play, Pause, RotateCcw } from "lucide-react";
+import { ArrowLeft, ArrowRight, Check, X, Lightbulb, Loader2, BookOpen, TimerReset, Play, Pause, RotateCcw, Minus, Plus } from "lucide-react";
 import { usePracticeStore } from "@/store/practice-store";
 import { ProblemActions } from "@/components/problem-actions";
 import { MathText } from "@/components/math-text";
@@ -166,7 +166,7 @@ function HintReveal({ id }: { id: number }) {
       )}
       {more && (
         <Button variant="outline" onClick={revealNext} disabled={loading}>
-          {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <HelpCircle className="h-4 w-4" />}
+          {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Lightbulb className="h-4 w-4 text-amber-500" />}
           {hints === null ? "Show hint" : `Show next hint (${shown + 1}/${total})`}
         </Button>
       )}
@@ -174,48 +174,120 @@ function HintReveal({ id }: { id: number }) {
   );
 }
 
-function Stopwatch() {
-  const [elapsed, setElapsed] = React.useState(0);
-  const [running, setRunning] = React.useState(false);
-  const startRef = React.useRef(0);
-
-  React.useEffect(() => {
-    if (!running) return;
-    startRef.current = Date.now() - elapsed;
-    const timer = setInterval(() => setElapsed(Date.now() - startRef.current), 100);
-    return () => clearInterval(timer);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [running]);
-
-  const totalSec = Math.floor(elapsed / 1000);
-  const h = Math.floor(totalSec / 3600);
-  const m = Math.floor((totalSec % 3600) / 60);
-  const s = totalSec % 60;
-  const time = h > 0
+function fmt(ms: number): string {
+  const total = Math.max(0, Math.floor(ms / 1000));
+  const h = Math.floor(total / 3600);
+  const m = Math.floor((total % 3600) / 60);
+  const s = total % 60;
+  return h > 0
     ? `${h}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`
-    : `${m}:${String(s).padStart(2, "0")}`;
+    : `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+}
+
+function Stopwatch() {
+  const [mode, setMode] = React.useState<"stopwatch" | "timer">("stopwatch");
+  const [running, setRunning] = React.useState(false);
+  const [elapsed, setElapsed] = React.useState(0); // stopwatch: ms counted up
+  const [durationMin, setDurationMin] = React.useState(5); // timer: chosen minutes
+  const [remaining, setRemaining] = React.useState(5 * 60_000); // timer: ms left
+  const anchorRef = React.useRef(0);
+
+  const done = mode === "timer" && remaining <= 0;
+
+  // Stopwatch tick
+  React.useEffect(() => {
+    if (!running || mode !== "stopwatch") return;
+    anchorRef.current = Date.now() - elapsed;
+    const t = setInterval(() => setElapsed(Date.now() - anchorRef.current), 100);
+    return () => clearInterval(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [running, mode]);
+
+  // Timer tick (counts down, stops at 0)
+  React.useEffect(() => {
+    if (!running || mode !== "timer") return;
+    const end = Date.now() + remaining;
+    const t = setInterval(() => {
+      const rem = end - Date.now();
+      if (rem <= 0) {
+        setRemaining(0);
+        setRunning(false);
+        clearInterval(t);
+      } else {
+        setRemaining(rem);
+      }
+    }, 100);
+    return () => clearInterval(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [running, mode]);
+
+  const switchMode = (m: "stopwatch" | "timer") => {
+    setRunning(false);
+    setMode(m);
+  };
+  const reset = () => {
+    setRunning(false);
+    if (mode === "stopwatch") setElapsed(0);
+    else setRemaining(durationMin * 60_000);
+  };
+  const setMinutes = (min: number) => {
+    const clamped = Math.max(1, Math.min(180, min));
+    setDurationMin(clamped);
+    setRemaining(clamped * 60_000);
+    setRunning(false);
+  };
 
   return (
-    <div className="glass fixed bottom-5 right-5 z-40 flex items-center gap-2 rounded-full px-3 py-2">
-      <Timer className="h-4 w-4 text-accent" />
-      <span className="min-w-[3.25rem] text-center font-mono text-sm font-semibold tabular-nums">{time}</span>
-      <button
-        onClick={() => setRunning((r) => !r)}
-        aria-label={running ? "Pause timer" : "Start timer"}
-        className="grid h-7 w-7 place-items-center rounded-full bg-surface-2 text-foreground transition-colors hover:bg-accent hover:text-white"
-      >
-        {running ? <Pause className="h-3.5 w-3.5" /> : <Play className="h-3.5 w-3.5" />}
-      </button>
-      <button
-        onClick={() => {
-          setRunning(false);
-          setElapsed(0);
-        }}
-        aria-label="Reset timer"
-        className="grid h-7 w-7 place-items-center rounded-full text-muted transition-colors hover:text-foreground"
-      >
-        <RotateCcw className="h-3.5 w-3.5" />
-      </button>
+    <div className="glass fixed bottom-5 right-5 z-40 w-48 space-y-2.5 rounded-2xl p-3">
+      {/* mode toggle */}
+      <div className="flex gap-1 rounded-full border border-border bg-surface-2/50 p-0.5 text-[11px] font-semibold uppercase tracking-wider">
+        {(["stopwatch", "timer"] as const).map((m) => (
+          <button
+            key={m}
+            onClick={() => switchMode(m)}
+            className={cn(
+              "flex-1 rounded-full py-1 transition-colors",
+              mode === m ? "bg-foreground text-background" : "text-muted hover:text-foreground",
+            )}
+          >
+            {m === "stopwatch" ? "Stopwatch" : "Timer"}
+          </button>
+        ))}
+      </div>
+
+      <div className={cn("text-center font-mono text-3xl font-semibold tabular-nums", done && "text-negative")}>
+        {mode === "stopwatch" ? fmt(elapsed) : fmt(remaining)}
+      </div>
+
+      {/* timer duration setter (only when idle) */}
+      {mode === "timer" && !running && (
+        <div className="flex items-center justify-center gap-2 text-sm">
+          <button onClick={() => setMinutes(durationMin - 1)} aria-label="Less time" className="grid h-6 w-6 place-items-center rounded-full bg-surface-2 text-muted hover:text-foreground">
+            <Minus className="h-3.5 w-3.5" />
+          </button>
+          <span className="w-16 text-center font-mono text-muted">{durationMin} min</span>
+          <button onClick={() => setMinutes(durationMin + 1)} aria-label="More time" className="grid h-6 w-6 place-items-center rounded-full bg-surface-2 text-muted hover:text-foreground">
+            <Plus className="h-3.5 w-3.5" />
+          </button>
+        </div>
+      )}
+
+      <div className="flex items-center justify-center gap-2">
+        <button
+          onClick={() => (done ? reset() : setRunning((r) => !r))}
+          aria-label={running ? "Pause" : "Start"}
+          className="grid h-9 w-9 place-items-center rounded-full bg-accent text-white transition-colors hover:opacity-90"
+        >
+          {running ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
+        </button>
+        <button
+          onClick={reset}
+          aria-label="Reset"
+          className="grid h-9 w-9 place-items-center rounded-full bg-surface-2 text-muted transition-colors hover:text-foreground"
+        >
+          {mode === "timer" ? <TimerReset className="h-4 w-4" /> : <RotateCcw className="h-4 w-4" />}
+        </button>
+      </div>
     </div>
   );
 }
@@ -302,7 +374,7 @@ function SolutionReveal({ id }: { id: number }) {
   return (
     <div className="border-t border-border pt-5">
       <Button variant={open ? "outline" : "primary"} size="lg" onClick={reveal} disabled={loading}>
-        {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Lightbulb className="h-4 w-4" />}
+        {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <BookOpen className="h-4 w-4" />}
         {open ? "Hide solution" : "Reveal solution"}
       </Button>
 
