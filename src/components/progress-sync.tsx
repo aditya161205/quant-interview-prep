@@ -40,20 +40,22 @@ export function ProgressSync() {
         .select("solved,bookmarked,activity,games")
         .eq("user_id", user.id)
         .maybeSingle();
-      usePracticeStore.getState().setAll({
+      // Merge for the same user (keeps progress made in other tabs / offline),
+      // replace for a different account (no cross-account bleed).
+      usePracticeStore.getState().applyServer(user.id, {
         solved: data?.solved ?? {},
         bookmarked: data?.bookmarked ?? {},
         activity: data?.activity ?? {},
         games: data?.games ?? 0,
       });
-      await push(); // ensure the row exists for a brand-new account
+      await push(); // persist the merged result / create the row
     };
 
     supabase.auth.getUser().then(({ data }) => applyUser(data.user));
     const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === "SIGNED_OUT") {
         userRef.current = null;
-        usePracticeStore.getState().setAll({}); // clear so the next user starts fresh
+        usePracticeStore.getState().signOut(); // clear so the next user starts fresh
         return;
       }
       applyUser(session?.user ?? null);
@@ -73,6 +75,21 @@ export function ProgressSync() {
     return () => {
       clearTimeout(timer);
       unsubscribe();
+    };
+  }, [supabase, push]);
+
+  // Flush to the server as soon as the tab is hidden/closed, so a quick
+  // solve-then-close doesn't get lost.
+  React.useEffect(() => {
+    if (!supabase) return;
+    const flush = () => {
+      if (document.visibilityState === "hidden") push();
+    };
+    document.addEventListener("visibilitychange", flush);
+    window.addEventListener("pagehide", push);
+    return () => {
+      document.removeEventListener("visibilitychange", flush);
+      window.removeEventListener("pagehide", push);
     };
   }, [supabase, push]);
 
