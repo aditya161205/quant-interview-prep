@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
+import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { Search, X, ChevronLeft, ChevronRight, Check } from "lucide-react";
 import { usePracticeStore, useMounted } from "@/store/practice-store";
 import { DifficultyBadge } from "@/components/difficulty-badge";
@@ -24,18 +25,23 @@ export function ProblemBrowser() {
   const bookmarkedMap = usePracticeStore((s) => s.bookmarked);
   const toggleSolved = usePracticeStore((s) => s.toggleSolved);
 
+  const router = useRouter();
+  const pathname = usePathname();
+  const sp = useSearchParams();
+
   const [facets, setFacets] = React.useState<Facets>({ categories: [], companies: [], difficulties: [] });
   const [items, setItems] = React.useState<ProblemMeta[] | null>(null);
   const [loading, setLoading] = React.useState(true);
 
-  const [query, setQuery] = React.useState("");
-  const [debounced, setDebounced] = React.useState("");
-  const [difficulty, setDifficulty] = React.useState("All");
-  const [category, setCategory] = React.useState("All");
-  const [company, setCompany] = React.useState("All");
-  const [status, setStatus] = React.useState<StatusFilter>("All");
-  const [pageSize, setPageSize] = React.useState(25);
-  const [page, setPage] = React.useState(1);
+  // Initial filter state comes from the URL, so it survives navigation/back.
+  const [query, setQuery] = React.useState(sp.get("q") ?? "");
+  const [debounced, setDebounced] = React.useState(sp.get("q") ?? "");
+  const [difficulty, setDifficulty] = React.useState(sp.get("difficulty") ?? "All");
+  const [category, setCategory] = React.useState(sp.get("category") ?? "All");
+  const [company, setCompany] = React.useState(sp.get("company") ?? "All");
+  const [status, setStatus] = React.useState<StatusFilter>((sp.get("status") as StatusFilter) ?? "All");
+  const [pageSize, setPageSize] = React.useState(Number(sp.get("size")) || 25);
+  const [page, setPage] = React.useState(Number(sp.get("page")) || 1);
 
   React.useEffect(() => {
     fetch("/api/problems/facets")
@@ -84,8 +90,32 @@ export function ProblemBrowser() {
   const safePage = Math.min(page, pageCount);
   const pageRows = rows.slice((safePage - 1) * pageSize, safePage * pageSize);
 
-  // Reset to page 1 whenever the result set or page size changes.
+  // Shared query string — drives both the URL and each problem link.
+  const qs = React.useMemo(() => {
+    const p = new URLSearchParams();
+    if (debounced) p.set("q", debounced);
+    if (difficulty !== "All") p.set("difficulty", difficulty);
+    if (category !== "All") p.set("category", category);
+    if (company !== "All") p.set("company", company);
+    if (status !== "All") p.set("status", status);
+    if (page > 1) p.set("page", String(page));
+    if (pageSize !== 25) p.set("size", String(pageSize));
+    return p.toString();
+  }, [debounced, difficulty, category, company, status, page, pageSize]);
+
+  // Keep the URL in sync so filters persist across navigation/back.
   React.useEffect(() => {
+    router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
+  }, [qs, pathname, router]);
+
+  // Reset to page 1 when filters change — but not on first mount, so a page
+  // restored from the URL is preserved.
+  const firstRun = React.useRef(true);
+  React.useEffect(() => {
+    if (firstRun.current) {
+      firstRun.current = false;
+      return;
+    }
     setPage(1);
   }, [difficulty, category, company, status, debounced, pageSize]);
 
@@ -154,7 +184,7 @@ export function ProblemBrowser() {
                 key={p.id}
                 className="group relative grid grid-cols-[2.25rem_1fr_5rem_2.25rem] items-center gap-3 border-b border-border px-4 py-3 text-sm transition-colors last:border-b-0 hover:bg-surface-2/40 sm:grid-cols-[3rem_1fr_9rem_11rem_5.5rem_2.5rem]"
               >
-                <Link href={`/practice/${p.id}`} className="absolute inset-0" aria-label={p.title} />
+                <Link href={`/practice/${p.id}${qs ? `?${qs}` : ""}`} className="absolute inset-0" aria-label={p.title} />
                 <span className="pointer-events-none font-mono text-muted">{(safePage - 1) * pageSize + i + 1}</span>
                 <span className="pointer-events-none min-w-0">
                   <span className="block truncate font-medium">{p.title}</span>

@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { ProblemDetail } from "@/components/problem-detail";
 
 export const metadata = {
@@ -6,5 +7,9 @@ export const metadata = {
 
 export default async function ProblemPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  return <ProblemDetail id={id} />;
+  return (
+    <Suspense fallback={<div className="py-16 text-center text-sm text-muted">Loading…</div>}>
+      <ProblemDetail id={id} />
+    </Suspense>
+  );
 }

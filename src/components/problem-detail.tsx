@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { ArrowLeft, ArrowRight, Check, X, Lightbulb, Loader2 } from "lucide-react";
 import { usePracticeStore } from "@/store/practice-store";
 import { ProblemActions } from "@/components/problem-actions";
@@ -11,11 +12,18 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import type { Difficulty, ProblemDetail as Detail } from "@/lib/problems";
+import type { Difficulty, ProblemDetail as Detail, ProblemMeta } from "@/lib/problems";
 
 export function ProblemDetail({ id }: { id: string }) {
   const [detail, setDetail] = React.useState<Detail | null>(null);
   const [status, setStatus] = React.useState<"loading" | "ok" | "error">("loading");
+
+  // Carry the list's filters through so prev/next walk the filtered set.
+  const sp = useSearchParams();
+  const qs = sp.toString();
+  const solvedMap = usePracticeStore((s) => s.solved);
+  const bookmarkedMap = usePracticeStore((s) => s.bookmarked);
+  const [nav, setNav] = React.useState<{ prev: number | null; next: number | null }>({ prev: null, next: null });
 
   React.useEffect(() => {
     setStatus("loading");
@@ -28,6 +36,30 @@ export function ProblemDetail({ id }: { id: string }) {
       })
       .catch(() => setStatus("error"));
   }, [id]);
+
+  // Compute prev/next within the same filtered + ordered list as the table.
+  React.useEffect(() => {
+    const params = new URLSearchParams();
+    for (const k of ["q", "difficulty", "category", "company"]) {
+      const v = sp.get(k);
+      if (v) params.set(k, v);
+    }
+    fetch(`/api/problems?${params}`)
+      .then((r) => r.json())
+      .then(({ problems }: { problems: ProblemMeta[] }) => {
+        let list = problems ?? [];
+        const st = sp.get("status");
+        if (st === "Solved") list = list.filter((p) => solvedMap[String(p.id)]);
+        else if (st === "Unsolved") list = list.filter((p) => !solvedMap[String(p.id)]);
+        else if (st === "Bookmarked") list = list.filter((p) => bookmarkedMap[String(p.id)]);
+        const idx = list.findIndex((p) => p.id === Number(id));
+        setNav({
+          prev: idx > 0 ? list[idx - 1].id : null,
+          next: idx >= 0 && idx < list.length - 1 ? list[idx + 1].id : null,
+        });
+      })
+      .catch(() => {});
+  }, [id, sp, solvedMap, bookmarkedMap]);
 
   if (status === "loading") {
     return (
@@ -48,12 +80,12 @@ export function ProblemDetail({ id }: { id: string }) {
   return (
     <div className="mx-auto max-w-3xl space-y-5">
       <div className="flex items-center justify-between gap-3">
-        <Link href="/practice" className="inline-flex items-center gap-1.5 text-sm text-muted transition-colors hover:text-foreground">
+        <Link href={`/practice${qs ? `?${qs}` : ""}`} className="inline-flex items-center gap-1.5 text-sm text-muted transition-colors hover:text-foreground">
           <ArrowLeft className="h-4 w-4" /> All problems
         </Link>
         <div className="flex items-center gap-2">
-          <NavButton id={detail.prevId} direction="prev" />
-          <NavButton id={detail.nextId} direction="next" />
+          <NavButton id={nav.prev} qs={qs} direction="prev" />
+          <NavButton id={nav.next} qs={qs} direction="next" />
         </div>
       </div>
 
@@ -202,7 +234,7 @@ function SolutionReveal({ id }: { id: number }) {
   );
 }
 
-function NavButton({ id, direction }: { id: number | null; direction: "prev" | "next" }) {
+function NavButton({ id, qs, direction }: { id: number | null; qs: string; direction: "prev" | "next" }) {
   const isNext = direction === "next";
   const cls = "inline-flex h-9 items-center gap-1.5 rounded-full border border-border px-3.5 text-sm";
   if (id === null) {
@@ -215,7 +247,7 @@ function NavButton({ id, direction }: { id: number | null; direction: "prev" | "
     );
   }
   return (
-    <Link href={`/practice/${id}`} className={cn(cls, "transition-colors hover:border-accent/50 hover:text-accent")}>
+    <Link href={`/practice/${id}${qs ? `?${qs}` : ""}`} className={cn(cls, "transition-colors hover:border-accent/50 hover:text-accent")}>
       {!isNext && <ArrowLeft className="h-4 w-4" />}
       {isNext ? "Next" : "Prev"}
       {isNext && <ArrowRight className="h-4 w-4" />}
