@@ -18,8 +18,18 @@ export interface ProblemDetail {
   companies: string[];
   difficulty: string;
   hasAnswer: boolean;
+  hasHint: boolean;
   prevId: number | null;
   nextId: number | null;
+}
+
+/** Split the stored hints text into individual, progressively-revealed hints. */
+export function splitHints(raw: string | null): string[] {
+  if (!raw) return [];
+  return raw
+    .split(/\s*\|\s*/)
+    .map((h) => h.trim())
+    .filter(Boolean);
 }
 
 export function splitCompanies(askedIn: string | null): string[] {

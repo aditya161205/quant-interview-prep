@@ -3,7 +3,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { ArrowLeft, ArrowRight, Check, X, Lightbulb, Loader2 } from "lucide-react";
+import { ArrowLeft, ArrowRight, Check, X, Lightbulb, Loader2, HelpCircle, Timer, Play, Pause, RotateCcw } from "lucide-react";
 import { usePracticeStore } from "@/store/practice-store";
 import { ProblemActions } from "@/components/problem-actions";
 import { MathText } from "@/components/math-text";
@@ -115,9 +115,107 @@ export function ProblemDetail({ id }: { id: string }) {
 
           {detail.hasAnswer && <AnswerCheck id={detail.id} />}
 
+          {detail.hasHint && <HintReveal id={detail.id} />}
+
           <SolutionReveal id={detail.id} />
         </CardContent>
       </Card>
+
+      <Stopwatch />
+    </div>
+  );
+}
+
+function HintReveal({ id }: { id: number }) {
+  const [hints, setHints] = React.useState<string[] | null>(null);
+  const [shown, setShown] = React.useState(0);
+  const [loading, setLoading] = React.useState(false);
+
+  const revealNext = async () => {
+    if (hints === null) {
+      setLoading(true);
+      try {
+        const r = await fetch(`/api/problems/${id}/hint`);
+        const d: { hints: string[] } = await r.json();
+        setHints(d.hints ?? []);
+        setShown(1);
+      } finally {
+        setLoading(false);
+      }
+      return;
+    }
+    setShown((n) => Math.min(n + 1, hints.length));
+  };
+
+  const total = hints?.length ?? 0;
+  const more = hints === null || shown < total;
+
+  return (
+    <div className="border-t border-border pt-5">
+      {hints && shown > 0 && (
+        <div className="mb-3 space-y-2">
+          {hints.slice(0, shown).map((h, i) => (
+            <div key={i} className="animate-pop rounded-xl border border-amber-500/30 bg-amber-500/5 p-4">
+              <div className="text-xs font-semibold uppercase tracking-wider text-amber-600 dark:text-amber-400">
+                Hint {i + 1}
+              </div>
+              <MathText text={h} className="mt-1 text-sm leading-relaxed text-muted" />
+            </div>
+          ))}
+        </div>
+      )}
+      {more && (
+        <Button variant="outline" onClick={revealNext} disabled={loading}>
+          {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <HelpCircle className="h-4 w-4" />}
+          {hints === null ? "Show hint" : `Show next hint (${shown + 1}/${total})`}
+        </Button>
+      )}
+    </div>
+  );
+}
+
+function Stopwatch() {
+  const [elapsed, setElapsed] = React.useState(0);
+  const [running, setRunning] = React.useState(false);
+  const startRef = React.useRef(0);
+
+  React.useEffect(() => {
+    if (!running) return;
+    startRef.current = Date.now() - elapsed;
+    const timer = setInterval(() => setElapsed(Date.now() - startRef.current), 100);
+    return () => clearInterval(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [running]);
+
+  const totalSec = Math.floor(elapsed / 1000);
+  const h = Math.floor(totalSec / 3600);
+  const m = Math.floor((totalSec % 3600) / 60);
+  const s = totalSec % 60;
+  const time = h > 0
+    ? `${h}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`
+    : `${m}:${String(s).padStart(2, "0")}`;
+
+  return (
+    <div className="glass fixed bottom-5 right-5 z-40 flex items-center gap-2 rounded-full px-3 py-2">
+      <Timer className="h-4 w-4 text-accent" />
+      <span className="min-w-[3.25rem] text-center font-mono text-sm font-semibold tabular-nums">{time}</span>
+      <button
+        onClick={() => setRunning((r) => !r)}
+        aria-label={running ? "Pause timer" : "Start timer"}
+        className="grid h-7 w-7 place-items-center rounded-full bg-surface-2 text-foreground transition-colors hover:bg-accent hover:text-white"
+      >
+        {running ? <Pause className="h-3.5 w-3.5" /> : <Play className="h-3.5 w-3.5" />}
+      </button>
+      <button
+        onClick={() => {
+          setRunning(false);
+          setElapsed(0);
+        }}
+        aria-label="Reset timer"
+        className="grid h-7 w-7 place-items-center rounded-full text-muted transition-colors hover:text-foreground"
+      >
+        <RotateCcw className="h-3.5 w-3.5" />
+      </button>
     </div>
   );
 }
@@ -183,7 +281,7 @@ function AnswerCheck({ id }: { id: number }) {
 
 function SolutionReveal({ id }: { id: number }) {
   const [open, setOpen] = React.useState(false);
-  const [data, setData] = React.useState<{ answer: string; solution: string; hints: string } | null>(null);
+  const [data, setData] = React.useState<{ answer: string; solution: string } | null>(null);
   const [loading, setLoading] = React.useState(false);
 
   const reveal = async () => {
@@ -214,12 +312,6 @@ function SolutionReveal({ id }: { id: number }) {
             <div>
               <div className="text-xs font-semibold uppercase tracking-wider text-accent">Answer</div>
               <div className="font-mono text-xl font-semibold">{data.answer}</div>
-            </div>
-          )}
-          {data.hints && (
-            <div>
-              <div className="mb-1 text-xs font-semibold uppercase tracking-wider text-muted">Hint</div>
-              <MathText text={data.hints} className="text-sm leading-relaxed text-muted" />
             </div>
           )}
           {data.solution && (

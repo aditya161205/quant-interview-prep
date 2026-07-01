@@ -3,6 +3,8 @@ import { getApiUser } from "@/lib/supabase/api-auth";
 import { getAdminClient, problemsEnabled } from "@/lib/supabase/admin";
 import { splitCompanies, isNumericAnswer, type ProblemDetail } from "@/lib/problems";
 
+const hasText = (v: unknown) => typeof v === "string" && v.trim().length > 0;
+
 export const dynamic = "force-dynamic";
 
 export async function GET(_request: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -18,7 +20,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
   // Note: final_answer is read only to derive hasAnswer; it is NOT returned.
   const { data, error } = await admin
     .from("problems")
-    .select("id, question_name, question_statement, topic, difficulty, asked_in, final_answer")
+    .select("id, question_name, question_statement, topic, difficulty, asked_in, final_answer, hints")
     .eq("id", numId)
     .maybeSingle();
 
@@ -38,6 +40,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
     companies: splitCompanies(data.asked_in as string | null),
     difficulty: (data.difficulty as string) ?? "",
     hasAnswer: isNumericAnswer(data.final_answer as string | null),
+    hasHint: hasText(data.hints),
     prevId: (prev.data?.id as number | undefined) ?? null,
     nextId: (next.data?.id as number | undefined) ?? null,
   };
