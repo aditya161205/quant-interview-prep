@@ -3,7 +3,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { ArrowLeft, ArrowRight, Check, X, Lightbulb, Loader2, BookOpen, TimerReset, Play, Pause, RotateCcw, Minus, Plus } from "lucide-react";
+import { ArrowLeft, ArrowRight, Check, X, Lightbulb, Loader2, BookOpen, Timer, Hourglass, Play, Pause, RotateCcw, ChevronUp, ChevronDown } from "lucide-react";
 import { usePracticeStore } from "@/store/practice-store";
 import { ProblemActions } from "@/components/problem-actions";
 import { MathText } from "@/components/math-text";
@@ -238,56 +238,55 @@ function Stopwatch() {
   };
 
   return (
-    <div className="glass fixed bottom-5 right-5 z-40 w-48 space-y-2.5 rounded-2xl p-3">
+    <div className="glass fixed bottom-5 right-5 z-40 flex items-center gap-1.5 rounded-full py-1.5 pl-1.5 pr-2">
       {/* mode toggle */}
-      <div className="flex gap-1 rounded-full border border-border bg-surface-2/50 p-0.5 text-[11px] font-semibold uppercase tracking-wider">
+      <div className="flex items-center gap-0.5 rounded-full bg-surface-2/60 p-0.5">
         {(["stopwatch", "timer"] as const).map((m) => (
           <button
             key={m}
             onClick={() => switchMode(m)}
+            aria-label={m === "stopwatch" ? "Stopwatch" : "Countdown timer"}
+            aria-pressed={mode === m}
             className={cn(
-              "flex-1 rounded-full py-1 transition-colors",
+              "grid h-6 w-6 place-items-center rounded-full transition-colors",
               mode === m ? "bg-foreground text-background" : "text-muted hover:text-foreground",
             )}
           >
-            {m === "stopwatch" ? "Stopwatch" : "Timer"}
+            {m === "stopwatch" ? <Timer className="h-3.5 w-3.5" /> : <Hourglass className="h-3.5 w-3.5" />}
           </button>
         ))}
       </div>
 
-      <div className={cn("text-center font-mono text-3xl font-semibold tabular-nums", done && "text-negative")}>
+      <span className={cn("min-w-[3.5rem] text-center font-mono text-sm font-semibold tabular-nums", done && "text-negative")}>
         {mode === "stopwatch" ? fmt(elapsed) : fmt(remaining)}
-      </div>
+      </span>
 
-      {/* timer duration setter (only when idle) */}
+      {/* compact minute stepper (timer, when idle) */}
       {mode === "timer" && !running && (
-        <div className="flex items-center justify-center gap-2 text-sm">
-          <button onClick={() => setMinutes(durationMin - 1)} aria-label="Less time" className="grid h-6 w-6 place-items-center rounded-full bg-surface-2 text-muted hover:text-foreground">
-            <Minus className="h-3.5 w-3.5" />
+        <div className="-my-1 flex flex-col text-muted">
+          <button onClick={() => setMinutes(durationMin + 1)} aria-label="More time" className="hover:text-foreground">
+            <ChevronUp className="h-3.5 w-3.5" />
           </button>
-          <span className="w-16 text-center font-mono text-muted">{durationMin} min</span>
-          <button onClick={() => setMinutes(durationMin + 1)} aria-label="More time" className="grid h-6 w-6 place-items-center rounded-full bg-surface-2 text-muted hover:text-foreground">
-            <Plus className="h-3.5 w-3.5" />
+          <button onClick={() => setMinutes(durationMin - 1)} aria-label="Less time" className="hover:text-foreground">
+            <ChevronDown className="h-3.5 w-3.5" />
           </button>
         </div>
       )}
 
-      <div className="flex items-center justify-center gap-2">
-        <button
-          onClick={() => (done ? reset() : setRunning((r) => !r))}
-          aria-label={running ? "Pause" : "Start"}
-          className="grid h-9 w-9 place-items-center rounded-full bg-accent text-white transition-colors hover:opacity-90"
-        >
-          {running ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
-        </button>
-        <button
-          onClick={reset}
-          aria-label="Reset"
-          className="grid h-9 w-9 place-items-center rounded-full bg-surface-2 text-muted transition-colors hover:text-foreground"
-        >
-          {mode === "timer" ? <TimerReset className="h-4 w-4" /> : <RotateCcw className="h-4 w-4" />}
-        </button>
-      </div>
+      <button
+        onClick={() => (done ? reset() : setRunning((r) => !r))}
+        aria-label={running ? "Pause" : "Start"}
+        className="grid h-7 w-7 place-items-center rounded-full bg-accent text-white transition-colors hover:opacity-90"
+      >
+        {running ? <Pause className="h-3.5 w-3.5" /> : <Play className="h-3.5 w-3.5" />}
+      </button>
+      <button
+        onClick={reset}
+        aria-label="Reset"
+        className="grid h-7 w-7 place-items-center rounded-full text-muted transition-colors hover:text-foreground"
+      >
+        <RotateCcw className="h-3.5 w-3.5" />
+      </button>
     </div>
   );
 }
