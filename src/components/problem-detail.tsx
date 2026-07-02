@@ -49,10 +49,14 @@ export function ProblemDetail({ id }: { id: string }) {
       .then(({ problems }: { problems: ProblemMeta[] }) => {
         let list = problems ?? [];
         const st = sp.get("status");
-        if (st === "Solved") list = list.filter((p) => solvedMap[String(p.id)]);
-        else if (st === "Unsolved") list = list.filter((p) => !solvedMap[String(p.id)]);
-        else if (st === "Bookmarked") list = list.filter((p) => bookmarkedMap[String(p.id)]);
-        const idx = list.findIndex((p) => p.id === Number(id));
+        const numId = Number(id);
+        // Always keep the current problem in the list so its neighbours stay
+        // reachable even after its own status changes (e.g. you solve it while
+        // filtering by "Unsolved" — it shouldn't strand the prev/next buttons).
+        if (st === "Solved") list = list.filter((p) => p.id === numId || solvedMap[String(p.id)]);
+        else if (st === "Unsolved") list = list.filter((p) => p.id === numId || !solvedMap[String(p.id)]);
+        else if (st === "Bookmarked") list = list.filter((p) => p.id === numId || bookmarkedMap[String(p.id)]);
+        const idx = list.findIndex((p) => p.id === numId);
         setNav({
           prev: idx > 0 ? list[idx - 1].id : null,
           next: idx >= 0 && idx < list.length - 1 ? list[idx + 1].id : null,
