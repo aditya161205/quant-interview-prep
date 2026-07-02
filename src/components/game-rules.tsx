@@ -116,6 +116,38 @@ export function BettingRules() {
   );
 }
 
+/* -------------------------------- Arrow Game ------------------------------ */
+export function ArrowGameRules() {
+  return (
+    <>
+      <Step n={1} title="Watch the middle">
+        Each round a 3×5 grid of symbols flashes. React only to the{" "}
+        <strong className="text-foreground">middle cell</strong> (centre row, 3rd column) — ignore
+        every arrow, dash and symbol around it.
+      </Step>
+      <Step n={2} title="Call the direction">
+        If the middle arrow points left, press <span className="font-mono text-foreground">Q</span> or{" "}
+        <span className="font-mono text-foreground">←</span>. If it points right, press{" "}
+        <span className="font-mono text-foreground">P</span> or <span className="font-mono text-foreground">→</span>{" "}
+        (or tap the on-screen buttons).
+      </Step>
+      <Step n={3} title="The no-go rule">
+        <span className="text-negative">Exception:</span> when the middle arrow is boxed in by{" "}
+        <span className="font-mono text-foreground">✕</span> symbols, it&apos;s a no-go — press{" "}
+        <strong className="text-foreground">nothing</strong> and let the round pass.
+      </Step>
+      <Step n={4} title="Beat the clock">
+        Rounds advance on a fixed timer with <span className="text-foreground">no feedback</span>. Respond as
+        quickly and accurately as you can — only your first press each round counts.
+      </Step>
+      <Step n={5} title="Your result">
+        You&apos;re scored on overall accuracy, average reaction speed, and how well you held back on the
+        no-go rounds (<span className="text-foreground">inhibition</span>).
+      </Step>
+    </>
+  );
+}
+
 /* ----------------------------- Market of Cards ---------------------------- */
 export function MarketOfCardsRules() {
   return (

@@ -1,4 +1,4 @@
-import { Spade, TrendingUp, Dices, Users } from "lucide-react";
+import { Spade, TrendingUp, Dices, Users, MoveHorizontal } from "lucide-react";
 import { IconCard, type CardColor } from "@/components/icon-card";
 import { PageHeader } from "@/components/page-header";
 
@@ -54,6 +54,16 @@ const games: {
     icon: Users,
     color: "rose",
     watermark: "MOC",
+  },
+  {
+    href: "/market-making/arrow-game",
+    title: "Arrow Game",
+    kicker: "Focus · Reaction",
+    description:
+      "React to the middle arrow only, ignore the flankers, and hold back on the no-go rounds — a fast test of focus, speed and impulse control.",
+    icon: MoveHorizontal,
+    color: "sky",
+    watermark: "AR",
   },
 ];
 
