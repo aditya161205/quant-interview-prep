@@ -167,6 +167,7 @@ function Playing({ config, onEnd }: { config: ArrowConfig; onEnd: (logs: RoundLo
 
   const logsRef = React.useRef<RoundLog[]>([]);
   const roundStartRef = React.useRef(performance.now());
+  const sessionStartRef = React.useRef(performance.now()); // fixed wall-clock start
   const committedRef = React.useRef(false); // guards against double-committing a round
 
   const trial = trials[roundIdx];
@@ -223,7 +224,10 @@ function Playing({ config, onEnd }: { config: ArrowConfig; onEnd: (logs: RoundLo
 
   const withinRound = Math.min(roundMs, now - roundStartRef.current);
   const roundProgress = withinRound / roundMs;
-  const secondsLeft = Math.max(0, Math.round((trials.length - roundIdx) * config.roundSeconds - withinRound / 1000));
+  // A steady wall-clock countdown of the total session budget — unaffected by
+  // how fast you answer (answering early just ends the game sooner).
+  const totalSec = trials.length * config.roundSeconds;
+  const secondsLeft = Math.max(0, Math.round(totalSec - (now - sessionStartRef.current) / 1000));
 
   return (
     <div className="space-y-4">
