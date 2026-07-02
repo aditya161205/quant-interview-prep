@@ -246,7 +246,7 @@ function Playing({ config, onEnd }: { config: ArrowConfig; onEnd: (logs: RoundLo
             />
           </div>
 
-          <div key={roundIdx} className="animate-pop mx-auto max-w-md">
+          <div className="mx-auto max-w-md">
             <Grid grid={trial.grid} />
           </div>
 
