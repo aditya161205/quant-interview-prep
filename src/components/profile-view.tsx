@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { CircleCheck, Bookmark, Gamepad2, Flame, ArrowRight } from "lucide-react";
+import { CircleCheck, Bookmark, Gamepad2, Flame, ArrowRight, ChevronLeft, ChevronRight } from "lucide-react";
 import type { Difficulty, ProblemMeta } from "@/lib/problems";
 import { usePracticeStore, useMounted, dayKey } from "@/store/practice-store";
 import { DifficultyBadge } from "@/components/difficulty-badge";
@@ -79,10 +79,12 @@ export function ProfileView() {
       <div className="grid gap-4 lg:grid-cols-2">
         <Card>
           <CardHeader><CardTitle className="text-base">By difficulty</CardTitle></CardHeader>
-          <CardContent className="space-y-3">
-            {(["Easy", "Medium", "Hard"] as Difficulty[]).map((d) => (
-              <ProgressRow key={d} label={<DifficultyBadge difficulty={d} />} done={byDifficulty[d].done} total={byDifficulty[d].total} />
-            ))}
+          <CardContent>
+            <div className="grid grid-cols-3 gap-2 py-2">
+              {(["Easy", "Medium", "Hard"] as Difficulty[]).map((d) => (
+                <Dial key={d} difficulty={d} done={byDifficulty[d].done} total={byDifficulty[d].total} />
+              ))}
+            </div>
           </CardContent>
         </Card>
         <Card>
@@ -96,32 +98,74 @@ export function ProfileView() {
       </div>
 
       {/* Bookmarked */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-base">Bookmarked problems</CardTitle>
-            <Link href="/practice" className="inline-flex items-center gap-1 text-sm font-medium text-accent">
-              All problems <ArrowRight className="h-4 w-4" />
-            </Link>
-          </div>
-        </CardHeader>
-        <CardContent>
-          {bookmarkedList.length === 0 ? (
-            <p className="py-2 text-sm text-muted">No bookmarks yet — tap the bookmark icon on any problem to save it here.</p>
-          ) : (
-            <div className="space-y-2">
-              {bookmarkedList.map((p) => (
-                <Link key={p.id} href={`/practice/${p.id}`} className="group flex items-center gap-3 rounded-lg border border-border bg-surface-2/40 px-3 py-2.5 transition-colors hover:border-accent/50">
-                  <span className="min-w-0 flex-1 truncate text-sm font-medium group-hover:text-accent">{p.title}</span>
-                  {isSolved(p.id) && <CircleCheck className="h-4 w-4 shrink-0 text-emerald-500" />}
-                  <DifficultyBadge difficulty={p.difficulty} className="hidden sm:inline-flex" />
-                </Link>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
+      <BookmarkedCard problems={bookmarkedList} isSolved={isSolved} />
     </div>
+  );
+}
+
+const BOOKMARKS_PER_PAGE = 8;
+
+function BookmarkedCard({ problems, isSolved }: { problems: ProblemMeta[]; isSolved: (id: number) => boolean }) {
+  const [page, setPage] = React.useState(0);
+  const pageCount = Math.max(1, Math.ceil(problems.length / BOOKMARKS_PER_PAGE));
+
+  // Keep the page in range if bookmarks change underneath us.
+  React.useEffect(() => {
+    if (page > pageCount - 1) setPage(pageCount - 1);
+  }, [page, pageCount]);
+
+  const start = page * BOOKMARKS_PER_PAGE;
+  const rows = problems.slice(start, start + BOOKMARKS_PER_PAGE);
+
+  return (
+    <Card>
+      <CardHeader>
+        <div className="flex items-center justify-between">
+          <CardTitle className="text-base">
+            Bookmarked problems
+            {problems.length > 0 && <span className="ml-2 text-sm font-normal text-muted">({problems.length})</span>}
+          </CardTitle>
+          <Link href="/practice" className="inline-flex items-center gap-1 text-sm font-medium text-accent">
+            All problems <ArrowRight className="h-4 w-4" />
+          </Link>
+        </div>
+      </CardHeader>
+      <CardContent>
+        {problems.length === 0 ? (
+          <p className="py-2 text-sm text-muted">No bookmarks yet — tap the bookmark icon on any problem to save it here.</p>
+        ) : (
+          <div className="space-y-2">
+            {rows.map((p) => (
+              <Link key={p.id} href={`/practice/${p.id}`} className="group flex items-center gap-3 rounded-lg border border-border bg-surface-2/40 px-3 py-2.5 transition-colors hover:border-accent/50">
+                <span className="min-w-0 flex-1 truncate text-sm font-medium group-hover:text-accent">{p.title}</span>
+                {isSolved(p.id) && <CircleCheck className="h-4 w-4 shrink-0 text-emerald-500" />}
+                <DifficultyBadge difficulty={p.difficulty} className="hidden sm:inline-flex" />
+              </Link>
+            ))}
+          </div>
+        )}
+
+        {pageCount > 1 && (
+          <div className="mt-4 flex items-center justify-between">
+            <button
+              onClick={() => setPage((p) => Math.max(0, p - 1))}
+              disabled={page === 0}
+              className="inline-flex h-8 items-center gap-1 rounded-full border border-border px-3 text-sm transition-colors hover:border-accent/50 hover:text-accent disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:border-border disabled:hover:text-foreground"
+            >
+              <ChevronLeft className="h-4 w-4" /> Prev
+            </button>
+            <span className="font-mono text-xs text-muted">Page {page + 1} / {pageCount}</span>
+            <button
+              onClick={() => setPage((p) => Math.min(pageCount - 1, p + 1))}
+              disabled={page >= pageCount - 1}
+              className="inline-flex h-8 items-center gap-1 rounded-full border border-border px-3 text-sm transition-colors hover:border-accent/50 hover:text-accent disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:border-border disabled:hover:text-foreground"
+            >
+              Next <ChevronRight className="h-4 w-4" />
+            </button>
+          </div>
+        )}
+      </CardContent>
+    </Card>
   );
 }
 
@@ -138,6 +182,49 @@ function StatCard({ icon: Icon, label, value, sub }: { icon: typeof Flame; label
         </div>
       </CardContent>
     </Card>
+  );
+}
+
+const DIFF_COLOR: Record<Difficulty, string> = {
+  Easy: "#10b981", // emerald-500
+  Medium: "#f59e0b", // amber-500
+  Hard: "#f43f5e", // rose-500
+};
+
+/** A radial gauge showing solved / total for one difficulty. */
+function Dial({ difficulty, done, total }: { difficulty: Difficulty; done: number; total: number }) {
+  const pct = total === 0 ? 0 : done / total;
+  const size = 116;
+  const stroke = 11;
+  const r = (size - stroke) / 2;
+  const c = 2 * Math.PI * r;
+  const color = DIFF_COLOR[difficulty];
+
+  return (
+    <div className="flex flex-col items-center gap-3">
+      <div className="relative" style={{ width: size, height: size }}>
+        <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="-rotate-90">
+          <circle cx={size / 2} cy={size / 2} r={r} fill="none" strokeWidth={stroke} stroke="var(--surface-2)" />
+          <circle
+            cx={size / 2}
+            cy={size / 2}
+            r={r}
+            fill="none"
+            strokeWidth={stroke}
+            stroke={color}
+            strokeLinecap="round"
+            strokeDasharray={c}
+            strokeDashoffset={c * (1 - pct)}
+            style={{ transition: "stroke-dashoffset 0.6s ease" }}
+          />
+        </svg>
+        <div className="absolute inset-0 flex flex-col items-center justify-center">
+          <span className="font-mono text-2xl font-bold tabular-nums">{Math.round(pct * 100)}%</span>
+          <span className="font-mono text-xs text-muted">{done}/{total}</span>
+        </div>
+      </div>
+      <DifficultyBadge difficulty={difficulty} />
+    </div>
   );
 }
 
@@ -165,7 +252,14 @@ function level(count: number): string {
   return "bg-accent";
 }
 
+function fmtDate(d: Date): string {
+  return d.toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric", year: "numeric" });
+}
+
 function Heatmap({ activity }: { activity: Record<string, number> }) {
+  const wrapRef = React.useRef<HTMLDivElement>(null);
+  const [tip, setTip] = React.useState<{ x: number; y: number; text: string } | null>(null);
+
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const start = new Date(today);
@@ -185,23 +279,45 @@ function Heatmap({ activity }: { activity: Record<string, number> }) {
     weeks.push(week);
   }
 
+  const showTip = (e: React.MouseEvent, day: { date: Date; count: number }) => {
+    const wrap = wrapRef.current?.getBoundingClientRect();
+    const cell = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    if (!wrap) return;
+    setTip({
+      x: cell.left - wrap.left + cell.width / 2,
+      y: cell.top - wrap.top,
+      text: `${fmtDate(day.date)} · ${day.count} ${day.count === 1 ? "activity" : "activities"}`,
+    });
+  };
+
   return (
-    <div className="space-y-2">
-      <div className="overflow-x-auto pb-1">
-        <div className="flex gap-1">
+    <div className="space-y-3">
+      <div ref={wrapRef} className="relative">
+        <div className="flex gap-[6px]">
           {weeks.map((week, wi) => (
-            <div key={wi} className="flex flex-col gap-1">
+            <div key={wi} className="flex flex-1 flex-col gap-[6px]">
               {week.map((day, di) => (
                 <span
                   key={di}
-                  title={`${dayKey(day.date)}: ${day.count} ${day.count === 1 ? "activity" : "activities"}`}
-                  className={cn("h-3 w-3 rounded-[3px]", level(day.count))}
+                  onMouseEnter={(e) => showTip(e, day)}
+                  onMouseLeave={() => setTip(null)}
+                  className={cn("aspect-square w-full rounded-[4px] transition-colors", level(day.count))}
                 />
               ))}
             </div>
           ))}
         </div>
+
+        {tip && (
+          <div
+            className="pointer-events-none absolute z-10 -translate-x-1/2 -translate-y-full whitespace-nowrap rounded-lg border border-border bg-surface px-2.5 py-1.5 text-xs font-medium shadow-lg"
+            style={{ left: tip.x, top: tip.y - 8 }}
+          >
+            {tip.text}
+          </div>
+        )}
       </div>
+
       <div className="flex items-center justify-end gap-1.5 text-[11px] text-muted">
         <span>Less</span>
         <span className="h-3 w-3 rounded-[3px] bg-surface-2" />
