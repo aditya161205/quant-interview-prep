@@ -8,7 +8,6 @@ import {
 import {
   ARROW_OPTIONS,
   DEFAULT_ARROW_CONFIG,
-  CENTER_INDEX,
   GRID_COLS,
   isCorrect,
   keyToDir,
@@ -309,17 +308,10 @@ function Grid({ grid }: { grid: CellKind[] }) {
       style={{ gridTemplateColumns: `repeat(${GRID_COLS}, minmax(0, 1fr))` }}
     >
       {grid.map((kind, i) => {
-        const isCenter = i === CENTER_INDEX;
         const Icon = CELL_ICON[kind];
         return (
           <div key={i} className="grid aspect-square place-items-center">
-            <Icon
-              className={cn(
-                "h-6 w-6 sm:h-8 sm:w-8",
-                isCenter ? "text-foreground" : "text-muted/40",
-              )}
-              strokeWidth={isCenter ? 2.75 : 2}
-            />
+            <Icon className="h-6 w-6 text-foreground sm:h-8 sm:w-8" strokeWidth={2.25} />
           </div>
         );
       })}
