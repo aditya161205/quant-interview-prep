@@ -20,6 +20,7 @@ import {
 } from "@/lib/market-of-cards";
 import { cn, formatSigned } from "@/lib/utils";
 import { useRecordGame } from "@/store/practice-store";
+import { Countdown as StartCountdown } from "@/components/countdown";
 import { Card as UICard, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -100,6 +101,7 @@ function Felt({ pnls }: { pnls?: number[] }) {
 
 function Intro() {
   const start = useMocStore((s) => s.start);
+  const [counting, setCounting] = React.useState(false);
   const saved = useMocStore((s) => s.config);
   const [config, setConfig] = React.useState<MocConfig>(saved ?? DEFAULT_MOC_CONFIG);
 
@@ -135,10 +137,12 @@ function Intro() {
         </div>
 
         <div className="flex justify-center">
-          <Button size="lg" onClick={() => start(config)}>
+          <Button size="lg" onClick={() => setCounting(true)}>
             <Play className="h-4 w-4" /> Start game
           </Button>
         </div>
+
+        {counting && <StartCountdown onDone={() => start(config)} />}
       </CardContent>
     </UICard>
   );

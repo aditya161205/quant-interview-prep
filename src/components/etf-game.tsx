@@ -34,6 +34,7 @@ import {
 } from "@/lib/etf-game";
 import { cn } from "@/lib/utils";
 import { useRecordGame } from "@/store/practice-store";
+import { Countdown as StartCountdown } from "@/components/countdown";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -55,6 +56,7 @@ export function EtfGame() {
 
 function Intro() {
   const start = useEtfStore((s) => s.start);
+  const [counting, setCounting] = React.useState(false);
   const saved = useEtfStore((s) => s.config);
   const [config, setConfig] = React.useState<EtfConfig>(saved ?? DEFAULT_ETF_CONFIG);
   const set = <K extends keyof EtfConfig>(k: K, v: EtfConfig[K]) =>
@@ -88,10 +90,12 @@ function Intro() {
         </div>
 
         <div className="flex justify-center">
-          <Button size="lg" onClick={() => start(config)}>
+          <Button size="lg" onClick={() => setCounting(true)}>
             <Play className="h-4 w-4" /> Start game
           </Button>
         </div>
+
+        {counting && <StartCountdown onDone={() => start(config)} />}
       </CardContent>
     </Card>
   );

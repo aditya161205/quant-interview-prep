@@ -39,6 +39,7 @@ import {
 } from "@/lib/market-game";
 import { cn, formatSigned } from "@/lib/utils";
 import { useRecordGame } from "@/store/practice-store";
+import { Countdown as StartCountdown } from "@/components/countdown";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -56,6 +57,7 @@ export function MarketGame() {
 
 function Intro() {
   const start = useGameStore((s) => s.start);
+  const [counting, setCounting] = React.useState(false);
   const savedConfig = useGameStore((s) => s.config);
   const [config, setConfig] = React.useState<GameConfig>(savedConfig ?? DEFAULT_CONFIG);
 
@@ -89,10 +91,12 @@ function Intro() {
         </div>
 
         <div className="flex justify-center">
-          <Button size="lg" onClick={() => start(config)}>
+          <Button size="lg" onClick={() => setCounting(true)}>
             <Play className="h-4 w-4" /> Start game
           </Button>
         </div>
+
+        {counting && <StartCountdown onDone={() => start(config)} />}
       </CardContent>
     </Card>
   );

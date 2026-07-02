@@ -21,6 +21,7 @@ import {
 } from "@/lib/betting-game";
 import { cn, formatSigned } from "@/lib/utils";
 import { useRecordGame } from "@/store/practice-store";
+import { Countdown } from "@/components/countdown";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -40,6 +41,7 @@ function Intro() {
   const start = useBettingStore((s) => s.start);
   const saved = useBettingStore((s) => s.config);
   const [config, setConfig] = React.useState<BettingConfig>(saved ?? DEFAULT_BETTING_CONFIG);
+  const [counting, setCounting] = React.useState(false);
   const set = <K extends keyof BettingConfig>(k: K, v: BettingConfig[K]) =>
     setConfig((c) => ({ ...c, [k]: v }));
 
@@ -81,10 +83,12 @@ function Intro() {
         <KellyCard />
 
         <div className="flex justify-center">
-          <Button size="lg" onClick={() => start(config)}>
+          <Button size="lg" onClick={() => setCounting(true)}>
             <Play className="h-4 w-4" /> Start game
           </Button>
         </div>
+
+        {counting && <Countdown onDone={() => start(config)} />}
       </CardContent>
     </Card>
   );

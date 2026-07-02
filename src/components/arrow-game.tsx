@@ -21,11 +21,12 @@ import {
   type Trial,
 } from "@/lib/arrow-game";
 import { cn } from "@/lib/utils";
+import { Countdown } from "@/components/countdown";
 import { useRecordGame } from "@/store/practice-store";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 
-type Phase = "intro" | "playing" | "over";
+type Phase = "intro" | "countdown" | "playing" | "over";
 
 export function ArrowGame() {
   const [phase, setPhase] = React.useState<Phase>("intro");
@@ -35,10 +36,17 @@ export function ArrowGame() {
   const start = (cfg: ArrowConfig) => {
     setConfig(cfg);
     setLogs([]);
-    setPhase("playing");
+    setPhase("countdown");
   };
 
   if (phase === "intro") return <Intro saved={config} onStart={start} />;
+  if (phase === "countdown")
+    return (
+      <>
+        <Intro saved={config} onStart={start} />
+        <Countdown onDone={() => setPhase("playing")} />
+      </>
+    );
   if (phase === "over")
     return <GameOver logs={logs} roundMs={config.roundSeconds * 1000} onAgain={() => setPhase("intro")} />;
   return (
