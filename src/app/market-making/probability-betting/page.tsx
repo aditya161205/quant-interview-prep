@@ -17,10 +17,10 @@ export default function ProbabilityBettingPage() {
         title="Probability Betting Game"
         description="Compute the true odds on dice, card and coin events, spot the bets the house has mispriced in your favour, and size them with Kelly."
       />
-      <BettingGame />
       <HowToPlay subtitle="Find the +EV bets and size them with Kelly.">
         <BettingRules />
       </HowToPlay>
+      <BettingGame />
     </div>
   );
 }

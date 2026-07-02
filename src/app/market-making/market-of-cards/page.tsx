@@ -17,10 +17,10 @@ export default function MarketOfCardsPage() {
         title="Market of Cards"
         description="You and three AI traders quote two-way markets on the total value of 11 cards. Trade as the table is revealed each round, then settle at the true sum."
       />
-      <MarketOfCardsGame />
       <HowToPlay subtitle="Quote the 11-card total, trade the AIs, settle at the truth.">
         <MarketOfCardsRules />
       </HowToPlay>
+      <MarketOfCardsGame />
     </div>
   );
 }

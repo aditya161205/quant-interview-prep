@@ -17,10 +17,10 @@ export default function EtfArbitragePage() {
         title="ETF Arbitrage Game"
         description="Compute the NAV from the basket, compare it to the ETF's bid/ask, and take the edge before the AI traders do."
       />
-      <EtfGame />
       <HowToPlay subtitle="Spot the ETF mispricing and take the edge.">
         <EtfArbitrageRules />
       </HowToPlay>
+      <EtfGame />
     </div>
   );
 }

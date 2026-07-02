@@ -17,10 +17,10 @@ export default function CardGamePage() {
         title="Card Trading Game"
         description="Rotating market maker, hidden hand — quote tight when it's your turn, hunt edge against the bots when it isn't."
       />
-      <MarketGame />
       <HowToPlay subtitle="The rotating market-maker card game.">
         <CardGameRules />
       </HowToPlay>
+      <MarketGame />
     </div>
   );
 }
