@@ -3,7 +3,7 @@
 import * as React from "react";
 import {
   Play, RotateCcw, Flag, MoveHorizontal, ArrowLeft, ArrowRight, Minus, X,
-  Settings2, Trophy, Timer, Zap, Target, ShieldCheck,
+  Settings2, Trophy, Timer, Clock, Target, ShieldCheck,
 } from "lucide-react";
 import {
   ARROW_OPTIONS,
@@ -40,7 +40,8 @@ export function ArrowGame() {
   };
 
   if (phase === "intro") return <Intro saved={config} onStart={start} />;
-  if (phase === "over") return <GameOver logs={logs} onAgain={() => setPhase("intro")} />;
+  if (phase === "over")
+    return <GameOver logs={logs} roundMs={config.roundSeconds * 1000} onAgain={() => setPhase("intro")} />;
   return (
     <Playing
       config={config}
@@ -158,37 +159,38 @@ function Playing({ config, onEnd }: { config: ArrowConfig; onEnd: (logs: RoundLo
   const [now, setNow] = React.useState(() => performance.now());
 
   const logsRef = React.useRef<RoundLog[]>([]);
-  const pickRef = React.useRef<{ dir: Response; rt: number } | null>(null);
   const roundStartRef = React.useRef(performance.now());
+  const committedRef = React.useRef(false); // guards against double-committing a round
 
   const trial = trials[roundIdx];
 
-  const record = React.useCallback(
-    (dir: Dir) => {
-      if (pickRef.current) return; // only the first press per round counts
-      pickRef.current = { dir, rt: performance.now() - roundStartRef.current };
-      setPressed(dir);
-    },
-    [],
-  );
+  // Finalise the current round and move on. Called either by a keypress
+  // (response = the direction) or by the timeout firing (response = null).
+  const commitRef = React.useRef<(response: Response, rt: number | null) => void>(() => {});
+  commitRef.current = (response, rt) => {
+    if (committedRef.current) return;
+    committedRef.current = true;
+    const ok = isCorrect(trial, response);
+    logsRef.current.push({ trial, response, correct: ok, rtMs: response != null ? rt : null });
+    if (ok) setCorrectCount((c) => c + 1);
+    if (roundIdx + 1 >= trials.length) onEnd(logsRef.current);
+    else setRoundIdx((i) => i + 1);
+  };
 
-  // Advance through rounds on a fixed clock — each round lasts roundSeconds,
-  // no correctness feedback (just like the real assessment).
+  // A press ends the round immediately (only the first press counts).
+  const record = React.useCallback((dir: Dir) => {
+    if (committedRef.current) return;
+    setPressed(dir);
+    commitRef.current(dir, performance.now() - roundStartRef.current);
+  }, []);
+
+  // Each new round starts its clock; if nothing is pressed within roundSeconds
+  // the round auto-advances with no response (no feedback, like the real test).
   React.useEffect(() => {
     roundStartRef.current = performance.now();
-    pickRef.current = null;
+    committedRef.current = false;
     setPressed(null);
-
-    const id = window.setTimeout(() => {
-      const response: Response = pickRef.current?.dir ?? null;
-      const ok = isCorrect(trial, response);
-      logsRef.current.push({ trial, response, correct: ok, rtMs: pickRef.current?.rt ?? null });
-      if (ok) setCorrectCount((c) => c + 1);
-
-      if (roundIdx + 1 >= trials.length) onEnd(logsRef.current);
-      else setRoundIdx((i) => i + 1);
-    }, roundMs);
-
+    const id = window.setTimeout(() => commitRef.current(null, null), roundMs);
     return () => window.clearTimeout(id);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [roundIdx]);
@@ -335,9 +337,10 @@ function Kbd({ children }: { children: React.ReactNode }) {
 
 /* --------------------------------- game over ------------------------- */
 
-function GameOver({ logs, onAgain }: { logs: RoundLog[]; onAgain: () => void }) {
+function GameOver({ logs, roundMs, onAgain }: { logs: RoundLog[]; roundMs: number; onAgain: () => void }) {
   useRecordGame();
-  const s = summarize(logs);
+  const s = summarize(logs, roundMs);
+  const savedSec = s.savedMs / 1000;
 
   return (
     <div className="mx-auto max-w-3xl space-y-6">
@@ -356,8 +359,8 @@ function GameOver({ logs, onAgain }: { logs: RoundLog[]; onAgain: () => void }) 
 
           <div className="mx-auto grid max-w-lg grid-cols-2 gap-3 sm:grid-cols-4">
             <Metric icon={Target} label="Accuracy" value={`${(s.accuracy * 100).toFixed(0)}%`} />
+            <Metric icon={Clock} label="Time saved" value={`${savedSec.toFixed(1)}s`} />
             <Metric icon={Timer} label="Avg speed" value={s.avgRtMs != null ? `${s.avgRtMs}ms` : "—"} />
-            <Metric icon={Zap} label="Go trials" value={`${s.goCorrect}/${s.goTotal}`} />
             <Metric icon={ShieldCheck} label="Inhibition" value={`${s.noGoCorrect}/${s.noGoTotal}`} />
           </div>
 

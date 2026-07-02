@@ -95,10 +95,13 @@ export interface ArrowSummary {
   noGoTotal: number;
   noGoCorrect: number; // successful inhibitions
   avgRtMs: number | null; // over correct go-trials that were answered
+  allottedMs: number; // total time you were given (rounds × roundSeconds)
+  actualMs: number; // total time you actually took
+  savedMs: number; // time saved by answering early
   score: number;
 }
 
-export function summarize(logs: RoundLog[]): ArrowSummary {
+export function summarize(logs: RoundLog[], roundMs: number): ArrowSummary {
   const total = logs.length;
   const correct = logs.filter((l) => l.correct).length;
   const go = logs.filter((l) => !l.trial.isNoGo);
@@ -108,6 +111,12 @@ export function summarize(logs: RoundLog[]): ArrowSummary {
 
   const rts = go.filter((l) => l.correct && l.rtMs != null).map((l) => l.rtMs as number);
   const avgRtMs = rts.length ? Math.round(rts.reduce((a, b) => a + b, 0) / rts.length) : null;
+
+  // A round that got a press ends the moment you press; otherwise it ran the
+  // full window. Answering early banks the difference as "time saved".
+  const allottedMs = total * roundMs;
+  const actualMs = logs.reduce((s, l) => s + (l.rtMs != null ? l.rtMs : roundMs), 0);
+  const savedMs = Math.max(0, allottedMs - actualMs);
 
   // Score rewards accuracy, with a small speed bonus on correct answered trials.
   const speedBonus = rts.reduce((s, rt) => s + Math.max(0, Math.round((1000 - rt) / 20)), 0);
@@ -122,6 +131,9 @@ export function summarize(logs: RoundLog[]): ArrowSummary {
     noGoTotal: noGo.length,
     noGoCorrect,
     avgRtMs,
+    allottedMs,
+    actualMs,
+    savedMs,
     score,
   };
 }
