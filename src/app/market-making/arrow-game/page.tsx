@@ -17,10 +17,10 @@ export default function ArrowGamePage() {
         title="Arrow Game"
         description="React to the middle arrow, ignore the flankers, and hold back on the no-go rounds. A fast test of focus, reaction speed and impulse control — the kind trading firms use to screen."
       />
+      <ArrowGame />
       <HowToPlay subtitle="Middle arrow only — press left or right, unless it's boxed in by X.">
         <ArrowGameRules />
       </HowToPlay>
-      <ArrowGame />
     </div>
   );
 }
