@@ -1,4 +1,4 @@
-import { Spade, TrendingUp, Dices, Users, MoveHorizontal } from "lucide-react";
+import { Spade, TrendingUp, Dices, Users, MoveHorizontal, Swords } from "lucide-react";
 import { IconCard, type CardColor } from "@/components/icon-card";
 import { PageHeader } from "@/components/page-header";
 
@@ -64,6 +64,16 @@ const games: {
     icon: MoveHorizontal,
     color: "sky",
     watermark: "AR",
+  },
+  {
+    href: "/market-making/tournament",
+    title: "Tournament Market",
+    kicker: "Probability · Estimation",
+    description:
+      "Price outcomes of a 4-team tournament from a win-probability matrix — finalists, champion, group-stage feats — then re-price as live results drop.",
+    icon: Swords,
+    color: "indigo",
+    watermark: "TM",
   },
 ];
 

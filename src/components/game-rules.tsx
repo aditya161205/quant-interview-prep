@@ -116,6 +116,39 @@ export function BettingRules() {
   );
 }
 
+/* ----------------------------- Tournament Market -------------------------- */
+export function TournamentRules() {
+  return (
+    <>
+      <Step n={1} title="The matrix">
+        Four teams — A, B, C, D. The 4×4 grid gives{" "}
+        <span className="font-mono text-foreground">P(row team beats column team)</span>; the diagonal
+        is dashed out. It stays on screen the whole game.
+      </Step>
+      <Step n={2} title="The format">
+        A group stage round-robin (everyone plays everyone once) ranks the teams by wins. Any tie is
+        broken by <strong className="text-foreground">replaying a round-robin among only the tied teams</strong>,
+        repeating until every tie is resolved. The top two are the finalists and play once for the title.
+      </Step>
+      <Step n={3} title="Price the market">
+        Each round you&apos;re quoted a two-sided market on an outcome (e.g. &ldquo;A reaches the final&rdquo;,
+        &ldquo;C is champion&rdquo;, &ldquo;at least one team loses all its group games&rdquo;). Within the timer,{" "}
+        <span className="text-positive">Buy</span> if you think fair value is above the ask,{" "}
+        <span className="text-negative">Sell</span> if it&apos;s below the bid, or <span className="text-foreground">Pass</span>.
+      </Step>
+      <Step n={4} title="Estimate the value">
+        Then lock in your estimate of the true fair value (0–100). You score for a correct trade decision{" "}
+        <em>and</em> for a close estimate — within a tolerance — and lose points for wrong calls.
+      </Step>
+      <Step n={5} title="Trade the news">
+        In the final rounds a real group-stage result is revealed (e.g. &ldquo;D beat C&rdquo;). Say whether an
+        outcome&apos;s fair value moves <span className="text-positive">up</span>,{" "}
+        <span className="text-negative">down</span> or stays the same, then re-estimate it on the new information.
+      </Step>
+    </>
+  );
+}
+
 /* -------------------------------- Arrow Game ------------------------------ */
 export function ArrowGameRules() {
   return (
