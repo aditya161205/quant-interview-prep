@@ -370,69 +370,105 @@ export function scoreEstimate(estimate: number, trueValue: number) {
 
 const others = (t: number) => [0, 1, 2, 3].filter((k) => k !== t);
 const nm = (t: number) => TEAMS[t];
+const prod = (xs: number[]) => xs.reduce((s, x) => s * x, 1);
+const p100 = (x: number) => Math.round(x * 100);
 
-/** Plain-English reasoning for why an event's fair value is what it is. */
+const sweepProb = (t: number, m: Matrix) => prod(others(t).map((j) => m[t][j])); // P(t goes 3-0)
+const winlessProb = (t: number, m: Matrix) => prod(others(t).map((j) => 1 - m[t][j])); // P(t goes 0-3)
+
+/** Approx P(t finishes top-2): P(it beats ≥2 of its 3 rivals head-to-head). */
+function reachFinalApprox(t: number, m: Matrix): number {
+  const [a, b, c] = others(t).map((j) => m[t][j]);
+  return a * b * c + a * b * (1 - c) + a * (1 - b) * c + (1 - a) * b * c;
+}
+/** Approx P(t champion): reach the final, then win an average final. */
+function championApprox(t: number, m: Matrix): number {
+  const wins = others(t).map((j) => m[t][j]);
+  return reachFinalApprox(t, m) * (wins.reduce((s, x) => s + x, 0) / wins.length);
+}
+
+/** Plain-English reasoning + a back-of-envelope estimate/range for an event. */
 export function explainEvent(ev: EventDef, m: Matrix): string[] {
   const p = (i: number, j: number) => m[i][j];
   switch (ev.type) {
     case "win3": {
       const [a] = ev.teams;
       const os = others(a);
-      const prod = os.reduce((s, j) => s * p(a, j), 1);
+      const val = prod(os.map((j) => p(a, j)));
       return [
         `${nm(a)} sweeps the group only if it beats all three opponents.`,
-        `Group games are independent, so P = ${os.map((j) => p(a, j).toFixed(2)).join(" × ")} = ${(prod * 100).toFixed(0)}% (vs ${os.map(nm).join(", ")}).`,
+        `Group games are independent, so P = ${os.map((j) => p(a, j).toFixed(2)).join(" × ")} = ${p100(val)}% (vs ${os.map(nm).join(", ")}).`,
       ];
     }
     case "win1": {
       const [a] = ev.teams;
       const os = others(a);
-      const lose = os.reduce((s, j) => s * (1 - p(a, j)), 1);
+      const lose = prod(os.map((j) => 1 - p(a, j)));
       return [
         `“Wins at least one” = 1 − P(loses all three).`,
-        `P(loses all) = ${os.map((j) => (1 - p(a, j)).toFixed(2)).join(" × ")} = ${(lose * 100).toFixed(0)}%, so fair value = ${((1 - lose) * 100).toFixed(0)}%.`,
+        `P(loses all) = ${os.map((j) => (1 - p(a, j)).toFixed(2)).join(" × ")} = ${p100(lose)}%, so fair value = ${p100(1 - lose)}%.`,
       ];
     }
     case "final": {
       const [a] = ev.teams;
       const os = others(a);
+      const est = p100(reachFinalApprox(a, m));
+      const lo = Math.max(0, est - 8);
+      const hi = Math.min(100, est + 8);
       return [
-        `${nm(a)} reaches the final by finishing in the group-stage top two (after every tie is replayed and broken).`,
-        `Driven by its pairwise edges — vs ${os.map((j) => `${nm(j)} ${p(a, j).toFixed(2)}`).join(", ")}: the more expected group wins, the more likely a top-two finish.`,
-        `No clean closed form (tie-break replays), so it's estimated by simulating the whole tournament many times.`,
+        `${nm(a)} reaches the final by finishing in the group-stage top two.`,
+        `Approximate that as beating at least 2 of its 3 rivals, using each head-to-head as a proxy for who ranks higher: beats ${os.map((j) => `${nm(j)} ${p(a, j).toFixed(2)}`).join(", ")}.`,
+        `P(above ≥2 of 3) ≈ ${est}%, so expect a fair value around ${lo}–${hi}% (tie-break replays add some wobble).`,
       ];
     }
     case "champ": {
       const [a] = ev.teams;
       const os = others(a);
+      const rf = reachFinalApprox(a, m);
+      const wins = os.map((j) => p(a, j));
+      const lo = p100(rf * Math.min(...wins));
+      const hi = p100(rf * Math.max(...wins));
+      const est = p100(championApprox(a, m));
       return [
-        `${nm(a)} is champion = reach the final AND win it.`,
-        `First a top-two group finish (edges vs ${os.map((j) => `${nm(j)} ${p(a, j).toFixed(2)}`).join(", ")}), then beat whichever team also gets through.`,
-        `Roughly P(reach final) × P(win the final) — computed exactly by simulation.`,
+        `${nm(a)} is champion = reach the final (≈${p100(rf)}%) and win it.`,
+        `Its win odds vs the possible opponents span ${Math.min(...wins).toFixed(2)}–${Math.max(...wins).toFixed(2)} (${os.map(nm).join(", ")}).`,
+        `So champion ≈ ${p100(rf)}% × its final-win odds ≈ ${est}%, in a band of about ${Math.min(lo, hi)}–${Math.max(lo, hi)}% depending on the opponent.`,
       ];
     }
-    case "noundef":
+    case "noundef": {
+      const sweeps = [0, 1, 2, 3].map((i) => sweepProb(i, m));
+      const total = sweeps.reduce((s, x) => s + x, 0);
       return [
-        `Fails only if some team goes 3-0. Each team's sweep chance is the product of its three win probabilities.`,
-        `Fair value = 1 − P(any team sweeps); teams share matches, so it's estimated by simulation.`,
+        `“No undefeated” fails only if some team goes 3-0. Two teams can't both sweep — they play each other — so those events are disjoint and just add up.`,
+        `P(some team sweeps) = ${sweeps.map((s) => `${p100(s)}%`).join(" + ")} = ${p100(total)}%.`,
+        `So fair value = 1 − ${p100(total)}% = ${p100(1 - total)}% (this one is exact).`,
       ];
-    case "somewinless":
+    }
+    case "somewinless": {
+      const wl = [0, 1, 2, 3].map((i) => winlessProb(i, m));
+      const total = wl.reduce((s, x) => s + x, 0);
       return [
-        `= 1 − P(no team goes 0-3). A team's winless chance is the product of its three loss probabilities.`,
-        `Because the four teams share the same six matches, it's estimated by simulation rather than a single product.`,
+        `A team goes 0-3 with prob = product of its three loss odds. Two teams can't both go winless (they play each other), so these are disjoint and add up.`,
+        `Fair value = ${wl.map((s) => `${p100(s)}%`).join(" + ")} = ${p100(total)}% (exact).`,
       ];
+    }
     case "champpair": {
       const [a, b] = ev.teams;
+      const ca = championApprox(a, m);
+      const cb = championApprox(b, m);
       return [
-        `Champion is ${nm(a)} or ${nm(b)}: each must reach the final and win it.`,
-        `They can't both be champion, so it's simply P(${nm(a)} champion) + P(${nm(b)} champion).`,
+        `Champion is ${nm(a)} or ${nm(b)} = P(${nm(a)} champ) + P(${nm(b)} champ) — they can't both win.`,
+        `Approximately ${p100(ca)}% + ${p100(cb)}% ≈ ${p100(ca + cb)}%.`,
       ];
     }
     case "bothfinal": {
       const [a, b] = ev.teams;
+      const [c, d] = [0, 1, 2, 3].filter((x) => x !== a && x !== b);
+      const val = p(a, c) * p(a, d) * p(b, c) * p(b, d);
       return [
-        `${nm(a)} and ${nm(b)} are the two finalists ⇔ both finish ahead of the other two in the group stage.`,
-        `Needs both to do well in the same group at once, so it's usually well below either one's individual "reach the final" chance. Estimated by simulation.`,
+        `${nm(a)} and ${nm(b)} are the two finalists ⇔ both finish above ${nm(c)} and ${nm(d)}.`,
+        `Using head-to-heads as proxies: ≈ ${p(a, c).toFixed(2)} × ${p(a, d).toFixed(2)} × ${p(b, c).toFixed(2)} × ${p(b, d).toFixed(2)} ≈ ${p100(val)}%.`,
+        `That ignores their own match and tie-breaks, so read it as a rough estimate.`,
       ];
     }
   }
