@@ -2,8 +2,8 @@
 
 import * as React from "react";
 import {
-  Play, RotateCcw, Flag, ArrowRight, Settings2, Trophy, Timer, Swords,
-  TrendingUp, TrendingDown, MinusCircle, Check, X, Info, ArrowUp, ArrowDown, Equal,
+  Play, RotateCcw, ArrowRight, Settings2, Trophy, Timer, Swords,
+  TrendingUp, TrendingDown, MinusCircle, Check, X, Info, ArrowUp, ArrowDown, Equal, ChevronDown,
 } from "lucide-react";
 import {
   buildGame,
@@ -11,6 +11,8 @@ import {
   scoreInfoDecision,
   scoreEstimate,
   actualDirection,
+  explainEvent,
+  explainReveal,
   TEAMS,
   TOURNAMENT_OPTIONS,
   DEFAULT_TOURNAMENT_CONFIG,
@@ -63,7 +65,8 @@ export function TournamentGame() {
         <StartCountdown onDone={() => setPhase("playing")} />
       </>
     );
-  if (phase === "over") return <GameOver history={history} score={score} onAgain={() => setPhase("intro")} />;
+  if (phase === "over" && game)
+    return <GameOver history={history} score={score} matrix={game.matrix} onAgain={() => setPhase("intro")} />;
 
   if (!game) return null;
   const round = game.rounds[roundIdx];
@@ -271,6 +274,7 @@ function RoundCard({ round, decisionSeconds, onNext }: { round: Round; decisionS
     const estimatePts = scoreEstimate(est, round.trueValue);
     const o: RoundOutcome = {
       kind: round.kind,
+      event: round.event,
       eventLabel: round.event.label,
       decision: decision!,
       decisionCorrect,
@@ -509,7 +513,7 @@ function StatTile({ label, value, accent = false }: { label: string; value: stri
 
 /* --------------------------------- game over ------------------------- */
 
-function GameOver({ history, score, onAgain }: { history: RoundOutcome[]; score: number; onAgain: () => void }) {
+function GameOver({ history, score, matrix, onAgain }: { history: RoundOutcome[]; score: number; matrix: Matrix; onAgain: () => void }) {
   useRecordGame();
   const decisions = history.filter((h) => h.decisionCorrect).length;
   const estimates = history.filter((h) => h.estimatePts > 0).length;
@@ -544,17 +548,13 @@ function GameOver({ history, score, onAgain }: { history: RoundOutcome[]; score:
       </Card>
 
       <Card>
-        <CardHeader><CardTitle className="text-base">Round-by-round</CardTitle></CardHeader>
+        <CardHeader>
+          <CardTitle className="text-base">Round-by-round</CardTitle>
+          <p className="text-sm text-muted">Tap a round to see how its fair value is worked out.</p>
+        </CardHeader>
         <CardContent className="space-y-2">
           {history.map((h, i) => (
-            <div key={i} className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-xl border border-border bg-surface-2/30 px-3 py-2.5 text-sm">
-              <Badge tone={h.kind === "trade" ? "outline" : "accent"}>{h.kind === "trade" ? "Price" : "News"}</Badge>
-              <span className="min-w-0 flex-1 truncate">{h.eventLabel}</span>
-              <span className="font-mono text-xs text-muted">true {h.trueValue} · you {h.estimate}</span>
-              <span className={cn("font-mono font-semibold", h.totalPts > 0 ? "text-positive" : h.totalPts < 0 ? "text-negative" : "text-muted")}>
-                {formatSigned(h.totalPts)}
-              </span>
-            </div>
+            <RoundBreakdown key={i} outcome={h} matrix={matrix} />
           ))}
         </CardContent>
       </Card>
@@ -567,6 +567,66 @@ function Stat({ label, value }: { label: string; value: string }) {
     <div className="rounded-lg border border-border bg-surface-2/40 px-3 py-2 text-center">
       <div className="font-mono text-lg font-semibold">{value}</div>
       <div className="text-[11px] uppercase tracking-wider text-muted">{label}</div>
+    </div>
+  );
+}
+
+function RoundBreakdown({ outcome: h, matrix }: { outcome: RoundOutcome; matrix: Matrix }) {
+  const [open, setOpen] = React.useState(false);
+  const bullets = explainEvent(h.event, matrix);
+
+  // What the right trade/direction call was, and why.
+  let verdict = "";
+  if (h.kind === "trade" && h.quote) {
+    const { bid, ask } = h.quote;
+    if (h.trueValue > ask) verdict = `Fair value ${h.trueValue} is above the ask ${ask} — Buy was the +EV call.`;
+    else if (h.trueValue < bid) verdict = `Fair value ${h.trueValue} is below the bid ${bid} — Sell was the +EV call.`;
+    else verdict = `Fair value ${h.trueValue} sits inside the ${bid}–${ask} market — Pass was correct (no edge).`;
+  } else if (h.kind === "info" && h.reveal && h.priorValue != null) {
+    verdict = explainReveal(h.event, h.reveal, h.priorValue, h.trueValue);
+  }
+
+  return (
+    <div className="overflow-hidden rounded-xl border border-border bg-surface-2/30">
+      <button onClick={() => setOpen((o) => !o)} className="flex w-full flex-wrap items-center gap-x-3 gap-y-1 px-3 py-2.5 text-left text-sm">
+        <Badge tone={h.kind === "trade" ? "outline" : "accent"}>{h.kind === "trade" ? "Price" : "News"}</Badge>
+        <span className="min-w-0 flex-1 truncate">{h.eventLabel}</span>
+        <span className="font-mono text-xs text-muted">true {h.trueValue} · you {h.estimate}</span>
+        <span className={cn("font-mono font-semibold", h.totalPts > 0 ? "text-positive" : h.totalPts < 0 ? "text-negative" : "text-muted")}>
+          {formatSigned(h.totalPts)}
+        </span>
+        <ChevronDown className={cn("h-4 w-4 text-muted transition-transform", open && "rotate-180")} />
+      </button>
+
+      {open && (
+        <div className="animate-pop space-y-3 border-t border-border px-3 py-3 text-sm">
+          {h.kind === "trade" && h.quote && (
+            <div className="flex flex-wrap gap-x-4 gap-y-1 font-mono text-xs text-muted">
+              <span>Market <span className="text-foreground">{h.quote.bid} / {h.quote.ask}</span></span>
+              <span>Fair value <span className="text-foreground">{h.trueValue}</span></span>
+              <span>Your estimate <span className="text-foreground">{h.estimate}</span></span>
+            </div>
+          )}
+
+          <div>
+            <div className="mb-1 text-[11px] font-semibold uppercase tracking-wider text-muted">How the fair value works out</div>
+            <ul className="space-y-1 text-muted">
+              {bullets.map((b, i) => (
+                <li key={i} className="flex gap-2">
+                  <span className="text-accent">•</span>
+                  <span>{b}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {verdict && (
+            <div className="rounded-lg border border-accent/25 bg-accent/5 px-3 py-2 text-foreground/90">
+              {verdict}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
