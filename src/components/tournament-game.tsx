@@ -163,34 +163,52 @@ function MatrixTable({ matrix, highlight }: { matrix: Matrix; highlight?: string
           <span className="font-normal text-muted">— P(row beats column)</span>
         </CardTitle>
       </CardHeader>
-      <CardContent className="flex justify-center pb-5">
-        <table className="border-collapse text-center font-mono text-sm">
+      <CardContent className="flex justify-center pb-6">
+        <table className="border-separate border-spacing-1.5 text-center font-mono text-sm sm:border-spacing-2">
           <thead>
             <tr>
-              <th className="h-9 w-9" />
+              <th className="h-10 w-10" />
               {TEAMS.map((t) => (
-                <th key={t} className="h-9 w-14 text-xs font-semibold uppercase tracking-wider text-muted sm:w-16">{t}</th>
+                <th key={t} className="p-0">
+                  <div className="mx-auto grid h-9 w-14 place-items-center rounded-lg bg-accent/10 text-xs font-bold uppercase tracking-wider text-accent sm:w-16">
+                    {t}
+                  </div>
+                </th>
               ))}
             </tr>
           </thead>
           <tbody>
             {TEAMS.map((row, i) => (
               <tr key={row}>
-                <th className="h-14 w-9 text-xs font-semibold uppercase tracking-wider text-muted">{row}</th>
+                <th className="p-0">
+                  <div className="grid h-14 w-10 place-items-center rounded-lg bg-accent/10 text-xs font-bold uppercase tracking-wider text-accent">
+                    {row}
+                  </div>
+                </th>
                 {TEAMS.map((col, j) => {
                   const key = `${Math.min(i, j)}-${Math.max(i, j)}`;
                   const isHi = highlight === key && i !== j;
                   if (i === j) {
-                    return <td key={col} className="h-14 w-14 text-border sm:w-16">—</td>;
+                    return (
+                      <td key={col} className="p-0">
+                        <div className="grid h-14 w-14 place-items-center rounded-lg border border-dashed border-border bg-surface-2/30 text-border sm:w-16">
+                          —
+                        </div>
+                      </td>
+                    );
                   }
                   const p = matrix[i][j];
+                  const strong = p >= 0.65 || p <= 0.35;
                   return (
-                    <td key={col} className="h-14 w-14 p-1 sm:w-16">
+                    <td key={col} className="p-0">
                       <div
                         className={cn(
-                          "grid h-full w-full place-items-center rounded-lg tabular-nums",
-                          p >= 0.5 ? "text-positive" : "text-negative",
-                          isHi ? "bg-accent/15 ring-1 ring-accent/50" : "bg-surface-2/40",
+                          "grid h-14 w-14 place-items-center rounded-lg border font-semibold tabular-nums shadow-sm transition-transform hover:-translate-y-0.5 hover:shadow-md sm:w-16",
+                          p >= 0.5
+                            ? "border-positive/30 bg-positive/10 text-positive"
+                            : "border-negative/30 bg-negative/10 text-negative",
+                          strong && (p >= 0.5 ? "bg-positive/20" : "bg-negative/20"),
+                          isHi && "ring-2 ring-accent ring-offset-1 ring-offset-surface",
                         )}
                       >
                         {p.toFixed(2)}
