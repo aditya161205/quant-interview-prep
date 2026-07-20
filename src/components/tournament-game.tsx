@@ -547,10 +547,12 @@ function GameOver({ history, score, matrix, onAgain }: { history: RoundOutcome[]
         </CardContent>
       </Card>
 
+      <MatrixTable matrix={matrix} />
+
       <Card>
         <CardHeader>
           <CardTitle className="text-base">Round-by-round</CardTitle>
-          <p className="text-sm text-muted">Tap a round to see how its fair value is worked out.</p>
+          <p className="text-sm text-muted">Tap a round to see how its fair value is worked out — the matrix above shows the win probabilities used.</p>
         </CardHeader>
         <CardContent className="space-y-2">
           {history.map((h, i) => (
