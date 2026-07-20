@@ -234,9 +234,13 @@ const ALL_PAIRS: [number, number][] = [
 /* -------------------------------- rounds --------------------------------- */
 
 function makeQuote(trueValue: number): Quote {
-  const skew = (Math.random() < 0.5 ? -1 : 1) * (3 + randInt(7)); // ±3..9
-  const center = clamp(trueValue + skew, 8, 92);
-  const half = 3 + randInt(3); // spread 6..10
+  // Tight two-sided market (spread 2–4) whose midpoint is usually mispriced by
+  // a moderate amount — the point is a quick approximate read, not the exact
+  // value. ~30% of markets sit roughly fair, the rest are off by 3–13 points.
+  const mag = Math.random() < 0.3 ? randInt(3) : 3 + randInt(11); // 0..2 or 3..13
+  const dir = Math.random() < 0.5 ? -1 : 1;
+  const half = 1 + randInt(2); // spread 2 or 4
+  const center = clamp(trueValue + dir * mag, 3 + half, 97 - half);
   const bid = clamp(Math.round(center - half), 1, 98);
   const ask = clamp(Math.round(center + half), bid + 2, 99);
   return { bid, ask };

@@ -163,37 +163,38 @@ function MatrixTable({ matrix, highlight }: { matrix: Matrix; highlight?: string
           <span className="font-normal text-muted">— P(row beats column)</span>
         </CardTitle>
       </CardHeader>
-      <CardContent className="overflow-x-auto pb-4">
-        <table className="w-full min-w-[360px] border-collapse text-center font-mono text-sm">
+      <CardContent className="flex justify-center pb-5">
+        <table className="border-collapse text-center font-mono text-sm">
           <thead>
             <tr>
-              <th className="p-1.5" />
+              <th className="h-9 w-9" />
               {TEAMS.map((t) => (
-                <th key={t} className="p-1.5 text-xs font-semibold uppercase tracking-wider text-muted">{t}</th>
+                <th key={t} className="h-9 w-14 text-xs font-semibold uppercase tracking-wider text-muted sm:w-16">{t}</th>
               ))}
             </tr>
           </thead>
           <tbody>
             {TEAMS.map((row, i) => (
               <tr key={row}>
-                <th className="p-1.5 text-xs font-semibold uppercase tracking-wider text-muted">{row}</th>
+                <th className="h-14 w-9 text-xs font-semibold uppercase tracking-wider text-muted">{row}</th>
                 {TEAMS.map((col, j) => {
                   const key = `${Math.min(i, j)}-${Math.max(i, j)}`;
                   const isHi = highlight === key && i !== j;
                   if (i === j) {
-                    return <td key={col} className="p-1.5 text-border">—</td>;
+                    return <td key={col} className="h-14 w-14 text-border sm:w-16">—</td>;
                   }
                   const p = matrix[i][j];
                   return (
-                    <td
-                      key={col}
-                      className={cn(
-                        "rounded-md p-1.5 tabular-nums",
-                        p >= 0.5 ? "text-positive" : "text-negative",
-                        isHi && "bg-accent/15 ring-1 ring-accent/50",
-                      )}
-                    >
-                      {p.toFixed(2)}
+                    <td key={col} className="h-14 w-14 p-1 sm:w-16">
+                      <div
+                        className={cn(
+                          "grid h-full w-full place-items-center rounded-lg tabular-nums",
+                          p >= 0.5 ? "text-positive" : "text-negative",
+                          isHi ? "bg-accent/15 ring-1 ring-accent/50" : "bg-surface-2/40",
+                        )}
+                      >
+                        {p.toFixed(2)}
+                      </div>
                     </td>
                   );
                 })}
