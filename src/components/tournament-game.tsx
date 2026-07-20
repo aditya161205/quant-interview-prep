@@ -86,7 +86,6 @@ export function TournamentGame() {
 
 function Intro({ saved, onStart }: { saved: TournamentConfig; onStart: (c: TournamentConfig) => void }) {
   const [config, setConfig] = React.useState<TournamentConfig>(saved);
-  const [counting, setCounting] = React.useState(false);
   const set = <K extends keyof TournamentConfig>(k: K, v: TournamentConfig[K]) =>
     setConfig((c) => ({ ...c, [k]: v }));
 
@@ -117,12 +116,10 @@ function Intro({ saved, onStart }: { saved: TournamentConfig; onStart: (c: Tourn
         </div>
 
         <div className="flex justify-center">
-          <Button size="lg" onClick={() => setCounting(true)}>
+          <Button size="lg" onClick={() => onStart(config)}>
             <Play className="h-4 w-4" /> Start game
           </Button>
         </div>
-
-        {counting && <StartCountdown onDone={() => onStart(config)} />}
       </CardContent>
     </Card>
   );
