@@ -404,7 +404,7 @@ function Heatmap({ activity }: { activity: Record<string, number> }) {
           <div className="w-8 shrink-0" />
           <div className="flex min-w-0 flex-1 gap-[6px]">
             {months.map((m, wi) => (
-              <span key={wi} className="min-w-0 flex-1 whitespace-nowrap text-[10px] uppercase tracking-wider text-muted">{m}</span>
+              <span key={wi} className="min-w-0 flex-1 whitespace-nowrap text-2xs uppercase tracking-wider text-muted">{m}</span>
             ))}
           </div>
         </div>
@@ -412,7 +412,7 @@ function Heatmap({ activity }: { activity: Record<string, number> }) {
         <div className="flex gap-[6px]">
           <div aria-hidden className="hidden w-8 shrink-0 flex-col gap-[6px] sm:flex">
             {WEEKDAY_LABELS.map((w, i) => (
-              <span key={i} className="flex flex-1 items-center text-[10px] uppercase tracking-wider text-muted">{w}</span>
+              <span key={i} className="flex flex-1 items-center text-2xs uppercase tracking-wider text-muted">{w}</span>
             ))}
           </div>
 
@@ -467,7 +467,7 @@ function Heatmap({ activity }: { activity: Record<string, number> }) {
             ? "Nothing logged yet — solve a problem or play a game and the grid starts filling in."
             : `${activeDays} active ${activeDays === 1 ? "day" : "days"} · ${totalCount} in the last 6 months.`}
         </p>
-        <div className="ml-auto flex items-center gap-1.5 text-[11px] text-muted">
+        <div className="ml-auto flex items-center gap-1.5 text-2xs text-muted">
           <span>Less</span>
           {[0, 1, 3, 9].map((n) => (
             <span key={n} className={cn("h-3 w-3 rounded-[3px]", level(n))} />

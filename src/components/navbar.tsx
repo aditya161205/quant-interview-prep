@@ -46,7 +46,7 @@ export function Navbar() {
                     key={l.href}
                     href={l.href}
                     className={cn(
-                      "rounded-full px-3.5 py-1.5 text-xs font-semibold uppercase tracking-wider transition-colors",
+                      "rounded-full px-3.5 py-1.5 text-2xs font-semibold uppercase tracking-[0.14em] transition-colors duration-200",
                       active ? "bg-foreground text-background" : "text-muted hover:text-foreground",
                     )}
                   >

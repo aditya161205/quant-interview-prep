@@ -115,7 +115,7 @@ function Felt({ pnls }: { pnls?: number[] }) {
       <div className="flex items-center justify-between gap-3">
         <PlayerSpot player={players[1]} pnl={pnls?.[1]} align="left" />
         <div className="flex flex-col items-center gap-1">
-          <span className="text-[11px] uppercase tracking-wider text-muted">Table</span>
+          <span className="text-2xs uppercase tracking-wider text-muted">Table</span>
           <div className="flex gap-1.5">
             {table.map((c, i) => <MiniCard key={i} card={c} />)}
           </div>
@@ -380,15 +380,15 @@ function TradePanel() {
       <div className="mx-auto grid max-w-md grid-cols-3 gap-3">
         <Button variant="outline" className="h-auto flex-col gap-0 py-2.5 border-positive/40 text-positive hover:bg-positive/10" onClick={() => tradeWithAi("buy")}>
           <span className="flex items-center gap-1.5 font-semibold">Buy <TrendingUp className="h-4 w-4" /></span>
-          <span className="text-[11px] font-normal text-muted">at {q.ask}</span>
+          <span className="text-2xs font-normal text-muted">at {q.ask}</span>
         </Button>
         <Button variant="outline" className="h-auto flex-col gap-0 py-2.5 border-negative/40 text-negative hover:bg-negative/10" onClick={() => tradeWithAi("sell")}>
           <span className="flex items-center gap-1.5 font-semibold">Sell <TrendingDown className="h-4 w-4" /></span>
-          <span className="text-[11px] font-normal text-muted">at {q.bid}</span>
+          <span className="text-2xs font-normal text-muted">at {q.bid}</span>
         </Button>
         <Button variant="outline" className="h-auto flex-col gap-0 py-2.5" onClick={() => tradeWithAi("pass")}>
           <span className="flex items-center gap-1.5 font-semibold">Pass <SkipForward className="h-4 w-4" /></span>
-          <span className="text-[11px] font-normal text-muted">no trade</span>
+          <span className="text-2xs font-normal text-muted">no trade</span>
         </Button>
       </div>
     </div>
@@ -468,7 +468,7 @@ function GameOver() {
             <span className="grid h-14 w-14 place-items-center rounded-2xl bg-accent text-accent-foreground shadow-lg">
               <Trophy className="h-6 w-6" />
             </span>
-            <h2 className="text-2xl font-black uppercase tracking-tight">Settlement</h2>
+            <h2 className="text-2xl font-bold tracking-[-0.02em]">Settlement</h2>
             <p className="text-sm text-muted">The 11 cards summed to <span className="font-mono font-semibold text-foreground">{trueSum}</span>.</p>
             <div className={cn("font-mono text-3xl font-bold", youPnl > 0 ? "text-positive" : youPnl < 0 ? "text-negative" : "text-foreground")}>
               {formatSigned(youPnl)}

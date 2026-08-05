@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
 
 /** Consistent page header used across every section and game window. */
 export function PageHeader({
@@ -26,9 +25,20 @@ export function PageHeader({
           <ArrowLeft className="h-4 w-4" /> {backLabel}
         </Link>
       )}
-      <div className="space-y-3">
-        {kicker && <Badge tone="accent">{kicker}</Badge>}
-        <h1 className="text-3xl font-black uppercase tracking-tight sm:text-4xl">{title}</h1>
+      <div className="space-y-2">
+        {/* A quiet eyebrow rather than an accent pill: every page led with a
+            violet badge, which spent the accent before the primary action. */}
+        {kicker && (
+          <span className="block text-2xs font-semibold uppercase tracking-[0.18em] text-muted">
+            {kicker}
+          </span>
+        )}
+        {/* Sentence case: uppercase is reserved for eyebrow-sized labels and
+            the one display moment on the dashboard, so headings read as
+            hierarchy instead of shouting alongside everything else. */}
+        <h1 className="text-[1.75rem] font-bold leading-tight tracking-[-0.02em] sm:text-[2rem]">
+          {title}
+        </h1>
         {description && <p className="max-w-2xl text-muted">{description}</p>}
       </div>
     </div>

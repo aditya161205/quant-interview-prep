@@ -56,7 +56,7 @@ export default function RootLayout({
           >
             {children}
           </main>
-          <footer className="mt-8 border-t border-border py-8 text-center text-xs uppercase tracking-widest text-muted">
+          <footer className="mt-10 border-t border-border py-8 text-center text-2xs uppercase tracking-[0.18em] text-muted">
             QuantPrep
           </footer>
         </ThemeProvider>

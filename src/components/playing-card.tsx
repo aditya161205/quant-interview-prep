@@ -35,7 +35,7 @@ function Corner({ rank, suit, flip = false }: { rank: Rank; suit: Suit; flip?: b
       style={{ color: inkFor(suit) }}
     >
       <span className="text-[16px] font-bold">{rank}</span>
-      <span className="text-[10px]">{suit}</span>
+      <span className="text-2xs">{suit}</span>
     </div>
   );
 }

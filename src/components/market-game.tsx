@@ -336,7 +336,7 @@ function PlayerCard({
       )}
     >
       <div className="flex items-center justify-between">
-        <span className={cn("text-[15px] font-semibold", player.isYou && "text-accent")}>
+        <span className={cn("text-[0.9375rem] font-semibold", player.isYou && "text-accent")}>
           {player.name}
         </span>
         <Badge tone={player.isYou ? "accent" : "default"}>{player.isYou ? "You" : "Bot"}</Badge>
@@ -344,7 +344,7 @@ function PlayerCard({
 
       {isMaker ? (
         <div className="mt-2">
-          <span className="inline-flex h-5 items-center rounded-full bg-accent/15 px-2 text-[11px] font-medium text-accent animate-pulse-badge">
+          <span className="inline-flex h-5 items-center rounded-full bg-accent/15 px-2 text-2xs font-medium text-accent animate-pulse-badge">
             <Crown className="mr-1 h-3 w-3" /> Maker
           </span>
           {quote ? (
@@ -483,15 +483,15 @@ function TradePhase() {
       <div className="grid grid-cols-3 gap-3">
         <Button variant="outline" disabled={!canBuy} className="h-auto flex-col gap-0 py-2.5 border-positive/40 text-positive hover:bg-positive/10" onClick={() => trade("buy", qty)}>
           <span className="flex items-center gap-1.5 font-semibold">Buy <TrendingUp className="h-4 w-4" /></span>
-          <span className="text-[11px] font-normal text-muted">at {quote.ask}</span>
+          <span className="text-2xs font-normal text-muted">at {quote.ask}</span>
         </Button>
         <Button variant="outline" disabled={!canSell} className="h-auto flex-col gap-0 py-2.5 border-negative/40 text-negative hover:bg-negative/10" onClick={() => trade("sell", qty)}>
           <span className="flex items-center gap-1.5 font-semibold">Sell <TrendingDown className="h-4 w-4" /></span>
-          <span className="text-[11px] font-normal text-muted">at {quote.bid}</span>
+          <span className="text-2xs font-normal text-muted">at {quote.bid}</span>
         </Button>
         <Button variant="outline" className="h-auto flex-col gap-0 py-2.5" onClick={() => trade("skip", qty)}>
           <span className="flex items-center gap-1.5 font-semibold">Skip <SkipForward className="h-4 w-4" /></span>
-          <span className="text-[11px] font-normal text-muted">no trade</span>
+          <span className="text-2xs font-normal text-muted">no trade</span>
         </Button>
       </div>
 
@@ -639,7 +639,7 @@ function BotTrades({ trades }: { trades: BotTrade[] }) {
 
   return (
     <div className="mt-3 space-y-1.5">
-      <div className="text-[11px] uppercase tracking-wider text-muted">
+      <div className="text-2xs uppercase tracking-wider text-muted">
         How the bots traded your market
       </div>
       {trades.map((t) => {
@@ -674,7 +674,7 @@ function BotTrades({ trades }: { trades: BotTrade[] }) {
 function Stat({ label, value, ok }: { label: string; value: string; ok?: boolean }) {
   return (
     <div className="rounded-xl border border-border bg-surface-2/40 px-3 py-2">
-      <div className="text-[11px] uppercase tracking-wider text-muted">{label}</div>
+      <div className="text-2xs uppercase tracking-wider text-muted">{label}</div>
       <div
         className={cn(
           "font-mono text-base font-semibold",
@@ -703,7 +703,7 @@ function GameOver() {
             <span className="grid h-14 w-14 place-items-center rounded-2xl bg-accent text-accent-foreground shadow-lg">
               <Trophy className="h-7 w-7" />
             </span>
-            <h2 className="text-2xl font-black uppercase tracking-tight">Final standings</h2>
+            <h2 className="text-2xl font-bold tracking-[-0.02em]">Final standings</h2>
           </div>
 
           <ol className="mx-auto max-w-md space-y-2">
@@ -759,7 +759,7 @@ function CardChip({ card }: { card: CardSnapshot }) {
       title={card.wasFaceUp ? "Was face-up" : "Was face-down"}
     >
       <span>{card.rank}</span>
-      <span className="text-[11px]">{card.suit}</span>
+      <span className="text-2xs">{card.suit}</span>
     </span>
   );
 }

@@ -137,23 +137,23 @@ export function ProblemDetail({ id }: { id: string }) {
             <div className="flex flex-wrap items-center gap-2">
               <Badge tone="outline">#{detail.id}</Badge>
               <DifficultyBadge difficulty={detail.difficulty as Difficulty} />
-              {detail.category && <span className="text-[11px] font-semibold uppercase tracking-wider text-muted">{detail.category}</span>}
+              {detail.category && <span className="text-2xs font-semibold uppercase tracking-wider text-muted">{detail.category}</span>}
             </div>
             <ProblemActions id={String(detail.id)} />
           </div>
 
           {detail.companies.length > 0 && (
             <div className="flex flex-wrap items-center gap-1.5">
-              <span className="text-[11px] font-semibold uppercase tracking-wider text-muted">Asked at</span>
+              <span className="text-2xs font-semibold uppercase tracking-wider text-muted">Asked at</span>
               {detail.companies.map((c) => (
                 <Badge key={c} tone="default">{c}</Badge>
               ))}
             </div>
           )}
 
-          <h1 className="text-2xl font-black uppercase leading-[1.1] tracking-tight sm:text-3xl">{detail.title}</h1>
+          <h1 className="text-2xl font-bold leading-snug tracking-[-0.02em] sm:text-[1.75rem]">{detail.title}</h1>
 
-          <MathText text={detail.statement} className="text-[15px] leading-relaxed text-foreground/90" />
+          <MathText text={detail.statement} className="text-[0.9375rem] leading-relaxed text-foreground/90" />
 
           {detail.hasAnswer && <AnswerCheck id={detail.id} onAttempt={() => setAttempted(true)} />}
 

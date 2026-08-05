@@ -357,7 +357,7 @@ function PlayersPanel({
                 {!isYou && <Cpu className="h-3.5 w-3.5 text-muted" />}
                 {name}
                 {res?.first && (
-                  <span className="inline-flex items-center gap-0.5 rounded-full bg-accent/15 px-1.5 text-[10px] font-medium text-accent">
+                  <span className="inline-flex items-center gap-0.5 rounded-full bg-accent/15 px-1.5 text-2xs font-medium text-accent">
                     <Zap className="h-2.5 w-2.5" /> 1st
                   </span>
                 )}
@@ -424,15 +424,15 @@ function TradeControls() {
         <div className="grid grid-cols-3 gap-3">
           <Button variant="outline" className="h-auto flex-col gap-0 py-2.5 border-positive/40 text-positive hover:bg-positive/10" onClick={() => submitTrade("buy", units)}>
             <span className="flex items-center gap-1.5 font-semibold">Buy <TrendingUp className="h-4 w-4" /></span>
-            <span className="text-[11px] font-normal text-muted">at the ask</span>
+            <span className="text-2xs font-normal text-muted">at the ask</span>
           </Button>
           <Button variant="outline" className="h-auto flex-col gap-0 py-2.5 border-negative/40 text-negative hover:bg-negative/10" onClick={() => submitTrade("sell", units)}>
             <span className="flex items-center gap-1.5 font-semibold">Sell <TrendingDown className="h-4 w-4" /></span>
-            <span className="text-[11px] font-normal text-muted">at the bid</span>
+            <span className="text-2xs font-normal text-muted">at the bid</span>
           </Button>
           <Button variant="outline" className="h-auto flex-col gap-0 py-2.5" onClick={() => submitTrade("skip", 0)}>
             <span className="flex items-center gap-1.5 font-semibold">Skip <SkipForward className="h-4 w-4" /></span>
-            <span className="text-[11px] font-normal text-muted">no trade</span>
+            <span className="text-2xs font-normal text-muted">no trade</span>
           </Button>
         </div>
       </CardContent>
@@ -501,7 +501,7 @@ function GameOver() {
             <span className="grid h-14 w-14 place-items-center rounded-2xl bg-accent text-accent-foreground shadow-lg">
               <Trophy className="h-6 w-6" />
             </span>
-            <h2 className="text-2xl font-black uppercase tracking-tight">
+            <h2 className="text-2xl font-bold tracking-[-0.02em]">
               You finished {ordinal(youRank)} · {total$(youTotal)}
             </h2>
           </div>
@@ -558,7 +558,7 @@ function GameOver() {
 function Stat({ label, value }: { label: string; value: string }) {
   return (
     <div className="rounded-lg border border-border bg-surface-2/40 px-3 py-2.5 text-center">
-      <div className="text-[11px] uppercase tracking-wider text-muted">{label}</div>
+      <div className="text-2xs uppercase tracking-wider text-muted">{label}</div>
       <div className="font-mono text-lg font-semibold">{value}</div>
     </div>
   );

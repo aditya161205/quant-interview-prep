@@ -67,7 +67,7 @@ export function IconCard({
 
       <h3 className="relative mt-6 text-xl font-extrabold tracking-tight">{title}</h3>
       {kicker && (
-        <p className="relative mt-1 text-[11px] font-semibold uppercase tracking-[0.15em] text-muted">{kicker}</p>
+        <p className="relative mt-1 text-2xs font-semibold uppercase tracking-[0.15em] text-muted">{kicker}</p>
       )}
       {description && <p className="relative mt-3 text-sm leading-relaxed text-muted">{description}</p>}
     </Link>

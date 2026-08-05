@@ -338,10 +338,10 @@ function RoundCard({
         )}
 
         <div className="text-center">
-          <div className="text-[11px] font-semibold uppercase tracking-wider text-muted">
+          <div className="text-2xs font-semibold uppercase tracking-wider text-muted">
             {round.kind === "trade" ? "Price this market" : "Re-price on the news"}
           </div>
-          <h3 className="mt-1 text-xl font-black uppercase leading-tight tracking-tight sm:text-2xl">
+          <h3 className="mt-1 text-xl font-bold leading-snug tracking-[-0.02em] sm:text-2xl">
             {round.event.label}
           </h3>
         </div>
@@ -427,11 +427,11 @@ function QuoteBar({ quote }: { quote: { bid: number; ask: number } }) {
   return (
     <div className="flex items-stretch overflow-hidden rounded-xl border border-border">
       <div className="flex-1 bg-negative/10 px-4 py-3 text-center">
-        <div className="text-[10px] font-semibold uppercase tracking-wider text-muted">Bid (sell here)</div>
+        <div className="text-2xs font-semibold uppercase tracking-wider text-muted">Bid (sell here)</div>
         <div className="font-mono text-2xl font-bold text-negative">{quote.bid}</div>
       </div>
       <div className="flex-1 bg-positive/10 px-4 py-3 text-center">
-        <div className="text-[10px] font-semibold uppercase tracking-wider text-muted">Ask (buy here)</div>
+        <div className="text-2xs font-semibold uppercase tracking-wider text-muted">Ask (buy here)</div>
         <div className="font-mono text-2xl font-bold text-positive">{quote.ask}</div>
       </div>
     </div>
@@ -460,7 +460,7 @@ function ResultView({ outcome, onNext }: { outcome: RoundOutcome; onNext: () => 
   return (
     <div className="animate-pop space-y-4">
       <div className="rounded-xl border border-border bg-surface-2/40 p-4 text-center">
-        <div className="text-[11px] font-semibold uppercase tracking-wider text-muted">True fair value</div>
+        <div className="text-2xs font-semibold uppercase tracking-wider text-muted">True fair value</div>
         <div className="font-mono text-4xl font-black">{outcome.trueValue}</div>
         {outcome.kind === "info" && outcome.priorValue != null && (
           <div className="mt-1 text-xs text-muted">
@@ -505,7 +505,7 @@ function ScoreLine({ ok, label, detail, pts }: { ok: boolean; label: string; det
   return (
     <div className="rounded-xl border border-border bg-surface-2/40 p-3">
       <div className="flex items-center justify-between">
-        <span className="text-[11px] font-semibold uppercase tracking-wider text-muted">{label}</span>
+        <span className="text-2xs font-semibold uppercase tracking-wider text-muted">{label}</span>
         <span className={cn("grid h-5 w-5 place-items-center rounded-full", ok ? "bg-positive/15 text-positive" : "bg-negative/15 text-negative")}>
           {ok ? <Check className="h-3.5 w-3.5" /> : <X className="h-3.5 w-3.5" />}
         </span>
@@ -535,7 +535,7 @@ function StatTile({ label, value, accent = false }: { label: string; value: stri
   return (
     <Card>
       <CardContent className="px-4 py-3 text-center">
-        <div className="text-[11px] font-semibold uppercase tracking-wider text-muted">{label}</div>
+        <div className="text-2xs font-semibold uppercase tracking-wider text-muted">{label}</div>
         <div className={cn("mt-0.5 font-mono text-2xl font-bold tabular-nums", accent && "text-accent")}>{value}</div>
       </CardContent>
     </Card>
@@ -560,7 +560,7 @@ function GameOver({ history, score, matrix, onAgain }: { history: RoundOutcome[]
             <span className="grid h-14 w-14 place-items-center rounded-2xl bg-indigo-500 text-white shadow-lg">
               <Trophy className="h-6 w-6" />
             </span>
-            <h2 className="text-2xl font-black uppercase tracking-tight">Final score</h2>
+            <h2 className="text-2xl font-bold tracking-[-0.02em]">Final score</h2>
             <div className="font-mono text-4xl font-bold">{score}</div>
           </div>
 
@@ -599,7 +599,7 @@ function Stat({ label, value }: { label: string; value: string }) {
   return (
     <div className="rounded-lg border border-border bg-surface-2/40 px-3 py-2 text-center">
       <div className="font-mono text-lg font-semibold">{value}</div>
-      <div className="text-[11px] uppercase tracking-wider text-muted">{label}</div>
+      <div className="text-2xs uppercase tracking-wider text-muted">{label}</div>
     </div>
   );
 }
@@ -642,7 +642,7 @@ function RoundBreakdown({ outcome: h, matrix }: { outcome: RoundOutcome; matrix:
           )}
 
           <div>
-            <div className="mb-1 text-[11px] font-semibold uppercase tracking-wider text-muted">How the fair value works out</div>
+            <div className="mb-1 text-2xs font-semibold uppercase tracking-wider text-muted">How the fair value works out</div>
             <ul className="space-y-1 text-muted">
               {bullets.map((b, i) => (
                 <li key={i} className="flex gap-2">

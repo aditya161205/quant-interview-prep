@@ -125,7 +125,7 @@ function ExampleGrid() {
   ];
   return (
     <div className="mx-auto max-w-md rounded-xl border border-border bg-surface-2/40 p-4 text-center">
-      <div className="mb-3 text-[11px] font-semibold uppercase tracking-wider text-muted">Example</div>
+      <div className="mb-3 text-2xs font-semibold uppercase tracking-wider text-muted">Example</div>
       <Grid grid={example} />
       <p className="mt-3 text-sm text-muted">
         Middle points <span className="font-semibold text-foreground">right</span> → press{" "}
@@ -284,7 +284,7 @@ function StatTile({ label, value, accent = false }: { label: string; value: stri
   return (
     <Card>
       <CardContent className="px-4 py-3 text-center">
-        <div className="text-[11px] font-semibold uppercase tracking-wider text-muted">{label}</div>
+        <div className="text-2xs font-semibold uppercase tracking-wider text-muted">{label}</div>
         <div className={cn("mt-0.5 font-mono text-2xl font-bold tabular-nums", accent && "text-accent")}>{value}</div>
       </CardContent>
     </Card>
@@ -338,7 +338,7 @@ function Grid({ grid }: { grid: CellKind[] }) {
 
 function Kbd({ children }: { children: React.ReactNode }) {
   return (
-    <kbd className="rounded border border-border bg-surface-2 px-1.5 py-0.5 font-mono text-[11px] text-foreground">
+    <kbd className="rounded border border-border bg-surface-2 px-1.5 py-0.5 font-mono text-2xs text-foreground">
       {children}
     </kbd>
   );
@@ -359,7 +359,7 @@ function GameOver({ logs, roundMs, onAgain }: { logs: RoundLog[]; roundMs: numbe
             <span className="grid h-14 w-14 place-items-center rounded-2xl bg-sky-500 text-white shadow-lg">
               <Trophy className="h-6 w-6" />
             </span>
-            <h2 className="text-2xl font-black uppercase tracking-tight">Score</h2>
+            <h2 className="text-2xl font-bold tracking-[-0.02em]">Score</h2>
             <div className="font-mono text-4xl font-bold">{s.score}</div>
             <div className="font-mono text-sm font-semibold text-muted">
               {s.correct}/{s.total} correct · {(s.accuracy * 100).toFixed(0)}% accuracy
@@ -389,7 +389,7 @@ function Metric({ icon: Icon, label, value }: { icon: typeof Target; label: stri
     <div className="rounded-lg border border-border bg-surface-2/40 px-3 py-3 text-center">
       <Icon className="mx-auto mb-1 h-4 w-4 text-accent" />
       <div className="font-mono text-lg font-semibold">{value}</div>
-      <div className="text-[11px] uppercase tracking-wider text-muted">{label}</div>
+      <div className="text-2xs uppercase tracking-wider text-muted">{label}</div>
     </div>
   );
 }

@@ -6,22 +6,25 @@ import { IconCard } from "@/components/icon-card";
 
 export default function DashboardPage() {
   return (
-    <div className="space-y-12">
+    <div className="space-y-10">
       {/* Hero */}
-      <section className="pb-4 pt-10 sm:pt-16">
-        <Badge tone="accent" className="mb-6">
+      {/* The one place big display type earns its size — everywhere else
+          headings are sentence case, so this reads as the brand moment
+          rather than one more shouting element. */}
+      <section className="pb-2 pt-2 sm:pt-6">
+        <Badge tone="accent" className="mb-5">
           Quant Interview Practice
         </Badge>
-        <h1 className="max-w-4xl text-5xl font-black uppercase leading-[0.92] tracking-tight sm:text-7xl">
+        <h1 className="max-w-4xl text-[2.75rem] font-black uppercase leading-[0.95] tracking-[-0.02em] sm:text-6xl">
           Crack the
           <br />
           <span className="text-accent">trading desk</span> interview
         </h1>
-        <p className="mt-6 max-w-xl text-base text-muted sm:text-lg">
+        <p className="mt-5 max-w-xl text-base text-muted sm:text-lg">
           Drill mental math, probability and expected value — then prove it under
           pressure across six interactive market-making games.
         </p>
-        <div className="mt-8 flex flex-wrap gap-3">
+        <div className="mt-7 flex flex-wrap gap-3">
           <Link href="/practice">
             <Button size="lg">
               Practice problems <ArrowRight className="h-4 w-4" />
@@ -37,7 +40,7 @@ export default function DashboardPage() {
 
       {/* Modules */}
       <section>
-        <h2 className="mb-5 text-xs font-semibold uppercase tracking-[0.2em] text-muted">
+        <h2 className="mb-4 text-2xs font-semibold uppercase tracking-[0.18em] text-muted">
           Modules
         </h2>
         <div className="grid gap-5 md:grid-cols-2">

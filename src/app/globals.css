@@ -23,12 +23,15 @@
 }
 
 .dark {
-  --background: #000000;     /* true black canvas */
-  --surface: #0d0d0f;       /* card surface */
-  --surface-2: #1a1a1d;     /* elevated / inputs */
-  --border: #26262a;
+  /* Not pure black: a near-black with a faint cool cast. True #000 gives the
+     card surface nothing to sit on (they measured 1.1:1 apart, so only the
+     border separated them) and smears on OLED during scroll. */
+  --background: #09090c;    /* canvas */
+  --surface: #15151b;       /* card surface */
+  --surface-2: #1f1f27;     /* elevated / inputs */
+  --border: #2a2a33;
   --foreground: #fafafa;
-  --muted: #8b8b92;
+  --muted: #8f8f99;
   --accent: #8b5cf6;        /* electric violet */
   --accent-foreground: #ffffff;
   --positive: #34d399;
@@ -51,6 +54,18 @@
   --color-ring: var(--ring);
   --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+
+  /* Type scale. The app had grown 17 distinct sizes, 6 of them one-off pixel
+     values; `2xs` is the eyebrow/label size that `text-[11px]` was doing by
+     hand in 33 places. Everything else maps onto Tailwind's own steps. */
+  --text-2xs: 0.6875rem;      /* 11px — uppercase labels, table heads, badges */
+  --text-2xs--line-height: 1rem;
+
+  /* Elevation. Cards previously relied on a 1px border alone; these give the
+     surface a little lift without the heavy drop shadows the dark UI can't
+     carry. */
+  --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.28), 0 1px 0 rgba(255, 255, 255, 0.02) inset;
+  --shadow-raised: 0 4px 16px -6px rgba(0, 0, 0, 0.45);
 }
 
 * {

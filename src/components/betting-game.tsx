@@ -271,7 +271,7 @@ function PropRow({ bp }: { bp: BoardProp }) {
       <div className="flex items-start justify-between gap-2">
         <span className="text-sm leading-snug">{bp.prop.label}</span>
         <span className="shrink-0 text-right">
-          <span className="block text-[10px] uppercase tracking-wider text-muted">Odds</span>
+          <span className="block text-2xs uppercase tracking-wider text-muted">Odds</span>
           <span className="font-mono text-sm font-semibold text-amber-600 dark:text-amber-400">{bp.odds.b.toFixed(2)}:1</span>
         </span>
       </div>
@@ -316,7 +316,7 @@ function SpecialRow({ kind, label, sub, b }: { kind: "put" | "call"; label: stri
           <span className="block text-xs text-muted">{sub}</span>
         </span>
         <span className="shrink-0 text-right">
-          <span className="block text-[10px] uppercase tracking-wider text-muted">Odds</span>
+          <span className="block text-2xs uppercase tracking-wider text-muted">Odds</span>
           <span className="font-mono text-sm font-semibold text-amber-600 dark:text-amber-400">{b.toFixed(2)}:1</span>
         </span>
       </div>
@@ -392,7 +392,7 @@ function OutcomeStrip({ outcome, compact = false }: { outcome: RoundOutcome; com
 function OutcomeTile({ title, children, compact = false }: { title: string; children: React.ReactNode; compact?: boolean }) {
   return (
     <div className={cn("rounded-xl border border-border bg-surface-2/40 text-center", compact ? "p-2.5" : "p-4")}>
-      <div className="mb-2 text-[11px] uppercase tracking-wider text-muted">{title}</div>
+      <div className="mb-2 text-2xs uppercase tracking-wider text-muted">{title}</div>
       <div className={cn("flex items-center justify-center", compact ? "gap-2" : "gap-3")}>{children}</div>
     </div>
   );
@@ -483,7 +483,7 @@ function GameOver() {
             <span className="grid h-14 w-14 place-items-center rounded-2xl bg-accent text-accent-foreground shadow-lg">
               <Trophy className="h-6 w-6" />
             </span>
-            <h2 className="text-2xl font-black uppercase tracking-tight">Final bankroll</h2>
+            <h2 className="text-2xl font-bold tracking-[-0.02em]">Final bankroll</h2>
             <div className="font-mono text-4xl font-bold">{bankroll}</div>
             <div className={cn("font-mono text-sm font-semibold", net > 0 ? "text-positive" : net < 0 ? "text-negative" : "text-muted")}>
               {formatSigned(net)} net · peak {peak}
@@ -522,7 +522,7 @@ function Stat({ label, value }: { label: string; value: string }) {
   return (
     <div className="rounded-lg border border-border bg-surface-2/40 px-3 py-2 text-center">
       <div className="font-mono text-lg font-semibold">{value}</div>
-      <div className="text-[11px] uppercase tracking-wider text-muted">{label}</div>
+      <div className="text-2xs uppercase tracking-wider text-muted">{label}</div>
     </div>
   );
 }

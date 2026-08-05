@@ -369,7 +369,7 @@ export function ProblemBrowser() {
         </div>
       ) : (
         <div className="overflow-hidden rounded-2xl border border-border bg-surface">
-          <div className="grid grid-cols-[2.25rem_1fr_5rem_2.25rem] gap-3 border-b border-border px-4 py-3 text-[11px] font-semibold uppercase tracking-wider text-muted sm:grid-cols-[3rem_1fr_8rem_6rem_2.5rem] lg:grid-cols-[3rem_1fr_8.5rem_10.5rem_6rem_2.5rem]">
+          <div className="grid grid-cols-[2.25rem_1fr_5rem_2.25rem] gap-3 border-b border-border px-4 py-3 text-2xs font-semibold uppercase tracking-wider text-muted sm:grid-cols-[3rem_1fr_8rem_6rem_2.5rem] lg:grid-cols-[3rem_1fr_8.5rem_10.5rem_6rem_2.5rem]">
             <span>#</span>
             <span>Problem</span>
             <span className="hidden sm:block">Category</span>
