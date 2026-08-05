@@ -3,7 +3,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { ArrowLeft, ArrowRight, Check, X, Lightbulb, Loader2, BookOpen, Timer, Hourglass, Play, Pause, RotateCcw, ChevronUp, ChevronDown } from "lucide-react";
+import { ArrowLeft, ArrowRight, Check, X, Lightbulb, Loader2, BookOpen, Timer, Hourglass, Play, Pause, RotateCcw, ChevronUp, ChevronDown, AlertTriangle } from "lucide-react";
 import { usePracticeStore } from "@/store/practice-store";
 import { ProblemActions } from "@/components/problem-actions";
 import { MathText } from "@/components/math-text";
@@ -12,22 +12,31 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { parseNumeric } from "@/lib/problems";
 import type { Difficulty, ProblemDetail as Detail, ProblemMeta } from "@/lib/problems";
 
 export function ProblemDetail({ id }: { id: string }) {
   const [detail, setDetail] = React.useState<Detail | null>(null);
   const [status, setStatus] = React.useState<"loading" | "ok" | "error">("loading");
+  // A check or a hint counts as an attempt — that's what earns the solution
+  // reveal its emphasis (see SolutionReveal).
+  const [attempted, setAttempted] = React.useState(false);
 
   // Carry the list's filters through so prev/next walk the filtered set.
   const sp = useSearchParams();
   const qs = sp.toString();
   const solvedMap = usePracticeStore((s) => s.solved);
   const bookmarkedMap = usePracticeStore((s) => s.bookmarked);
-  const [nav, setNav] = React.useState<{ prev: number | null; next: number | null }>({ prev: null, next: null });
+  const statusFilter = sp.get("status");
+  // Ids of the server-filtered set, tagged with the query they came from so a
+  // stale set is never used against different filters. `partial` marks a
+  // paginated response that didn't hand back the whole set.
+  const [idSet, setIdSet] = React.useState<{ qs: string; ids: number[]; partial: boolean } | null>(null);
 
   React.useEffect(() => {
     setStatus("loading");
     setDetail(null);
+    setAttempted(false);
     fetch(`/api/problems/${id}`)
       .then((r) => (r.ok ? r.json() : Promise.reject()))
       .then((d: Detail) => {
@@ -37,33 +46,62 @@ export function ProblemDetail({ id }: { id: string }) {
       .catch(() => setStatus("error"));
   }, [id]);
 
-  // Compute prev/next within the same filtered + ordered list as the table.
-  React.useEffect(() => {
+  // Only the server-side filters narrow the list; status is applied on the client.
+  const listQs = React.useMemo(() => {
     const params = new URLSearchParams();
     for (const k of ["q", "difficulty", "category", "company"]) {
       const v = sp.get(k);
       if (v) params.set(k, v);
     }
-    fetch(`/api/problems?${params}`)
+    return params.toString();
+  }, [sp]);
+
+  // The detail response already carries prev/next for the same ordering the
+  // table uses, so the id list is only worth fetching when a Status filter is
+  // on — that one lives in localStorage and the server can't apply it.
+  React.useEffect(() => {
+    if (!statusFilter) return;
+    const params = new URLSearchParams(listQs);
+    // Ids only — we need every match to walk them, but none of the row data.
+    params.set("fields", "ids");
+    const ctrl = new AbortController();
+    fetch(`/api/problems?${params}`, { signal: ctrl.signal })
       .then((r) => r.json())
-      .then(({ problems }: { problems: ProblemMeta[] }) => {
-        let list = problems ?? [];
-        const st = sp.get("status");
-        const numId = Number(id);
-        // Always keep the current problem in the list so its neighbours stay
-        // reachable even after its own status changes (e.g. you solve it while
-        // filtering by "Unsolved" — it shouldn't strand the prev/next buttons).
-        if (st === "Solved") list = list.filter((p) => p.id === numId || solvedMap[String(p.id)]);
-        else if (st === "Unsolved") list = list.filter((p) => p.id === numId || !solvedMap[String(p.id)]);
-        else if (st === "Bookmarked") list = list.filter((p) => p.id === numId || bookmarkedMap[String(p.id)]);
-        const idx = list.findIndex((p) => p.id === numId);
-        setNav({
-          prev: idx > 0 ? list[idx - 1].id : null,
-          next: idx >= 0 && idx < list.length - 1 ? list[idx + 1].id : null,
-        });
+      .then((d: ProblemMeta[] | { ids?: number[]; problems?: ProblemMeta[]; total?: number }) => {
+        const rows = Array.isArray(d) ? d : (d.problems ?? []);
+        const ids = !Array.isArray(d) && d.ids ? d.ids : rows.map((p) => p.id);
+        const total = Array.isArray(d) ? ids.length : (d.total ?? ids.length);
+        setIdSet({ qs: listQs, ids, partial: ids.length < total });
       })
       .catch(() => {});
-  }, [id, sp, solvedMap, bookmarkedMap]);
+    return () => ctrl.abort();
+  }, [statusFilter, listQs]);
+
+  const nav = React.useMemo<{ prev: number | null; next: number | null }>(() => {
+    if (!detail) return { prev: null, next: null };
+    const fallback = { prev: detail.prevId, next: detail.nextId };
+    if (!statusFilter || !idSet || idSet.qs !== listQs) return fallback;
+    // Always keep the current problem in the list so its neighbours stay
+    // reachable even after its own status changes (e.g. you solve it while
+    // filtering by "Unsolved" — it shouldn't strand the prev/next buttons).
+    const list = idSet.ids.filter((n) => {
+      if (n === detail.id) return true;
+      if (statusFilter === "Solved") return !!solvedMap[String(n)];
+      if (statusFilter === "Unsolved") return !solvedMap[String(n)];
+      if (statusFilter === "Bookmarked") return !!bookmarkedMap[String(n)];
+      return true;
+    });
+    const idx = list.indexOf(detail.id);
+    // If the ids we got back don't cover this problem, keep the server's
+    // neighbours rather than stranding the buttons — same where a partial
+    // response simply runs out before the walk does.
+    if (idx < 0) return fallback;
+    const edge = idSet.partial ? fallback : { prev: null, next: null };
+    return {
+      prev: idx > 0 ? list[idx - 1] : edge.prev,
+      next: idx < list.length - 1 ? list[idx + 1] : edge.next,
+    };
+  }, [detail, statusFilter, listQs, idSet, solvedMap, bookmarkedMap]);
 
   if (status === "loading") {
     return (
@@ -117,11 +155,11 @@ export function ProblemDetail({ id }: { id: string }) {
 
           <MathText text={detail.statement} className="text-[15px] leading-relaxed text-foreground/90" />
 
-          {detail.hasAnswer && <AnswerCheck id={detail.id} />}
+          {detail.hasAnswer && <AnswerCheck id={detail.id} onAttempt={() => setAttempted(true)} />}
 
-          {detail.hasHint && <HintReveal id={detail.id} />}
+          {detail.hasHint && <HintReveal id={detail.id} onAttempt={() => setAttempted(true)} />}
 
-          <SolutionReveal id={detail.id} />
+          <SolutionReveal id={detail.id} attempted={attempted} />
         </CardContent>
       </Card>
 
@@ -130,12 +168,13 @@ export function ProblemDetail({ id }: { id: string }) {
   );
 }
 
-function HintReveal({ id }: { id: number }) {
+function HintReveal({ id, onAttempt }: { id: number; onAttempt: () => void }) {
   const [hints, setHints] = React.useState<string[] | null>(null);
   const [shown, setShown] = React.useState(0);
   const [loading, setLoading] = React.useState(false);
 
   const revealNext = async () => {
+    onAttempt();
     if (hints === null) {
       setLoading(true);
       try {
@@ -156,18 +195,17 @@ function HintReveal({ id }: { id: number }) {
 
   return (
     <div className="border-t border-border pt-5">
-      {hints && shown > 0 && (
-        <div className="mb-3 space-y-2">
-          {hints.slice(0, shown).map((h, i) => (
-            <div key={i} className="animate-pop rounded-xl border border-amber-500/30 bg-amber-500/5 p-4">
-              <div className="text-xs font-semibold uppercase tracking-wider text-amber-600 dark:text-amber-400">
-                Hint {i + 1}
-              </div>
-              <MathText text={h} className="mt-1 text-sm leading-relaxed text-muted" />
+      {/* Live region so each newly revealed hint is announced, not just shown. */}
+      <div role="status" aria-live="polite" className={cn("space-y-2", shown > 0 && "mb-3")}>
+        {hints?.slice(0, shown).map((h, i) => (
+          <div key={i} className="animate-pop rounded-xl border border-amber-500/30 bg-amber-500/5 p-4">
+            <div className="text-xs font-semibold uppercase tracking-wider text-amber-600 dark:text-amber-400">
+              Hint {i + 1}
             </div>
-          ))}
-        </div>
-      )}
+            <MathText text={h} className="mt-1 text-sm leading-relaxed text-muted" />
+          </div>
+        ))}
+      </div>
       {more && (
         <Button variant="outline" onClick={revealNext} disabled={loading}>
           {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Lightbulb className="h-4 w-4 text-amber-500" />}
@@ -295,14 +333,23 @@ function Stopwatch() {
   );
 }
 
-function AnswerCheck({ id }: { id: number }) {
+function AnswerCheck({ id, onAttempt }: { id: number; onAttempt: () => void }) {
   const toggleSolved = usePracticeStore((s) => s.toggleSolved);
   const [value, setValue] = React.useState("");
-  const [state, setState] = React.useState<"idle" | "checking" | "correct" | "wrong">("idle");
+  const [state, setState] = React.useState<"idle" | "checking" | "correct" | "wrong" | "invalid" | "failed">("idle");
+  const inputId = React.useId();
+  const helpId = React.useId();
+  const msgId = React.useId();
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!value.trim()) return;
+    // Validate here rather than filtering keystrokes, so nothing the user types
+    // disappears without an explanation.
+    if (parseNumeric(value) === null) {
+      setState("invalid");
+      return;
+    }
+    onAttempt();
     setState("checking");
     try {
       const r = await fetch(`/api/problems/${id}/check`, {
@@ -310,6 +357,12 @@ function AnswerCheck({ id }: { id: number }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ answer: value }),
       });
+      // A failed request is not a wrong answer — saying "not quite" to someone
+      // whose session expired sends them rewriting a correct solution.
+      if (!r.ok) {
+        setState("failed");
+        return;
+      }
       const d: { correct: boolean } = await r.json();
       if (d.correct) {
         setState("correct");
@@ -318,43 +371,66 @@ function AnswerCheck({ id }: { id: number }) {
         setState("wrong");
       }
     } catch {
-      setState("idle");
+      setState("failed");
     }
   };
 
   return (
     <form onSubmit={submit} className="space-y-2 border-t border-border pt-5">
-      <span className="text-xs font-semibold uppercase tracking-wider text-muted">Your answer</span>
+      <label htmlFor={inputId} className="block text-xs font-semibold uppercase tracking-wider text-muted">
+        Your answer
+      </label>
       <div className="flex flex-wrap gap-2">
         <input
+          id={inputId}
           value={value}
           onChange={(e) => {
-            setValue(e.target.value.replace(/[^0-9./-]/g, ""));
+            setValue(e.target.value);
             if (state !== "idle") setState("idle");
           }}
           inputMode="decimal"
-          placeholder="e.g. 0.5 or 1/2 (up to 3 decimals)"
+          placeholder="0.5 or 1/2"
+          aria-describedby={`${helpId} ${msgId}`}
+          aria-invalid={state === "invalid"}
           className="h-11 min-w-0 flex-1 rounded-lg border border-border bg-surface-2 px-3 font-mono outline-none focus:ring-2 focus:ring-ring"
         />
-        <Button type="submit" disabled={state === "checking"}>
+        <Button type="submit" size="lg" disabled={state === "checking"}>
           {state === "checking" ? <Loader2 className="h-4 w-4 animate-spin" /> : "Check answer"}
         </Button>
       </div>
-      {state === "correct" && (
-        <p className="flex items-center gap-1.5 text-sm font-medium text-positive">
-          <Check className="h-4 w-4" /> Correct — marked complete.
-        </p>
-      )}
-      {state === "wrong" && (
-        <p className="flex items-center gap-1.5 text-sm font-medium text-negative">
-          <X className="h-4 w-4" /> Not quite — try again or reveal the solution.
-        </p>
-      )}
+      {/* The format rule stays put — a placeholder vanishes as soon as you type. */}
+      <p id={helpId} className="text-xs text-muted">
+        A decimal or a simple fraction — e.g. 0.5 or 1/2 (matched to 3 decimals).
+      </p>
+      {/* Persistent live region so the verdict is announced, not only shown. */}
+      <div id={msgId} role="status" aria-live="polite">
+        {state === "correct" && (
+          <p className="flex items-center gap-1.5 text-sm font-medium text-positive">
+            <Check className="h-4 w-4" /> Correct — marked complete.
+          </p>
+        )}
+        {state === "wrong" && (
+          <p className="flex items-center gap-1.5 text-sm font-medium text-negative">
+            <X className="h-4 w-4" /> Not quite — try again or reveal the solution.
+          </p>
+        )}
+        {state === "invalid" && (
+          <p className="flex items-center gap-1.5 text-sm font-medium text-negative">
+            <X className="h-4 w-4" /> Enter a decimal like 0.5 or a fraction like 1/2.
+          </p>
+        )}
+        {state === "failed" && (
+          <p className="flex items-center gap-1.5 text-sm font-medium text-muted">
+            <AlertTriangle className="h-4 w-4" /> Couldn&apos;t reach the server — your answer wasn&apos;t
+            checked. Try again.
+          </p>
+        )}
+      </div>
     </form>
   );
 }
 
-function SolutionReveal({ id }: { id: number }) {
+function SolutionReveal({ id, attempted }: { id: number; attempted: boolean }) {
   const [open, setOpen] = React.useState(false);
   const [data, setData] = React.useState<{ answer: string; solution: string } | null>(null);
   const [loading, setLoading] = React.useState(false);
@@ -376,7 +452,9 @@ function SolutionReveal({ id }: { id: number }) {
 
   return (
     <div className="border-t border-border pt-5">
-      <Button variant={open ? "outline" : "primary"} size="lg" onClick={reveal} disabled={loading}>
+      {/* Stays quiet until you've actually attempted — giving up shouldn't
+          out-rank checking an answer — but is never gated or hidden. */}
+      <Button variant={attempted || open ? "outline" : "ghost"} onClick={reveal} disabled={loading}>
         {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <BookOpen className="h-4 w-4" />}
         {open ? "Hide solution" : "Reveal solution"}
       </Button>

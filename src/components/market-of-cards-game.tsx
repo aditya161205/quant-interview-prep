@@ -3,7 +3,7 @@
 import * as React from "react";
 import {
   Play, RotateCcw, ArrowRight, Flag, TrendingUp, TrendingDown,
-  SkipForward, Trophy, Crown, Settings2, Timer, Check, Minus,
+  SkipForward, Trophy, Settings2, Timer, Check, Minus,
 } from "lucide-react";
 import {
   useMocStore,
@@ -15,7 +15,7 @@ import {
   type Player,
 } from "@/store/market-of-cards-store";
 import {
-  isRed, sumValue, quickTotalEV, exactTotalEV, TABLE_MID, QUICK_EV,
+  isRed, sumValue, quickTotalEV, exactTotalEV, TABLE_MID,
   type Card,
 } from "@/lib/market-of-cards";
 import { cn, formatSigned } from "@/lib/utils";
@@ -27,9 +27,41 @@ import { Badge } from "@/components/ui/badge";
 
 export function MarketOfCardsGame() {
   const phase = useMocStore((s) => s.phase);
-  if (phase === "intro") return <Intro />;
-  if (phase === "gameover") return <GameOver />;
-  return <GameScreen />;
+
+  return (
+    <>
+      <Announcer />
+      {phase === "intro" ? <Intro /> : phase === "gameover" ? <GameOver /> : <GameScreen />}
+    </>
+  );
+}
+
+/* --------------------------------- announcer ------------------------- */
+
+/**
+ * One polite live region for the whole game. It speaks how the AIs traded your
+ * market and the final settlement — the felt, the game log and the trade log
+ * stay silent so a screen reader isn't re-reading 11 cards every round.
+ */
+function Announcer() {
+  const { phase, round, reactions, trades, trueSum } = useMocStore();
+
+  let message = "";
+  if (phase === "reactions") {
+    const acted = reactions.filter((r) => r.action !== "passed");
+    message =
+      acted.length === 0
+        ? `Round ${round}: every AI passed on your market — no edge.`
+        : `Round ${round}: ${acted.map((r) => `${r.name} ${r.action} at ${r.price}`).join(", ")}.`;
+  } else if (phase === "gameover") {
+    message = `Settled. The 11 cards summed to ${trueSum}. Your PnL ${formatSigned(playerPnl(trades, trueSum)[0])}.`;
+  }
+
+  return (
+    <p role="status" aria-live="polite" className="sr-only">
+      {message}
+    </p>
+  );
 }
 
 /* ---------------------------------- cards ---------------------------- */
@@ -106,21 +138,9 @@ function Intro() {
   const [config, setConfig] = React.useState<MocConfig>(saved ?? DEFAULT_MOC_CONFIG);
 
   return (
+    // Title and description live in the page header — this card is just setup.
     <UICard className="obsidian-glow mx-auto max-w-2xl">
-      <CardContent className="space-y-7 py-10">
-        <div className="flex flex-col items-center gap-3 text-center">
-          <span className="grid h-14 w-14 place-items-center rounded-2xl bg-rose-500 text-white shadow-lg">
-            <Crown className="h-6 w-6" />
-          </span>
-          <h2 className="text-2xl font-black uppercase tracking-tight">Market of Cards</h2>
-          <p className="max-w-md text-muted">
-            You and three AI traders each hold two hidden cards; three more sit
-            face-down on the table — 11 cards in all. Quote a two-way market on
-            their total value, trade as cards are revealed each round, and settle
-            at the true sum. (Deck sums to 2200, mean {QUICK_EV} per card.)
-          </p>
-        </div>
-
+      <CardContent className="space-y-6 py-8">
         <div className="mx-auto max-w-md space-y-4 rounded-xl border border-border bg-surface-2/40 p-5">
           <div className="flex items-center gap-2 text-sm font-medium">
             <Settings2 className="h-4 w-4 text-accent" /> Game settings

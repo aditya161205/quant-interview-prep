@@ -9,7 +9,16 @@ import { DifficultyBadge } from "@/components/difficulty-badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 
+/** The subset of /api/problems/facets this view reads. */
+interface Facets {
+  total?: number;
+  categoryCounts?: Record<string, number>;
+  difficultyCounts?: Record<string, number>;
+}
+
 const HEATMAP_WEEKS = 26;
+// Every other weekday, GitHub-style — all seven would crowd the axis.
+const WEEKDAY_LABELS = ["", "Mon", "", "Wed", "", "Fri", ""];
 
 export function ProfileView() {
   const mounted = useMounted();
@@ -17,14 +26,6 @@ export function ProfileView() {
   const bookmarkedMap = usePracticeStore((s) => s.bookmarked);
   const activity = usePracticeStore((s) => s.activity);
   const games = usePracticeStore((s) => s.games);
-
-  const [problems, setProblems] = React.useState<ProblemMeta[]>([]);
-  React.useEffect(() => {
-    fetch("/api/problems")
-      .then((r) => r.json())
-      .then((d: { problems: ProblemMeta[] }) => setProblems(d.problems ?? []))
-      .catch(() => {});
-  }, []);
 
   // Only trust persisted values after mount.
   const solved = mounted ? solvedMap : {};
@@ -34,22 +35,73 @@ export function ProfileView() {
   const isSolved = (id: number) => !!solved[String(id)];
   const isBooked = (id: number) => !!booked[String(id)];
 
+  // The denominators come from the cached facet tallies, so this page never
+  // downloads the problem bank just to count it.
+  const [facets, setFacets] = React.useState<Facets | null>(null);
+  React.useEffect(() => {
+    fetch("/api/problems/facets")
+      .then((r) => r.json())
+      .then((d: Facets) => setFacets(d))
+      .catch(() => {});
+  }, []);
+
+  // …and the rows themselves are only fetched for the problems this user has
+  // actually touched, which is what the breakdowns and bookmark list need.
+  // Keyed off the store maps directly — the `mounted` fallbacks above are fresh
+  // objects each render and would retrigger the fetch forever.
+  const mineKey = React.useMemo(() => {
+    if (!mounted) return "";
+    const ids = new Set<string>();
+    for (const [k, v] of Object.entries(solvedMap)) if (v) ids.add(k);
+    for (const [k, v] of Object.entries(bookmarkedMap)) if (v) ids.add(k);
+    return [...ids]
+      .map(Number)
+      .filter(Number.isInteger)
+      .sort((a, b) => a - b)
+      .join(",");
+  }, [mounted, solvedMap, bookmarkedMap]);
+
+  // Nothing to clear when the key empties: the lists below are filtered against
+  // the live solved/bookmarked maps, so stale rows simply drop out.
+  const [problems, setProblems] = React.useState<ProblemMeta[]>([]);
+  React.useEffect(() => {
+    if (!mineKey) return;
+    const ctrl = new AbortController();
+    // The route caps one `ids` request at 1000, so ask in batches.
+    const ids = mineKey.split(",");
+    const batches: string[][] = [];
+    for (let i = 0; i < ids.length; i += 1000) batches.push(ids.slice(i, i + 1000));
+    Promise.all(
+      batches.map((b) =>
+        fetch(`/api/problems?ids=${b.join(",")}`, { signal: ctrl.signal })
+          .then((r) => r.json())
+          .then((d: { problems?: ProblemMeta[] }) => d.problems ?? []),
+      ),
+    )
+      .then((pages) => setProblems(pages.flat()))
+      .catch(() => {});
+    return () => ctrl.abort();
+  }, [mineKey]);
+
+  const total = facets?.total ?? 0;
   const solvedList = problems.filter((p) => isSolved(p.id));
   const bookmarkedList = problems.filter((p) => isBooked(p.id));
 
+  // Totals come from the facets; only the "done" side needs the fetched rows.
   const byDifficulty: Record<Difficulty, { total: number; done: number }> = {
-    Easy: { total: 0, done: 0 },
-    Medium: { total: 0, done: 0 },
-    Hard: { total: 0, done: 0 },
+    Easy: { total: facets?.difficultyCounts?.Easy ?? 0, done: 0 },
+    Medium: { total: facets?.difficultyCounts?.Medium ?? 0, done: 0 },
+    Hard: { total: facets?.difficultyCounts?.Hard ?? 0, done: 0 },
   };
   const byTopic: Record<string, { total: number; done: number }> = {};
-  for (const p of problems) {
+  for (const [topic, n] of Object.entries(facets?.categoryCounts ?? {})) {
+    byTopic[topic] = { total: n, done: 0 };
+  }
+  for (const p of solvedList) {
     const d = (["Easy", "Medium", "Hard"].includes(p.difficulty) ? p.difficulty : "Medium") as Difficulty;
-    byDifficulty[d].total++;
-    if (isSolved(p.id)) byDifficulty[d].done++;
+    byDifficulty[d].done++;
     byTopic[p.category] ??= { total: 0, done: 0 };
-    byTopic[p.category].total++;
-    if (isSolved(p.id)) byTopic[p.category].done++;
+    byTopic[p.category].done++;
   }
 
   const { current, best } = streaks(acts);
@@ -58,7 +110,7 @@ export function ProfileView() {
     <div className="space-y-6">
       {/* Stats */}
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-        <StatCard icon={CircleCheck} label="Problems solved" value={`${solvedList.length}/${problems.length}`} />
+        <StatCard icon={CircleCheck} label="Problems solved" value={`${solvedList.length}/${total}`} />
         <StatCard icon={Bookmark} label="Bookmarked" value={String(bookmarkedList.length)} />
         <StatCard icon={Gamepad2} label="Games played" value={String(gamesPlayed)} />
         <StatCard icon={Flame} label="Current streak" value={`${current}d`} sub={`best ${best}d`} />
@@ -245,19 +297,33 @@ function ProgressRow({ label, done, total }: { label: React.ReactNode; done: num
 
 /* --------------------------------- heatmap --------------------------- */
 
+type Day = { date: Date; count: number };
+
 function level(count: number): string {
-  if (count <= 0) return "bg-surface-2";
-  if (count <= 2) return "bg-accent/30";
-  if (count <= 5) return "bg-accent/60";
+  // The empty step is a neutral gray, not bg-surface-2 — that measured 1.12:1
+  // against the card, so "no activity" was invisible. The accent steps move up
+  // to 50/75/100% to keep every neighbouring pair at least 1.3:1 apart.
+  if (count <= 0) return "bg-foreground/20 dark:bg-foreground/15";
+  if (count <= 2) return "bg-accent/50";
+  if (count <= 5) return "bg-accent/75";
   return "bg-accent";
 }
 
+// Pinned locale: these strings are server-rendered into each cell's aria-label,
+// so an ambient locale would hydrate as a mismatch.
 function fmtDate(d: Date): string {
-  return d.toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric", year: "numeric" });
+  return d.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric", year: "numeric" });
+}
+
+/** The one description of a cell — used for the tooltip and the cell's a11y name. */
+function describeDay(day: Day): string {
+  return `${fmtDate(day.date)} · ${day.count} ${day.count === 1 ? "activity" : "activities"}`;
 }
 
 function Heatmap({ activity }: { activity: Record<string, number> }) {
   const wrapRef = React.useRef<HTMLDivElement>(null);
+  const gridRef = React.useRef<HTMLDivElement>(null);
+  const hintId = React.useId();
   const [tip, setTip] = React.useState<{ x: number; y: number; text: string } | null>(null);
 
   const today = new Date();
@@ -266,10 +332,10 @@ function Heatmap({ activity }: { activity: Record<string, number> }) {
   start.setDate(start.getDate() - (HEATMAP_WEEKS * 7 - 1));
   start.setDate(start.getDate() - start.getDay()); // align to Sunday
 
-  const weeks: { date: Date; count: number }[][] = [];
+  const weeks: Day[][] = [];
   const d = new Date(start);
   while (d <= today) {
-    const week: { date: Date; count: number }[] = [];
+    const week: Day[] = [];
     for (let i = 0; i < 7; i++) {
       if (d <= today) {
         week.push({ date: new Date(d), count: activity[dayKey(d)] ?? 0 });
@@ -279,34 +345,111 @@ function Heatmap({ activity }: { activity: Record<string, number> }) {
     weeks.push(week);
   }
 
-  const showTip = (e: React.MouseEvent, day: { date: Date; count: number }) => {
+  // A column gets a month label when its week opens a month it didn't before.
+  const months = weeks.map((week, wi) => {
+    const month = week[0]?.date.getMonth();
+    return month !== undefined && month !== weeks[wi - 1]?.[0]?.date.getMonth()
+      ? week[0].date.toLocaleDateString("en-US", { month: "short" })
+      : "";
+  });
+
+  const activeDays = weeks.reduce((n, w) => n + w.filter((day) => day.count > 0).length, 0);
+  const totalCount = weeks.reduce((n, w) => n + w.reduce((m, day) => m + day.count, 0), 0);
+
+  // The grid is one tab stop, not 186: arrow keys walk the cells and the
+  // tooltip follows focus as well as hover, so nothing lives on hover alone.
+  const last = weeks[weeks.length - 1];
+  const [cursor, setCursor] = React.useState<[number, number]>([weeks.length - 1, last.length - 1]);
+
+  const moveTo = (w: number, i: number) => {
+    const nw = Math.min(Math.max(w, 0), weeks.length - 1);
+    const ni = Math.min(Math.max(i, 0), weeks[nw].length - 1);
+    setCursor([nw, ni]);
+    gridRef.current?.querySelector<HTMLElement>(`[data-cell="${nw}-${ni}"]`)?.focus();
+  };
+
+  const onKeyDown = (e: React.KeyboardEvent) => {
+    // Read the position off the focused cell rather than state, so a burst of
+    // keydowns can't act on a cursor that hasn't re-rendered yet.
+    const [w, i] = ((e.target as HTMLElement).dataset.cell ?? "").split("-").map(Number);
+    if (Number.isNaN(w) || Number.isNaN(i)) return;
+    if (e.key === "ArrowLeft") moveTo(w - 1, i);
+    else if (e.key === "ArrowRight") moveTo(w + 1, i);
+    else if (e.key === "ArrowUp") moveTo(w, i - 1);
+    else if (e.key === "ArrowDown") moveTo(w, i + 1);
+    else if (e.key === "Home") moveTo(0, 0);
+    else if (e.key === "End") moveTo(weeks.length - 1, 6);
+    else return;
+    e.preventDefault();
+  };
+
+  const showTip = (el: HTMLElement, day: Day) => {
     const wrap = wrapRef.current?.getBoundingClientRect();
-    const cell = (e.currentTarget as HTMLElement).getBoundingClientRect();
     if (!wrap) return;
+    const cell = el.getBoundingClientRect();
     setTip({
       x: cell.left - wrap.left + cell.width / 2,
       y: cell.top - wrap.top,
-      text: `${fmtDate(day.date)} · ${day.count} ${day.count === 1 ? "activity" : "activities"}`,
+      text: describeDay(day),
     });
   };
 
   return (
     <div className="space-y-3">
       <div ref={wrapRef} className="relative">
-        <div className="flex gap-[6px]">
-          {weeks.map((week, wi) => (
-            <div key={wi} className="flex flex-1 flex-col gap-[6px]">
-              {week.map((day, di) => (
-                <span
-                  key={di}
-                  onMouseEnter={(e) => showTip(e, day)}
-                  onMouseLeave={() => setTip(null)}
-                  className={cn("aspect-square w-full rounded-[4px] transition-colors", level(day.count))}
-                />
-              ))}
-            </div>
-          ))}
+        {/* Axis labels are decorative for assistive tech — every cell already
+            names its own full date. They stay hidden below sm, where the cells
+            are too narrow to align type against. */}
+        <div aria-hidden className="mb-1.5 hidden gap-[6px] sm:flex">
+          <div className="w-8 shrink-0" />
+          <div className="flex min-w-0 flex-1 gap-[6px]">
+            {months.map((m, wi) => (
+              <span key={wi} className="min-w-0 flex-1 whitespace-nowrap text-[10px] uppercase tracking-wider text-muted">{m}</span>
+            ))}
+          </div>
         </div>
+
+        <div className="flex gap-[6px]">
+          <div aria-hidden className="hidden w-8 shrink-0 flex-col gap-[6px] sm:flex">
+            {WEEKDAY_LABELS.map((w, i) => (
+              <span key={i} className="flex flex-1 items-center text-[10px] uppercase tracking-wider text-muted">{w}</span>
+            ))}
+          </div>
+
+          {/* Weeks read as rows so the grid is announced in date order. */}
+          <div
+            ref={gridRef}
+            role="grid"
+            aria-label="Daily activity over the last 6 months"
+            aria-describedby={hintId}
+            onKeyDown={onKeyDown}
+            className="flex min-w-0 flex-1 gap-[6px]"
+          >
+            {weeks.map((week, wi) => (
+              <div key={wi} role="row" className="flex flex-1 flex-col gap-[6px]">
+                {week.map((day, di) => (
+                  <span
+                    key={di}
+                    role="gridcell"
+                    data-cell={`${wi}-${di}`}
+                    tabIndex={cursor[0] === wi && cursor[1] === di ? 0 : -1}
+                    aria-label={describeDay(day)}
+                    onFocus={(e) => { setCursor([wi, di]); showTip(e.currentTarget, day); }}
+                    onBlur={() => setTip(null)}
+                    onMouseEnter={(e) => showTip(e.currentTarget, day)}
+                    onMouseLeave={() => setTip(null)}
+                    className={cn(
+                      "aspect-square w-full rounded-[4px] outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring",
+                      level(day.count),
+                    )}
+                  />
+                ))}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <p id={hintId} className="sr-only">Use the arrow keys to move between days.</p>
 
         {tip && (
           <div
@@ -318,13 +461,19 @@ function Heatmap({ activity }: { activity: Record<string, number> }) {
         )}
       </div>
 
-      <div className="flex items-center justify-end gap-1.5 text-[11px] text-muted">
-        <span>Less</span>
-        <span className="h-3 w-3 rounded-[3px] bg-surface-2" />
-        <span className="h-3 w-3 rounded-[3px] bg-accent/30" />
-        <span className="h-3 w-3 rounded-[3px] bg-accent/60" />
-        <span className="h-3 w-3 rounded-[3px] bg-accent" />
-        <span>More</span>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <p className="text-sm text-muted">
+          {totalCount === 0
+            ? "Nothing logged yet — solve a problem or play a game and the grid starts filling in."
+            : `${activeDays} active ${activeDays === 1 ? "day" : "days"} · ${totalCount} in the last 6 months.`}
+        </p>
+        <div className="ml-auto flex items-center gap-1.5 text-[11px] text-muted">
+          <span>Less</span>
+          {[0, 1, 3, 9].map((n) => (
+            <span key={n} className={cn("h-3 w-3 rounded-[3px]", level(n))} />
+          ))}
+          <span>More</span>
+        </div>
       </div>
     </div>
   );

@@ -19,7 +19,7 @@ export default function DashboardPage() {
         </h1>
         <p className="mt-6 max-w-xl text-base text-muted sm:text-lg">
           Drill mental math, probability and expected value — then prove it under
-          pressure across four interactive market-making games.
+          pressure across six interactive market-making games.
         </p>
         <div className="mt-8 flex flex-wrap gap-3">
           <Link href="/practice">
@@ -55,7 +55,7 @@ export default function DashboardPage() {
             icon={LineChart}
             color="emerald"
             title="Market Making Games"
-            kicker="4 interactive games"
+            kicker="6 interactive games"
             description="Quote markets, hunt mispricings, and trade against AI agents — scored on the math that matters."
             watermark="MM"
           />

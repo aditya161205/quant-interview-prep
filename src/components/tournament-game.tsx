@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import {
-  Play, RotateCcw, ArrowRight, Settings2, Trophy, Timer, Swords,
+  Play, RotateCcw, ArrowRight, Settings2, Trophy, Timer,
   TrendingUp, TrendingDown, MinusCircle, Check, X, Info, ArrowUp, ArrowDown, Equal, ChevronDown,
 } from "lucide-react";
 import {
@@ -40,6 +40,9 @@ export function TournamentGame() {
   const [roundIdx, setRoundIdx] = React.useState(0);
   const [score, setScore] = React.useState(0);
   const [history, setHistory] = React.useState<RoundOutcome[]>([]);
+  // One polite live region for the whole game: the round verdict and the final
+  // score. The matrix and the stat tiles are left out of it on purpose.
+  const [status, setStatus] = React.useState("");
 
   const start = (cfg: TournamentConfig) => {
     setConfig(cfg);
@@ -47,41 +50,71 @@ export function TournamentGame() {
     setRoundIdx(0);
     setScore(0);
     setHistory([]);
+    setStatus("");
     setPhase("countdown");
   };
 
+  const onResult = React.useCallback((o: RoundOutcome) => {
+    setStatus(
+      `True fair value ${o.trueValue}. Your ${o.kind === "trade" ? "call" : "direction"} ` +
+        `${decisionLabel(o.decision)} was ${o.decisionCorrect ? "right" : "wrong"}, ` +
+        `you estimated ${o.estimate}. Round total ${formatSigned(o.totalPts)}.`,
+    );
+  }, []);
+
   const onNext = (outcome: RoundOutcome) => {
-    setScore((s) => s + outcome.totalPts);
+    const total = score + outcome.totalPts;
+    setScore(total);
     setHistory((h) => [...h, outcome]);
-    if (!game || roundIdx + 1 >= game.rounds.length) setPhase("over");
-    else setRoundIdx((i) => i + 1);
+    if (!game || roundIdx + 1 >= game.rounds.length) {
+      setStatus(`Game over. Final score ${total} over ${history.length + 1} rounds.`);
+      setPhase("over");
+    } else {
+      setStatus("");
+      setRoundIdx((i) => i + 1);
+    }
   };
 
-  if (phase === "intro") return <Intro saved={config} onStart={start} />;
-  if (phase === "countdown")
-    return (
+  const round = game?.rounds[roundIdx];
+  let content: React.ReactNode = null;
+  if (phase === "intro" || phase === "countdown") {
+    content = (
       <>
         <Intro saved={config} onStart={start} />
-        <StartCountdown onDone={() => setPhase("playing")} />
+        {phase === "countdown" && <StartCountdown onDone={() => setPhase("playing")} />}
       </>
     );
-  if (phase === "over" && game)
-    return <GameOver history={history} score={score} matrix={game.matrix} onAgain={() => setPhase("intro")} />;
+  } else if (phase === "over" && game) {
+    content = <GameOver history={history} score={score} matrix={game.matrix} onAgain={() => setPhase("intro")} />;
+  } else if (game && round) {
+    content = (
+      <div className="space-y-4">
+        <div className="grid grid-cols-3 gap-3">
+          <StatTile label="Round" value={`${roundIdx + 1}/${game.rounds.length}`} />
+          <StatTile label="Score" value={String(score)} accent />
+          <StatTile label="Phase" value={round.kind === "trade" ? "Pricing" : "News"} />
+        </div>
 
-  if (!game) return null;
-  const round = game.rounds[roundIdx];
-  return (
-    <div className="space-y-4">
-      <div className="grid grid-cols-3 gap-3">
-        <StatTile label="Round" value={`${roundIdx + 1}/${game.rounds.length}`} />
-        <StatTile label="Score" value={String(score)} accent />
-        <StatTile label="Phase" value={round.kind === "trade" ? "Pricing" : "News"} />
+        <MatrixTable matrix={game.matrix} />
+
+        <RoundCard
+          key={roundIdx}
+          round={round}
+          decisionSeconds={config.decisionSeconds}
+          onResult={onResult}
+          onNext={onNext}
+        />
       </div>
+    );
+  }
 
-      <MatrixTable matrix={game.matrix} />
-
-      <RoundCard key={roundIdx} round={round} decisionSeconds={config.decisionSeconds} onNext={onNext} />
-    </div>
+  return (
+    <>
+      <p role="status" aria-live="polite" className="sr-only">
+        {status}
+      </p>
+      {content}
+    </>
   );
 }
 
@@ -93,22 +126,9 @@ function Intro({ saved, onStart }: { saved: TournamentConfig; onStart: (c: Tourn
     setConfig((c) => ({ ...c, [k]: v }));
 
   return (
+    // Title and description live in the page header — this card is just setup.
     <Card className="obsidian-glow mx-auto max-w-2xl">
-      <CardContent className="space-y-7 py-10">
-        <div className="flex flex-col items-center gap-3 text-center">
-          <span className="grid h-14 w-14 place-items-center rounded-2xl bg-indigo-500 text-white shadow-lg">
-            <Swords className="h-6 w-6" />
-          </span>
-          <h2 className="text-2xl font-black uppercase tracking-tight">Tournament Market</h2>
-          <p className="max-w-lg text-muted">
-            Four teams, a win-probability matrix, and a group stage that breaks
-            every tie before crowning a champion. Each round you&apos;re quoted a
-            market on an outcome — decide whether to <span className="text-positive">buy</span> or{" "}
-            <span className="text-negative">sell</span>, then estimate its true fair value. Later,
-            live results drop and you re-price on the news.
-          </p>
-        </div>
-
+      <CardContent className="space-y-6 py-8">
         <div className="mx-auto max-w-xl space-y-4 rounded-xl border border-border bg-surface-2/40 p-5">
           <div className="flex items-center gap-2 text-sm font-medium">
             <Settings2 className="h-4 w-4 text-accent" /> Game settings
@@ -229,7 +249,17 @@ function MatrixTable({ matrix, highlight }: { matrix: Matrix; highlight?: string
 
 type Step = "decide" | "estimate" | "result";
 
-function RoundCard({ round, decisionSeconds, onNext }: { round: Round; decisionSeconds: number; onNext: (o: RoundOutcome) => void }) {
+function RoundCard({
+  round,
+  decisionSeconds,
+  onResult,
+  onNext,
+}: {
+  round: Round;
+  decisionSeconds: number;
+  onResult: (o: RoundOutcome) => void;
+  onNext: (o: RoundOutcome) => void;
+}) {
   const [step, setStep] = React.useState<Step>("decide");
   const [decision, setDecision] = React.useState<TradeDecision | InfoDecision | null>(null);
   const [timedOut, setTimedOut] = React.useState(false);
@@ -289,6 +319,7 @@ function RoundCard({ round, decisionSeconds, onNext }: { round: Round; decisionS
       timedOut,
     };
     setOutcome(o);
+    onResult(o);
     setStep("result");
   };
 

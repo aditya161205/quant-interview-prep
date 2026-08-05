@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import {
-  Play, RotateCcw, Flag, MoveHorizontal, ArrowLeft, ArrowRight, Minus, X,
+  Play, RotateCcw, Flag, ArrowLeft, ArrowRight, Minus, X,
   Settings2, Trophy, Timer, Clock, Target, ShieldCheck,
 } from "lucide-react";
 import {
@@ -39,24 +39,40 @@ export function ArrowGame() {
     setPhase("countdown");
   };
 
-  if (phase === "intro") return <Intro saved={config} onStart={start} />;
-  if (phase === "countdown")
-    return (
+  const roundMs = config.roundSeconds * 1000;
+
+  // Rounds are deliberately feedback-free (like the real test), so the only
+  // state change worth speaking is the final summary.
+  const s = phase === "over" ? summarize(logs, roundMs) : null;
+  const status = s
+    ? `Game over. Score ${s.score}. ${s.correct} of ${s.total} correct, ${(s.accuracy * 100).toFixed(0)}% accuracy. Held back on ${s.noGoCorrect} of ${s.noGoTotal} no-go rounds.`
+    : "";
+
+  const content =
+    phase === "over" ? (
+      <GameOver logs={logs} roundMs={roundMs} onAgain={() => setPhase("intro")} />
+    ) : phase === "playing" ? (
+      <Playing
+        config={config}
+        onEnd={(finalLogs) => {
+          setLogs(finalLogs);
+          setPhase("over");
+        }}
+      />
+    ) : (
       <>
         <Intro saved={config} onStart={start} />
-        <Countdown onDone={() => setPhase("playing")} />
+        {phase === "countdown" && <Countdown onDone={() => setPhase("playing")} />}
       </>
     );
-  if (phase === "over")
-    return <GameOver logs={logs} roundMs={config.roundSeconds * 1000} onAgain={() => setPhase("intro")} />;
+
   return (
-    <Playing
-      config={config}
-      onEnd={(finalLogs) => {
-        setLogs(finalLogs);
-        setPhase("over");
-      }}
-    />
+    <>
+      <p role="status" aria-live="polite" className="sr-only">
+        {status}
+      </p>
+      {content}
+    </>
   );
 }
 
@@ -69,24 +85,9 @@ function Intro({ saved, onStart }: { saved: ArrowConfig; onStart: (c: ArrowConfi
   const totalSec = Math.round(config.rounds * config.roundSeconds);
 
   return (
+    // Title and description live in the page header — this card is just setup.
     <Card className="obsidian-glow mx-auto max-w-2xl">
-      <CardContent className="space-y-7 py-10">
-        <div className="flex flex-col items-center gap-3 text-center">
-          <span className="grid h-14 w-14 place-items-center rounded-2xl bg-sky-500 text-white shadow-lg">
-            <MoveHorizontal className="h-6 w-6" />
-          </span>
-          <h2 className="text-2xl font-black uppercase tracking-tight">Arrow Game</h2>
-          <p className="max-w-md text-muted">
-            A grid of symbols flashes each round. React only to the{" "}
-            <span className="text-foreground">middle arrow</span>: press LEFT if it points ←,
-            RIGHT if it points →. Ignore everything around it — unless it&apos;s boxed in by{" "}
-            <span className="text-foreground">X</span> symbols, in which case press nothing.
-            A test of speed, focus and impulse control.
-          </p>
-        </div>
-
-        <ExampleGrid />
-
+      <CardContent className="space-y-6 py-8">
         <div className="mx-auto max-w-xl space-y-4 rounded-xl border border-border bg-surface-2/40 p-5">
           <div className="flex items-center gap-2 text-sm font-medium">
             <Settings2 className="h-4 w-4 text-accent" /> Game settings
@@ -106,6 +107,10 @@ function Intro({ saved, onStart }: { saved: ArrowConfig; onStart: (c: ArrowConfi
             <Play className="h-4 w-4" /> Start game
           </Button>
         </div>
+
+        {/* Below the CTA on purpose — it's a supporting illustration, and it
+            keeps the settings and Start button above the fold. */}
+        <ExampleGrid />
       </CardContent>
     </Card>
   );

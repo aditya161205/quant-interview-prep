@@ -3,7 +3,7 @@
 import * as React from "react";
 import {
   Play, RotateCcw, ArrowRight, Settings2, Flag, Dices, Coins, Spade,
-  ChevronDown, Check, X, Trophy, Sigma, Timer,
+  ChevronDown, Check, X, Trophy, Timer,
 } from "lucide-react";
 import {
   useBettingStore,
@@ -30,9 +30,41 @@ const CAT_ICON: Record<Category, typeof Dices> = { Dice: Dices, Cards: Spade, Co
 
 export function BettingGame() {
   const phase = useBettingStore((s) => s.phase);
-  if (phase === "intro") return <Intro />;
-  if (phase === "gameover") return <GameOver />;
-  return <BoardScreen />;
+
+  return (
+    <>
+      <Announcer />
+      {phase === "intro" ? <Intro /> : phase === "gameover" ? <GameOver /> : <BoardScreen />}
+    </>
+  );
+}
+
+/* --------------------------------- announcer ------------------------- */
+
+/**
+ * One polite live region for the whole game. Only the round settlement and the
+ * final bankroll are spoken — the board of ~10 props stays silent so taking a
+ * bet doesn't trigger a wall of speech.
+ */
+function Announcer() {
+  const { phase, round, result, bankroll } = useBettingStore();
+
+  let message = "";
+  if (phase === "result" && result) {
+    const won = result.lines.filter((l) => !l.voided && l.won).length;
+    message =
+      result.lines.length === 0
+        ? `Round ${round} resolved. You placed no bets. Bankroll ${bankroll}.`
+        : `Round ${round} resolved. ${won} of ${result.lines.length} bets won. Round ${formatSigned(result.roundPnl)}. Bankroll ${bankroll}.`;
+  } else if (phase === "gameover") {
+    message = `Game over. Final bankroll ${bankroll}, ${formatSigned(bankroll - STARTING_BANKROLL)} net.`;
+  }
+
+  return (
+    <p role="status" aria-live="polite" className="sr-only">
+      {message}
+    </p>
+  );
 }
 
 /* ----------------------------------- intro --------------------------- */
@@ -46,21 +78,9 @@ function Intro() {
     setConfig((c) => ({ ...c, [k]: v }));
 
   return (
+    // Title and description live in the page header — this card is just setup.
     <Card className="obsidian-glow mx-auto max-w-2xl">
-      <CardContent className="space-y-7 py-10">
-        <div className="flex flex-col items-center gap-3 text-center">
-          <span className="grid h-14 w-14 place-items-center rounded-2xl bg-amber-500 text-white shadow-lg">
-            <Dices className="h-6 w-6" />
-          </span>
-          <h2 className="text-2xl font-black uppercase tracking-tight">Probability Betting Game</h2>
-          <p className="max-w-md text-muted">
-            Each round the house quotes fractional odds on dice, card and coin
-            events — but the odds are skewed off the true probability. Compute the
-            real odds, take the bets where you have an edge, and grow your bankroll
-            of {STARTING_BANKROLL}.
-          </p>
-        </div>
-
+      <CardContent className="space-y-6 py-8">
         <div className="mx-auto max-w-xl space-y-4 rounded-xl border border-border bg-surface-2/40 p-5">
           <div className="flex items-center gap-2 text-sm font-medium">
             <Settings2 className="h-4 w-4 text-accent" /> Game settings
@@ -79,8 +99,6 @@ function Intro() {
             />
           </label>
         </div>
-
-        <KellyCard />
 
         <div className="flex justify-center">
           <Button size="lg" onClick={() => setCounting(true)}>
@@ -145,32 +163,6 @@ function MinutesCountdown({ minutes, onExpire }: { minutes: number; onExpire: ()
       <Timer className="h-4 w-4" />
       {m}:{String(s).padStart(2, "0")}
     </span>
-  );
-}
-
-function KellyCard() {
-  const [open, setOpen] = React.useState(false);
-  return (
-    <div className="mx-auto max-w-xl rounded-xl border border-border bg-surface-2/40">
-      <button onClick={() => setOpen((o) => !o)} className="flex w-full items-center gap-2 p-4 text-left text-sm font-medium">
-        <Sigma className="h-4 w-4 text-accent" /> Kelly Criterion — optimal bet sizing
-        <ChevronDown className={cn("ml-auto h-4 w-4 text-muted transition-transform", open && "rotate-180")} />
-      </button>
-      {open && (
-        <div className="animate-pop space-y-2 border-t border-border p-4 text-sm text-muted">
-          <p>Bet the fraction of your bankroll that maximises long-run growth:</p>
-          <div className="rounded-lg bg-surface px-3 py-2 text-center font-mono text-foreground">
-            f* = (b·p − q) / b
-          </div>
-          <ul className="space-y-1">
-            <li><span className="font-mono text-foreground">b</span> — decimal net odds (the “b” in b:1)</li>
-            <li><span className="font-mono text-foreground">p</span> — true probability of winning</li>
-            <li><span className="font-mono text-foreground">q</span> — 1 − p</li>
-          </ul>
-          <p>If f* ≤ 0 the bet has no edge — skip it.</p>
-        </div>
-      )}
-    </div>
   );
 }
 

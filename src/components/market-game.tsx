@@ -48,9 +48,44 @@ import { PlayingCard } from "@/components/playing-card";
 export function MarketGame() {
   const phase = useGameStore((s) => s.phase);
 
-  if (phase === "intro") return <Intro />;
-  if (phase === "gameover") return <GameOver />;
-  return <Table />;
+  return (
+    <>
+      <Announcer />
+      {phase === "intro" ? <Intro /> : phase === "gameover" ? <GameOver /> : <Table />}
+    </>
+  );
+}
+
+/* --------------------------------- announcer ------------------------- */
+
+/**
+ * One polite live region for the whole game. Only the round verdict and the
+ * final standings are spoken — the board and score cards stay silent so a
+ * screen reader isn't re-reading four player panels on every tick.
+ */
+function Announcer() {
+  const { phase, round, result, players } = useGameStore();
+
+  let message = "";
+  if (phase === "result" && result) {
+    const parts = [
+      `Round ${round} settled at ${result.trueSum}.`,
+      `Round PnL ${formatSigned(result.finalPnl ?? 0)}.`,
+    ];
+    if (result.timedOut) parts.push("Timed out — round skipped.");
+    else if (result.penalized) parts.push(`Wrong PnL guess, ${WRONG_PNL_PENALTY}-point penalty.`);
+    message = parts.join(" ");
+  } else if (phase === "gameover") {
+    const ranked = [...players].sort((a, b) => b.score - a.score);
+    const place = ranked.findIndex((p) => p.isYou) + 1;
+    message = `Game over. You finished ${place} of ${ranked.length} on ${players[YOU_INDEX].score} points.`;
+  }
+
+  return (
+    <p role="status" aria-live="polite" className="sr-only">
+      {message}
+    </p>
+  );
 }
 
 /* ----------------------------------- intro --------------------------- */
@@ -65,21 +100,9 @@ function Intro() {
     setConfig((c) => ({ ...c, [key]: value }));
 
   return (
+    // Title and description live in the page header — this card is just setup.
     <Card className="obsidian-glow mx-auto max-w-2xl">
-      <CardContent className="space-y-7 py-10">
-        <div className="flex flex-col items-center gap-3 text-center">
-          <span className="grid h-14 w-14 place-items-center rounded-2xl bg-accent text-accent-foreground shadow-lg">
-            <Crown className="h-7 w-7" />
-          </span>
-          <h2 className="text-2xl font-black uppercase tracking-tight sm:text-3xl">Card Trading Game</h2>
-          <p className="max-w-md text-muted">
-            The market-maker role rotates each round — quote a tight market when
-            it&apos;s your turn, and hunt for edge against the bots when it
-            isn&apos;t. Cards flash for {REVEAL_SECONDS}s, then you compute the
-            settlement and PnL yourself. Everyone starts at 500.
-          </p>
-        </div>
-
+      <CardContent className="space-y-6 py-8">
         <div className="mx-auto max-w-xl space-y-4 rounded-xl border border-border bg-surface-2/40 p-5">
           <div className="flex items-center gap-2 text-sm font-medium">
             <Settings2 className="h-4 w-4 text-accent" /> Game settings

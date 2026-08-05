@@ -47,9 +47,47 @@ const signed$ = (x: number) =>
 
 export function EtfGame() {
   const phase = useEtfStore((s) => s.phase);
-  if (phase === "intro") return <Intro />;
-  if (phase === "gameover") return <GameOver />;
-  return <Table />;
+
+  return (
+    <>
+      <Announcer />
+      {phase === "intro" ? <Intro /> : phase === "gameover" ? <GameOver /> : <Table />}
+    </>
+  );
+}
+
+/* --------------------------------- announcer ------------------------- */
+
+/**
+ * One polite live region for the whole game. Only the round verdict and the
+ * final placing are spoken — the basket table and the bots' running P&L are
+ * left out so a screen reader isn't re-reading the board every round.
+ */
+function Announcer() {
+  const { phase, round, data, results, totals, bots } = useEtfStore();
+
+  let message = "";
+  if (phase === "result" && data && results) {
+    const you = results.find((r) => r.name === "You");
+    const best = optimalAction(data);
+    if (you) {
+      message = [
+        `Round ${round}: NAV ${money(data.nav)} against ${money(data.etfBid)} bid, ${money(data.etfAsk)} ask.`,
+        you.action === best ? "Correct call." : `Best move was to ${best}.`,
+        `Round PnL ${signed$(you.pnl)}.`,
+      ].join(" ");
+    }
+  } else if (phase === "gameover") {
+    const ranked = ["You", ...bots].sort((a, b) => (totals[b] ?? 0) - (totals[a] ?? 0));
+    const place = ranked.indexOf("You") + 1;
+    message = `Game over. You finished ${ordinal(place)} of ${ranked.length} on ${total$(totals["You"] ?? 0)}.`;
+  }
+
+  return (
+    <p role="status" aria-live="polite" className="sr-only">
+      {message}
+    </p>
+  );
 }
 
 /* ----------------------------------- intro --------------------------- */
@@ -63,23 +101,10 @@ function Intro() {
     setConfig((c) => ({ ...c, [k]: v }));
 
   return (
+    // Title, description and the rules panel live on the page — this card is
+    // just setup.
     <Card className="obsidian-glow mx-auto max-w-2xl">
-      <CardContent className="space-y-7 py-10">
-        <div className="flex flex-col items-center gap-3 text-center">
-          <span className="grid h-14 w-14 place-items-center rounded-2xl bg-emerald-500 text-white shadow-lg">
-            <TrendingUp className="h-6 w-6" />
-          </span>
-          <h2 className="text-2xl font-black uppercase tracking-tight">ETF Arbitrage Game</h2>
-          <p className="max-w-lg text-muted">
-            Each round, compute the ETF&apos;s fair value (NAV = Σ weight × price)
-            and compare it to the quoted bid/ask. Buy when it&apos;s cheap, sell
-            when it&apos;s rich, skip when there&apos;s no edge — and beat 3 AI
-            traders to the punch for a bonus.
-          </p>
-        </div>
-
-        <HowToPlay />
-
+      <CardContent className="space-y-6 py-8">
         <div className="mx-auto max-w-xl space-y-4 rounded-xl border border-border bg-surface-2/40 p-5">
           <div className="flex items-center gap-2 text-sm font-medium">
             <Settings2 className="h-4 w-4 text-accent" /> Game settings
@@ -98,41 +123,6 @@ function Intro() {
         {counting && <StartCountdown onDone={() => start(config)} />}
       </CardContent>
     </Card>
-  );
-}
-
-function HowToPlay() {
-  const [open, setOpen] = React.useState(false);
-  return (
-    <div className="mx-auto max-w-xl">
-      <button
-        onClick={() => setOpen((v) => !v)}
-        className="w-full rounded-xl border border-border bg-surface-2/40 px-4 py-3 text-left text-sm font-medium"
-      >
-        How to play {open ? "▴" : "▾"}
-      </button>
-      {open && (
-        <div className="animate-pop mt-3 space-y-2 rounded-xl border border-border bg-surface-2/30 p-4 text-sm text-muted">
-          <p>
-            <strong className="text-foreground">NAV</strong> = Σ (weight × price).
-            The table gives you the <span className="font-mono">W × P</span> column
-            — just add it up.
-          </p>
-          <p>
-            Compare NAV to the ETF quote: NAV &gt; ask →{" "}
-            <span className="text-positive">Buy</span>; NAV &lt; bid →{" "}
-            <span className="text-negative">Sell</span>; otherwise{" "}
-            <span className="text-foreground">Skip</span>.
-          </p>
-          <p>
-            Each trade costs <span className="font-mono">${TX_COST}</span>. The
-            fastest trader each round earns a{" "}
-            <span className="text-accent">+20% bonus</span> on their profit. Size
-            up only when the edge is worth it.
-          </p>
-        </div>
-      )}
-    </div>
   );
 }
 
