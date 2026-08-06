@@ -13,10 +13,12 @@ const variants: Record<Variant, string> = {
   ghost: "bg-transparent hover:bg-surface-2",
 };
 
+// Chunkier than before: actions were reading as secondary chrome next to the
+// content. Generous horizontal padding is what gives them presence.
 const sizes: Record<Size, string> = {
-  sm: "h-8 px-3 text-sm",
-  md: "h-10 px-4 text-sm",
-  lg: "h-11 px-6 text-base",
+  sm: "h-9 gap-1.5 px-4 text-sm",
+  md: "h-11 px-5 text-[0.9375rem]",
+  lg: "h-12 px-7 text-base",
 };
 
 export interface ButtonProps
@@ -34,7 +36,9 @@ export function Button({
   return (
     <button
       className={cn(
-        "inline-flex cursor-pointer items-center justify-center gap-2 rounded-full font-semibold",
+        // Rounded rectangles, not pills: pills are the language of chips and
+        // nav here, so actions need their own shape to read as actions.
+        "inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl font-semibold",
         // Expo-out easing and a small press scale, per the motion guidance:
         // 150-300ms, and the press should be felt rather than seen.
         "transition-[background-color,border-color,color,opacity,transform] duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] active:scale-[0.97]",

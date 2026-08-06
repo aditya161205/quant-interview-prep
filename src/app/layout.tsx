@@ -49,14 +49,18 @@ export default function RootLayout({
             Skip to content
           </a>
           <Navbar />
-          <main
-            id="main-content"
-            tabIndex={-1}
-            className="mx-auto w-full max-w-6xl flex-1 px-4 py-8 focus:outline-none"
-          >
-            {children}
-          </main>
-          <footer className="mt-10 border-t border-border py-8 text-center text-2xs uppercase tracking-[0.18em] text-muted">
+          {/* The app sits in an inset panel so the ambient light reads as
+              coming from behind the product rather than washing over it. */}
+          <div className="mx-auto w-full max-w-6xl flex-1 px-3 pb-6 pt-3 sm:px-4">
+            <main
+              id="main-content"
+              tabIndex={-1}
+              className="h-full rounded-[1.75rem] border border-border/70 bg-surface/40 px-5 py-7 backdrop-blur-sm focus:outline-none sm:px-8 sm:py-9"
+            >
+              {children}
+            </main>
+          </div>
+          <footer className="pb-8 text-center text-2xs uppercase tracking-[0.18em] text-muted">
             QuantPrep
           </footer>
         </ThemeProvider>

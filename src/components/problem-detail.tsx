@@ -9,7 +9,6 @@ import { ProblemActions } from "@/components/problem-actions";
 import { MathText } from "@/components/math-text";
 import { DifficultyBadge } from "@/components/difficulty-badge";
 import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { parseNumeric } from "@/lib/problems";
@@ -21,6 +20,15 @@ export function ProblemDetail({ id }: { id: string }) {
   // A check or a hint counts as an attempt — that's what earns the solution
   // reveal its emphasis (see SolutionReveal).
   const [attempted, setAttempted] = React.useState(false);
+  // Hint/solution state lives here so the triggers can sit in the action bar
+  // while their output renders in the body — and so both reset when the id
+  // changes (they used to survive prev/next onto the following problem).
+  const [hints, setHints] = React.useState<string[] | null>(null);
+  const [hintsShown, setHintsShown] = React.useState(0);
+  const [hintLoading, setHintLoading] = React.useState(false);
+  const [solution, setSolution] = React.useState<{ answer: string; solution: string } | null>(null);
+  const [solutionOpen, setSolutionOpen] = React.useState(false);
+  const [solutionLoading, setSolutionLoading] = React.useState(false);
 
   // Carry the list's filters through so prev/next walk the filtered set.
   const sp = useSearchParams();
@@ -37,6 +45,10 @@ export function ProblemDetail({ id }: { id: string }) {
     setStatus("loading");
     setDetail(null);
     setAttempted(false);
+    setHints(null);
+    setHintsShown(0);
+    setSolution(null);
+    setSolutionOpen(false);
     fetch(`/api/problems/${id}`)
       .then((r) => (r.ok ? r.json() : Promise.reject()))
       .then((d: Detail) => {
@@ -76,6 +88,41 @@ export function ProblemDetail({ id }: { id: string }) {
       .catch(() => {});
     return () => ctrl.abort();
   }, [statusFilter, listQs]);
+
+  const hintTotal = hints?.length ?? 0;
+  const moreHints = hints === null || hintsShown < hintTotal;
+
+  const revealNextHint = async () => {
+    setAttempted(true);
+    if (hints === null) {
+      setHintLoading(true);
+      try {
+        const r = await fetch(`/api/problems/${id}/hint`);
+        const d: { hints: string[] } = await r.json();
+        setHints(d.hints ?? []);
+        setHintsShown(1);
+      } finally {
+        setHintLoading(false);
+      }
+      return;
+    }
+    setHintsShown((n) => Math.min(n + 1, hintTotal));
+  };
+
+  const toggleSolution = async () => {
+    if (solution) {
+      setSolutionOpen((o) => !o);
+      return;
+    }
+    setSolutionLoading(true);
+    try {
+      const r = await fetch(`/api/problems/${id}/solution`);
+      setSolution(await r.json());
+      setSolutionOpen(true);
+    } finally {
+      setSolutionLoading(false);
+    }
+  };
 
   const nav = React.useMemo<{ prev: number | null; next: number | null }>(() => {
     if (!detail) return { prev: null, next: null };
@@ -120,46 +167,122 @@ export function ProblemDetail({ id }: { id: string }) {
   }
 
   return (
-    <div className="mx-auto max-w-3xl space-y-5">
-      <div className="flex items-center justify-between gap-3">
-        <Link href={`/practice${qs ? `?${qs}` : ""}`} className="inline-flex items-center gap-1.5 text-sm text-muted transition-colors hover:text-foreground">
-          <ArrowLeft className="h-4 w-4" /> All problems
-        </Link>
-        <div className="flex items-center gap-2">
-          <NavButton id={nav.prev} qs={qs} direction="prev" />
-          <NavButton id={nav.next} qs={qs} direction="next" />
-        </div>
-      </div>
+    <div className="flex flex-col gap-5 lg:flex-row lg:items-start">
+      {/* Navigation rail — the list lives here instead of forcing a trip back
+          to the table for every problem. */}
+      <aside className="w-full shrink-0 lg:sticky lg:top-24 lg:w-60">
+        <Card className="p-4">
+          <Link
+            href={`/practice${qs ? `?${qs}` : ""}`}
+            className="inline-flex items-center gap-1.5 text-sm text-muted transition-colors hover:text-foreground"
+          >
+            <ArrowLeft className="h-4 w-4" /> All problems
+          </Link>
 
-      <Card className="obsidian-glow overflow-hidden">
-        <CardContent className="space-y-6 p-6 sm:p-8">
-          <div className="flex items-start justify-between gap-3">
-            <div className="flex flex-wrap items-center gap-2">
-              <Badge tone="outline">#{detail.id}</Badge>
-              <DifficultyBadge difficulty={detail.difficulty as Difficulty} />
-              {detail.category && <span className="text-2xs font-semibold uppercase tracking-wider text-muted">{detail.category}</span>}
+          <RailGroup label="Problem">
+            <span className="font-mono text-2xl font-bold tabular-nums">#{detail.id}</span>
+          </RailGroup>
+
+          <RailGroup label="Level">
+            <DifficultyBadge difficulty={detail.difficulty as Difficulty} />
+          </RailGroup>
+
+          <RailGroup label="Move">
+            <div className="flex gap-2">
+              <NavButton id={nav.prev} qs={qs} direction="prev" />
+              <NavButton id={nav.next} qs={qs} direction="next" />
             </div>
-            <ProblemActions id={String(detail.id)} />
-          </div>
+          </RailGroup>
+        </Card>
+      </aside>
 
-          {detail.companies.length > 0 && (
-            <div className="flex flex-wrap items-center gap-1.5">
-              <span className="text-2xs font-semibold uppercase tracking-wider text-muted">Asked at</span>
+      {/* Question panel — full height, content at the top, actions pinned to
+          the foot so they sit in the same place on every problem. */}
+      <Card className="obsidian-glow flex min-h-[34rem] w-full flex-col overflow-hidden lg:min-h-[38rem]">
+        <CardContent className="flex flex-1 flex-col p-6 sm:p-9">
+          <span className="text-2xs font-semibold uppercase tracking-[0.18em] text-muted">
+            Question / {detail.category || "Practice"}
+          </span>
+
+          <h1 className="mt-4 max-w-3xl text-[2.25rem] font-bold leading-[1.05] tracking-[-0.03em] sm:text-[3rem]">
+            {detail.title}
+          </h1>
+
+          <span className="mt-7 block text-2xs font-semibold uppercase tracking-[0.18em] text-muted">
+            Question
+          </span>
+          <MathText
+            text={detail.statement}
+            className="mt-3 max-w-3xl text-[1.0625rem] leading-[1.65] text-foreground/90"
+          />
+
+          {(detail.companies.length > 0 || detail.category) && (
+            <div className="mt-6 flex flex-wrap gap-2">
+              {detail.category && <MetaPill>{detail.category}</MetaPill>}
               {detail.companies.map((c) => (
-                <Badge key={c} tone="default">{c}</Badge>
+                <MetaPill key={c}>{c}</MetaPill>
               ))}
             </div>
           )}
 
-          <h1 className="text-2xl font-bold leading-snug tracking-[-0.02em] sm:text-[1.75rem]">{detail.title}</h1>
+          {detail.hasAnswer && (
+            <div className="mt-8 max-w-2xl">
+              <AnswerCheck id={detail.id} onAttempt={() => setAttempted(true)} />
+            </div>
+          )}
 
-          <MathText text={detail.statement} className="text-[0.9375rem] leading-relaxed text-foreground/90" />
+          {/* Live region so each newly revealed hint is announced, not just shown. */}
+          <div role="status" aria-live="polite" className="max-w-3xl space-y-2 empty:hidden [&:not(:empty)]:mt-6">
+            {hints?.slice(0, hintsShown).map((h, i) => (
+              <div key={i} className="animate-pop rounded-xl border border-amber-500/30 bg-amber-500/5 p-4">
+                <div className="text-2xs font-semibold uppercase tracking-wider text-amber-600 dark:text-amber-400">
+                  Hint {i + 1}
+                </div>
+                <MathText text={h} className="mt-1 text-sm leading-relaxed text-muted" />
+              </div>
+            ))}
+          </div>
 
-          {detail.hasAnswer && <AnswerCheck id={detail.id} onAttempt={() => setAttempted(true)} />}
+          {solutionOpen && solution && (
+            <div className="animate-pop mt-6 max-w-3xl space-y-4 rounded-xl border border-accent/30 bg-accent/5 p-5">
+              {solution.answer && (
+                <div>
+                  <div className="text-2xs font-semibold uppercase tracking-wider text-accent">Answer</div>
+                  <div className="font-mono text-xl font-semibold">{solution.answer}</div>
+                </div>
+              )}
+              {solution.solution && (
+                <div className="border-t border-accent/20 pt-4">
+                  <div className="mb-1 text-2xs font-semibold uppercase tracking-wider text-muted">Solution</div>
+                  <MathText text={solution.solution} className="text-sm leading-relaxed text-foreground/90" />
+                </div>
+              )}
+            </div>
+          )}
 
-          {detail.hasHint && <HintReveal id={detail.id} onAttempt={() => setAttempted(true)} />}
-
-          <SolutionReveal id={detail.id} attempted={attempted} />
+          {/* Action bar: the commitment on the left, the escape hatches on the
+              right, pushed to the foot of the panel. */}
+          <div className="mt-auto flex flex-wrap items-center justify-between gap-3 border-t border-border/70 pt-6 sm:pt-8">
+            <ProblemActions id={String(detail.id)} />
+            <div className="flex flex-wrap items-center gap-2">
+              {detail.hasHint && moreHints && (
+                <Button variant="outline" onClick={revealNextHint} disabled={hintLoading}>
+                  {hintLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Lightbulb className="h-4 w-4 text-amber-500" />}
+                  {hints === null ? "Reveal hint" : `Next hint (${hintsShown + 1}/${hintTotal})`}
+                </Button>
+              )}
+              {/* Stays quiet until you've actually attempted — giving up
+                  shouldn't out-rank checking an answer — but is never gated. */}
+              <Button
+                variant={attempted || solutionOpen ? "outline" : "ghost"}
+                onClick={toggleSolution}
+                disabled={solutionLoading}
+              >
+                {solutionLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <BookOpen className="h-4 w-4" />}
+                {solutionOpen ? "Hide solution" : "Reveal solution"}
+              </Button>
+            </div>
+          </div>
         </CardContent>
       </Card>
 
@@ -168,53 +291,27 @@ export function ProblemDetail({ id }: { id: string }) {
   );
 }
 
-function HintReveal({ id, onAttempt }: { id: number; onAttempt: () => void }) {
-  const [hints, setHints] = React.useState<string[] | null>(null);
-  const [shown, setShown] = React.useState(0);
-  const [loading, setLoading] = React.useState(false);
-
-  const revealNext = async () => {
-    onAttempt();
-    if (hints === null) {
-      setLoading(true);
-      try {
-        const r = await fetch(`/api/problems/${id}/hint`);
-        const d: { hints: string[] } = await r.json();
-        setHints(d.hints ?? []);
-        setShown(1);
-      } finally {
-        setLoading(false);
-      }
-      return;
-    }
-    setShown((n) => Math.min(n + 1, hints.length));
-  };
-
-  const total = hints?.length ?? 0;
-  const more = hints === null || shown < total;
-
+/** A labelled block in the navigation rail. */
+function RailGroup({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <div className="border-t border-border pt-5">
-      {/* Live region so each newly revealed hint is announced, not just shown. */}
-      <div role="status" aria-live="polite" className={cn("space-y-2", shown > 0 && "mb-3")}>
-        {hints?.slice(0, shown).map((h, i) => (
-          <div key={i} className="animate-pop rounded-xl border border-amber-500/30 bg-amber-500/5 p-4">
-            <div className="text-xs font-semibold uppercase tracking-wider text-amber-600 dark:text-amber-400">
-              Hint {i + 1}
-            </div>
-            <MathText text={h} className="mt-1 text-sm leading-relaxed text-muted" />
-          </div>
-        ))}
-      </div>
-      {more && (
-        <Button variant="outline" onClick={revealNext} disabled={loading}>
-          {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Lightbulb className="h-4 w-4 text-amber-500" />}
-          {hints === null ? "Show hint" : `Show next hint (${shown + 1}/${total})`}
-        </Button>
-      )}
+    <div className="mt-5">
+      <span className="mb-2 block text-2xs font-semibold uppercase tracking-[0.18em] text-muted">
+        {label}
+      </span>
+      {children}
     </div>
   );
 }
+
+/** Metadata chip — category and the companies a problem has been asked at. */
+function MetaPill({ children }: { children: React.ReactNode }) {
+  return (
+    <span className="inline-flex items-center rounded-full border border-border bg-surface-2/70 px-3.5 py-1.5 text-sm text-muted">
+      {children}
+    </span>
+  );
+}
+
 
 function fmt(ms: number): string {
   const total = Math.max(0, Math.floor(ms / 1000));
@@ -430,54 +527,6 @@ function AnswerCheck({ id, onAttempt }: { id: number; onAttempt: () => void }) {
   );
 }
 
-function SolutionReveal({ id, attempted }: { id: number; attempted: boolean }) {
-  const [open, setOpen] = React.useState(false);
-  const [data, setData] = React.useState<{ answer: string; solution: string } | null>(null);
-  const [loading, setLoading] = React.useState(false);
-
-  const reveal = async () => {
-    if (data) {
-      setOpen((o) => !o);
-      return;
-    }
-    setLoading(true);
-    try {
-      const r = await fetch(`/api/problems/${id}/solution`);
-      setData(await r.json());
-      setOpen(true);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  return (
-    <div className="border-t border-border pt-5">
-      {/* Stays quiet until you've actually attempted — giving up shouldn't
-          out-rank checking an answer — but is never gated or hidden. */}
-      <Button variant={attempted || open ? "outline" : "ghost"} onClick={reveal} disabled={loading}>
-        {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <BookOpen className="h-4 w-4" />}
-        {open ? "Hide solution" : "Reveal solution"}
-      </Button>
-
-      {open && data && (
-        <div className="animate-pop mt-5 space-y-4 rounded-xl border border-accent/30 bg-accent/5 p-5">
-          {data.answer && (
-            <div>
-              <div className="text-xs font-semibold uppercase tracking-wider text-accent">Answer</div>
-              <div className="font-mono text-xl font-semibold">{data.answer}</div>
-            </div>
-          )}
-          {data.solution && (
-            <div className="border-t border-accent/20 pt-4">
-              <div className="mb-1 text-xs font-semibold uppercase tracking-wider text-muted">Solution</div>
-              <MathText text={data.solution} className="text-sm leading-relaxed text-foreground/90" />
-            </div>
-          )}
-        </div>
-      )}
-    </div>
-  );
-}
 
 function NavButton({ id, qs, direction }: { id: number | null; qs: string; direction: "prev" | "next" }) {
   const isNext = direction === "next";
