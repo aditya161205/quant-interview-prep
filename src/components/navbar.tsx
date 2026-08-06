@@ -10,6 +10,7 @@ import { AuthButton } from "@/components/auth-button";
 const links = [
   { href: "/", label: "Dashboard" },
   { href: "/practice", label: "Practice" },
+  { href: "/study", label: "Study" },
   { href: "/market-making", label: "Market Making" },
   { href: "/profile", label: "Profile" },
 ];
