@@ -27,7 +27,7 @@ export function PageHeader({
       )}
       <div className="space-y-2">
         {/* A quiet eyebrow rather than an accent pill: every page led with a
-            violet badge, which spent the accent before the primary action. */}
+            accent badge, which spent the accent before the primary action. */}
         {kicker && (
           <span className="block text-2xs font-semibold uppercase tracking-[0.18em] text-muted">
             {kicker}

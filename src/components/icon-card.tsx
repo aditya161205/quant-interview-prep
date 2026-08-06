@@ -2,25 +2,27 @@ import Link from "next/link";
 import { ArrowUpRight, type LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-export type CardColor = "violet" | "emerald" | "amber" | "rose" | "pink" | "indigo" | "sky";
+// Tinted within the mint/teal family the theme is built on, so the tiles
+// stay distinguishable per module without turning the hub into a rainbow.
+export type CardColor = "mint" | "emerald" | "amber" | "rose" | "pink" | "teal" | "sky";
 
 const TILE: Record<CardColor, string> = {
-  violet: "bg-violet-600",
+  mint: "bg-accent",
   emerald: "bg-emerald-500",
   amber: "bg-amber-500",
   rose: "bg-rose-500",
   pink: "bg-pink-500",
-  indigo: "bg-indigo-500",
+  teal: "bg-teal-500",
   sky: "bg-sky-500",
 };
 
 const GLOW: Record<CardColor, string> = {
-  violet: "bg-violet-600",
+  mint: "bg-accent",
   emerald: "bg-emerald-500",
   amber: "bg-amber-500",
   rose: "bg-rose-500",
   pink: "bg-pink-500",
-  indigo: "bg-indigo-500",
+  teal: "bg-teal-500",
   sky: "bg-sky-500",
 };
 
@@ -30,7 +32,7 @@ export function IconCard({
   kicker,
   description,
   icon: Icon,
-  color = "violet",
+  color = "mint",
   watermark,
 }: {
   href: string;
@@ -57,7 +59,7 @@ export function IconCard({
       )}
 
       <div className="relative flex items-start justify-between">
-        <span className={cn("grid h-12 w-12 place-items-center rounded-2xl text-white shadow-lg", TILE[color])}>
+        <span className={cn("grid h-12 w-12 place-items-center rounded-2xl shadow-lg", color === "mint" ? "text-accent-foreground" : "text-white", TILE[color])}>
           <Icon className="h-6 w-6" />
         </span>
         <span className="grid h-9 w-9 place-items-center rounded-full bg-surface-2 text-foreground transition-colors group-hover:bg-foreground group-hover:text-background">

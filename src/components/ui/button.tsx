@@ -5,7 +5,7 @@ type Variant = "primary" | "secondary" | "outline" | "ghost";
 type Size = "sm" | "md" | "lg";
 
 const variants: Record<Variant, string> = {
-  // The hardcoded violet ring hung a second, slightly-off edge around every
+  // The hardcoded accent ring hung a second, slightly-off edge around every
   // primary button; the shadow now just lifts it off the surface.
   primary: "bg-accent text-accent-foreground shadow-(--shadow-raised) hover:opacity-90",
   secondary: "bg-surface-2 text-foreground hover:bg-border",

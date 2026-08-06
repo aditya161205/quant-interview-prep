@@ -5,38 +5,42 @@
 
 /* ------------------------------------------------------------------ */
 /*  Design tokens                                                      */
-/*  Light mode = clean slate. Dark mode = "Obsidian": deep blacks,     */
-/*  dark grays, subtle deep-purple accents.                            */
+/*  Light mode = clean slate. Dark mode = deep teal-black canvas with  */
+/*  ambient light and a mint accent.                                   */
 /* ------------------------------------------------------------------ */
 :root {
-  --background: #f7f7f8;
+  --background: #f3f7f5;
   --surface: #ffffff;
-  --surface-2: #f1f1f3;
-  --border: #e4e4e7;
-  --foreground: #18181b;
-  --muted: #71717a;
-  --accent: #7c3aed;        /* deep purple */
+  --surface-2: #e9f0ed;
+  --border: #dae4e0;
+  --foreground: #0d1a16;
+  --muted: #5d716b;
+  /* Mint, darkened hard for light mode: the accent doubles as link text, and
+     at #0d8f5c that measured 4.12:1 on a white card — under AA. */
+  --accent: #0a7549;
   --accent-foreground: #ffffff;
-  --positive: #16a34a;
+  --positive: #0a7549;
   --negative: #dc2626;
-  --ring: #a78bfa;
+  --ring: #2fbe86;
 }
 
 .dark {
-  /* Not pure black: a near-black with a faint cool cast. True #000 gives the
-     card surface nothing to sit on (they measured 1.1:1 apart, so only the
-     border separated them) and smears on OLED during scroll. */
-  --background: #09090c;    /* canvas */
-  --surface: #15151b;       /* card surface */
-  --surface-2: #1f1f27;     /* elevated / inputs */
-  --border: #2a2a33;
-  --foreground: #fafafa;
-  --muted: #8f8f99;
-  --accent: #8b5cf6;        /* electric violet */
-  --accent-foreground: #ffffff;
-  --positive: #34d399;
-  --negative: #fb5b6e;
-  --ring: #8b5cf6;
+  /* Deep teal-black rather than a neutral near-black: the canvas carries a
+     faint green cast so the mint accent and the ambient glow below read as
+     part of the same material. Still off pure #000 (OLED smear, and cards
+     need something to sit on). */
+  --background: #071411;    /* canvas */
+  --surface: #0f1d1b;       /* card surface */
+  --surface-2: #172b28;     /* elevated / inputs */
+  --border: #24403b;
+  --foreground: #f0f6f4;
+  --muted: #8ba49d;
+  --accent: #3ddc97;        /* mint */
+  /* Dark ink on mint — white on a colour this light measures ~1.9:1. */
+  --accent-foreground: #04241a;
+  --positive: #3ddc97;
+  --negative: #fb7185;
+  --ring: #3ddc97;
 }
 
 /* Expose tokens to Tailwind's utility engine */
@@ -79,10 +83,42 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-/* Subtle obsidian glow used on hero / accent surfaces in dark mode */
+/* ------------------------------------------------------------------ */
+/*  Ambient canvas — soft light sources plus a faint engineering grid, */
+/*  fixed behind everything so it doesn't scroll or catch pointers.    */
+/* ------------------------------------------------------------------ */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(48% 42% at 6% 8%, rgba(61, 220, 151, 0.16), transparent 70%),
+    radial-gradient(38% 34% at 78% 42%, rgba(214, 158, 92, 0.10), transparent 72%),
+    radial-gradient(60% 50% at 50% 108%, rgba(61, 220, 151, 0.07), transparent 70%);
+}
+
+/* The grid only reads on the dark canvas; on light it turns to mud. */
+.dark body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+  background-size: 46px 46px;
+  /* Fade the grid out toward the edges so it reads as texture, not a table. */
+  mask-image: radial-gradient(70% 60% at 30% 20%, #000 0%, transparent 75%);
+  -webkit-mask-image: radial-gradient(70% 60% at 30% 20%, #000 0%, transparent 75%);
+}
+
+/* Accent wash used on hero / feature surfaces */
 .dark .obsidian-glow {
   background-image:
-    radial-gradient(60% 120% at 50% 0%, rgba(139, 92, 246, 0.1), transparent 60%);
+    radial-gradient(60% 120% at 50% 0%, rgba(61, 220, 151, 0.08), transparent 60%);
 }
 
 /* Thin custom scrollbar */
@@ -144,8 +180,8 @@ body {
 }
 
 @keyframes pulse-badge {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(139, 92, 246, 0.5); }
-  50% { box-shadow: 0 0 0 6px rgba(139, 92, 246, 0); }
+  0%, 100% { box-shadow: 0 0 0 0 rgba(61, 220, 151, 0.5); }
+  50% { box-shadow: 0 0 0 6px rgba(61, 220, 151, 0); }
 }
 .animate-pulse-badge {
   animation: pulse-badge 1.8s ease-out infinite;
