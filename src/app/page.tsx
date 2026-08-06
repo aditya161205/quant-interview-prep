@@ -47,7 +47,7 @@ export default function DashboardPage() {
           <IconCard
             href="/practice"
             icon={BrainCircuit}
-            color="mint"
+            color="accent"
             title="Practice Problems"
             kicker="Probability · EV · Brainteasers"
             description="Real quant interview questions with worked solutions, search, filters, and progress tracking."

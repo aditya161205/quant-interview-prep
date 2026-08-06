@@ -557,7 +557,7 @@ function GameOver({ history, score, matrix, onAgain }: { history: RoundOutcome[]
       <Card className="obsidian-glow">
         <CardContent className="space-y-6 py-10">
           <div className="flex flex-col items-center gap-2 text-center">
-            <span className="grid h-14 w-14 place-items-center rounded-2xl bg-teal-500 text-white shadow-lg">
+            <span className="grid h-14 w-14 place-items-center rounded-2xl bg-indigo-500 text-white shadow-lg">
               <Trophy className="h-6 w-6" />
             </span>
             <h2 className="text-2xl font-bold tracking-[-0.02em]">Final score</h2>

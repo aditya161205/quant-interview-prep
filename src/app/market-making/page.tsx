@@ -22,7 +22,7 @@ const games: {
     description:
       "A rotating market maker quotes a two-sided market on a hidden hand; trade against it or quote your own.",
     icon: Spade,
-    color: "mint",
+    color: "accent",
     watermark: "CT",
   },
   {
@@ -72,7 +72,7 @@ const games: {
     description:
       "Price outcomes of a 4-team tournament from a win-probability matrix — finalists, champion, group-stage feats — then re-price as live results drop.",
     icon: Swords,
-    color: "teal",
+    color: "indigo",
     watermark: "TM",
   },
 ];

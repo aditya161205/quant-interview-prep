@@ -5,42 +5,38 @@
 
 /* ------------------------------------------------------------------ */
 /*  Design tokens                                                      */
-/*  Light mode = clean slate. Dark mode = deep teal-black canvas with  */
-/*  ambient light and a mint accent.                                   */
+/*  Light mode = clean slate. Dark mode = "Obsidian": deep near-black  */
+/*  canvas with ambient light and a deep-violet accent.                */
 /* ------------------------------------------------------------------ */
 :root {
-  --background: #f3f7f5;
+  --background: #f7f7f8;
   --surface: #ffffff;
-  --surface-2: #e9f0ed;
-  --border: #dae4e0;
-  --foreground: #0d1a16;
-  --muted: #5d716b;
-  /* Mint, darkened hard for light mode: the accent doubles as link text, and
-     at #0d8f5c that measured 4.12:1 on a white card — under AA. */
-  --accent: #0a7549;
+  --surface-2: #f1f1f3;
+  --border: #e4e4e7;
+  --foreground: #18181b;
+  --muted: #71717a;
+  --accent: #7c3aed;        /* deep purple */
   --accent-foreground: #ffffff;
-  --positive: #0a7549;
+  --positive: #16a34a;
   --negative: #dc2626;
-  --ring: #2fbe86;
+  --ring: #a78bfa;
 }
 
 .dark {
-  /* Deep teal-black rather than a neutral near-black: the canvas carries a
-     faint green cast so the mint accent and the ambient glow below read as
-     part of the same material. Still off pure #000 (OLED smear, and cards
-     need something to sit on). */
-  --background: #071411;    /* canvas */
-  --surface: #0f1d1b;       /* card surface */
-  --surface-2: #172b28;     /* elevated / inputs */
-  --border: #24403b;
-  --foreground: #f0f6f4;
-  --muted: #8ba49d;
-  --accent: #3ddc97;        /* mint */
-  /* Dark ink on mint — white on a colour this light measures ~1.9:1. */
-  --accent-foreground: #04241a;
-  --positive: #3ddc97;
-  --negative: #fb7185;
-  --ring: #3ddc97;
+  /* Not pure black: a near-black with a faint cool cast. True #000 gives the
+     card surface nothing to sit on (they measured 1.1:1 apart, so only the
+     border separated them) and smears on OLED during scroll. */
+  --background: #09090c;    /* canvas */
+  --surface: #15151b;       /* card surface */
+  --surface-2: #1f1f27;     /* elevated / inputs */
+  --border: #2a2a33;
+  --foreground: #fafafa;
+  --muted: #8f8f99;
+  --accent: #8b5cf6;        /* electric violet */
+  --accent-foreground: #ffffff;
+  --positive: #34d399;
+  --negative: #fb5b6e;
+  --ring: #8b5cf6;
 }
 
 /* Expose tokens to Tailwind's utility engine */
@@ -94,9 +90,9 @@ body::before {
   z-index: -1;
   pointer-events: none;
   background:
-    radial-gradient(48% 42% at 6% 8%, rgba(61, 220, 151, 0.16), transparent 70%),
-    radial-gradient(38% 34% at 78% 42%, rgba(214, 158, 92, 0.10), transparent 72%),
-    radial-gradient(60% 50% at 50% 108%, rgba(61, 220, 151, 0.07), transparent 70%);
+    radial-gradient(48% 42% at 6% 8%, rgba(139, 92, 246, 0.16), transparent 70%),
+    radial-gradient(38% 34% at 78% 42%, rgba(129, 140, 248, 0.09), transparent 72%),
+    radial-gradient(60% 50% at 50% 108%, rgba(139, 92, 246, 0.07), transparent 70%);
 }
 
 /* The grid only reads on the dark canvas; on light it turns to mud. */
@@ -118,7 +114,7 @@ body::before {
 /* Accent wash used on hero / feature surfaces */
 .dark .obsidian-glow {
   background-image:
-    radial-gradient(60% 120% at 50% 0%, rgba(61, 220, 151, 0.08), transparent 60%);
+    radial-gradient(60% 120% at 50% 0%, rgba(139, 92, 246, 0.10), transparent 60%);
 }
 
 /* Thin custom scrollbar */
@@ -180,8 +176,8 @@ body::before {
 }
 
 @keyframes pulse-badge {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(61, 220, 151, 0.5); }
-  50% { box-shadow: 0 0 0 6px rgba(61, 220, 151, 0); }
+  0%, 100% { box-shadow: 0 0 0 0 rgba(139, 92, 246, 0.5); }
+  50% { box-shadow: 0 0 0 6px rgba(139, 92, 246, 0); }
 }
 .animate-pulse-badge {
   animation: pulse-badge 1.8s ease-out infinite;
