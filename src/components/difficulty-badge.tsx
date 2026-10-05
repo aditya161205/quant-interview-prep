@@ -28,7 +28,7 @@ export function DifficultyBadge({
   return (
     <span
       className={cn(
-        "inline-flex w-[92px] shrink-0 items-center justify-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium",
+        "inline-flex w-[5.75rem] shrink-0 items-center justify-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium",
         styles[key],
         className,
       )}

@@ -12,7 +12,6 @@ export default function PracticePage() {
       <PageHeader
         kicker="Practice"
         title="Quant Interview Problems"
-        description="Filter by category, company, and difficulty. Open a problem to check your answer or reveal the worked solution."
       />
       <Suspense fallback={<div className="py-16 text-center text-sm text-muted">Loading…</div>}>
         <ProblemBrowser />

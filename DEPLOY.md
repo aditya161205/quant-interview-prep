@@ -11,8 +11,9 @@ Everything here is on free tiers.
 1. Go to <https://supabase.com> → sign in with GitHub → **New project**.
 2. Pick a name, a strong database password, and a region near you. Wait ~2 min
    for it to provision.
-3. **Create the table:** left sidebar → **SQL Editor** → **New query** → paste
-   the contents of [`supabase/schema.sql`](supabase/schema.sql) → **Run**.
+3. **Create the tables:** left sidebar → **SQL Editor** → **New query** → paste
+   the contents of [`supabase/schema.sql`](supabase/schema.sql) → **Run**. It is safe to re-run; it also
+   creates `path_progress` and `path_code`, which store each user's Paths progress and saved code.
 4. **Get your keys:** **Project Settings → API**. Copy:
    - **Project URL** → this is `NEXT_PUBLIC_SUPABASE_URL`
    - **anon public** key → this is `NEXT_PUBLIC_SUPABASE_ANON_KEY`

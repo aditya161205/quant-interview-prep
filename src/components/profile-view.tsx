@@ -400,17 +400,17 @@ function Heatmap({ activity }: { activity: Record<string, number> }) {
         {/* Axis labels are decorative for assistive tech — every cell already
             names its own full date. They stay hidden below sm, where the cells
             are too narrow to align type against. */}
-        <div aria-hidden className="mb-1.5 hidden gap-[6px] sm:flex">
+        <div aria-hidden className="mb-1.5 hidden gap-1.5 sm:flex">
           <div className="w-8 shrink-0" />
-          <div className="flex min-w-0 flex-1 gap-[6px]">
+          <div className="flex min-w-0 flex-1 gap-1.5">
             {months.map((m, wi) => (
               <span key={wi} className="min-w-0 flex-1 whitespace-nowrap text-2xs uppercase tracking-wider text-muted">{m}</span>
             ))}
           </div>
         </div>
 
-        <div className="flex gap-[6px]">
-          <div aria-hidden className="hidden w-8 shrink-0 flex-col gap-[6px] sm:flex">
+        <div className="flex gap-1.5">
+          <div aria-hidden className="hidden w-8 shrink-0 flex-col gap-1.5 sm:flex">
             {WEEKDAY_LABELS.map((w, i) => (
               <span key={i} className="flex flex-1 items-center text-2xs uppercase tracking-wider text-muted">{w}</span>
             ))}
@@ -423,10 +423,10 @@ function Heatmap({ activity }: { activity: Record<string, number> }) {
             aria-label="Daily activity over the last 6 months"
             aria-describedby={hintId}
             onKeyDown={onKeyDown}
-            className="flex min-w-0 flex-1 gap-[6px]"
+            className="flex min-w-0 flex-1 gap-1.5"
           >
             {weeks.map((week, wi) => (
-              <div key={wi} role="row" className="flex flex-1 flex-col gap-[6px]">
+              <div key={wi} role="row" className="flex flex-1 flex-col gap-1.5">
                 {week.map((day, di) => (
                   <span
                     key={di}

@@ -61,7 +61,7 @@ export function AuthButton() {
           {name.charAt(0).toUpperCase()}
         </span>
       )}
-      <span className="hidden max-w-[120px] truncate text-sm text-muted sm:inline">{name}</span>
+      <span className="hidden max-w-[7.5rem] truncate text-sm text-muted sm:inline">{name}</span>
       <Button variant="outline" size="sm" onClick={() => supabase.auth.signOut()}>
         <LogOut className="h-4 w-4" />
         <span className="hidden sm:inline">Sign out</span>

@@ -34,7 +34,7 @@ function Corner({ rank, suit, flip = false }: { rank: Rank; suit: Suit; flip?: b
       )}
       style={{ color: inkFor(suit) }}
     >
-      <span className="text-[16px] font-bold">{rank}</span>
+      <span className="text-base font-bold">{rank}</span>
       <span className="text-2xs">{suit}</span>
     </div>
   );
@@ -47,7 +47,7 @@ function Pips({ value, suit }: { value: number; suit: Suit }) {
       {layout.map(([x, y], i) => (
         <span
           key={i}
-          className="absolute text-[22px] leading-none"
+          className="absolute text-[1.375rem] leading-none"
           style={{
             left: `${x * 100}%`,
             top: `${y * 100}%`,

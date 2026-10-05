@@ -51,11 +51,11 @@ export default function RootLayout({
           <Navbar />
           {/* The app sits in an inset panel so the ambient light reads as
               coming from behind the product rather than washing over it. */}
-          <div className="mx-auto w-full max-w-6xl flex-1 px-3 pb-6 pt-3 sm:px-4">
+          <div className="mx-auto w-full max-w-[96rem] flex-1 px-3 pb-6 pt-3 sm:px-4">
             <main
               id="main-content"
               tabIndex={-1}
-              className="h-full rounded-[1.75rem] border border-border/70 bg-surface/40 px-5 py-7 backdrop-blur-sm focus:outline-none sm:px-8 sm:py-9"
+              className="h-full rounded-[1.75rem] border border-border/70 bg-surface/40 px-4 py-6 backdrop-blur-sm focus:outline-none sm:px-6 sm:py-7"
             >
               {children}
             </main>

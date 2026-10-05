@@ -83,7 +83,6 @@ export default function MarketMakingHub() {
       <PageHeader
         kicker="Market Making"
         title="Market Making Games"
-        description="Interactive trading games that drill the mental math and decision-making behind a real trading desk. Pick one to play."
       />
 
       <div className="grid gap-5 md:grid-cols-2">

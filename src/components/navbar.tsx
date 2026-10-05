@@ -10,7 +10,7 @@ import { AuthButton } from "@/components/auth-button";
 const links = [
   { href: "/", label: "Dashboard" },
   { href: "/practice", label: "Practice" },
-  { href: "/study", label: "Study" },
+  { href: "/paths", label: "Paths" },
   { href: "/market-making", label: "Market Making" },
   { href: "/profile", label: "Profile" },
 ];
@@ -34,7 +34,7 @@ export function Navbar() {
 
   return (
     <header className="sticky top-0 z-50 px-4 pt-3">
-      <div className="glass mx-auto flex h-14 max-w-6xl items-center gap-4 rounded-2xl px-3 sm:px-4">
+      <div className="glass mx-auto flex h-14 max-w-[96rem] items-center gap-4 rounded-2xl px-3 sm:px-4">
         <Brand />
 
         {!isLogin && (

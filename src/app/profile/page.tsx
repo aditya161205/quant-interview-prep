@@ -11,7 +11,6 @@ export default function ProfilePage() {
       <PageHeader
         kicker="Profile"
         title="Your progress"
-        description="Track problems solved, games played, and your day-to-day activity — synced to your account across devices."
       />
       <ProfileView />
     </div>

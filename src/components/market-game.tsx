@@ -353,11 +353,11 @@ function PlayerCard({
               <span className="rounded-md bg-negative/10 px-2 py-0.5 text-negative">ask {quote.ask}</span>
             </div>
           ) : (
-            <div className="mt-2 text-[13px] text-muted">quoting…</div>
+            <div className="mt-2 text-[0.8125rem] text-muted">quoting…</div>
           )}
         </div>
       ) : (
-        <div className="mt-2 h-5 text-[13px] text-muted">Trader</div>
+        <div className="mt-2 h-5 text-[0.8125rem] text-muted">Trader</div>
       )}
 
       <div className="mt-3 flex items-baseline justify-between border-t border-border pt-2">
@@ -752,7 +752,7 @@ function CardChip({ card }: { card: CardSnapshot }) {
   return (
     <span
       className={cn(
-        "inline-flex h-9 w-7 flex-col items-center justify-center rounded-md border bg-white text-[13px] font-bold leading-none",
+        "inline-flex h-9 w-7 flex-col items-center justify-center rounded-md border bg-white text-[0.8125rem] font-bold leading-none",
         card.wasFaceUp ? "border-zinc-300" : "border-accent ring-1 ring-accent/40",
       )}
       style={{ color: red ? "#d4163c" : "#17171d" }}

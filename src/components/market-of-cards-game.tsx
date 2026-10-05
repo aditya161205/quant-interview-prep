@@ -76,7 +76,7 @@ function MiniCard({ card }: { card: Card }) {
   return (
     <div className="relative h-[6.5rem] w-[4.5rem] shrink-0 rounded-lg border border-zinc-300 bg-white shadow-md" style={{ color: ink }}>
       <span className="absolute left-1.5 top-1 text-base font-bold leading-none">{card.rank}</span>
-      <span className="absolute left-1.5 top-[22px] text-xs leading-none">{card.suit}</span>
+      <span className="absolute left-1.5 top-[1.375rem] text-xs leading-none">{card.suit}</span>
       <span className="absolute inset-0 grid place-items-center text-4xl">{card.suit}</span>
       <span className="absolute bottom-1 right-1.5 rotate-180 text-base font-bold leading-none">{card.rank}</span>
     </div>
