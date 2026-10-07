@@ -5,7 +5,36 @@ import { SUPABASE_URL, SUPABASE_ANON_KEY, supabaseEnabled } from "@/lib/supabase
 // Routes the page-gate redirect must not touch (/api handles its own auth).
 const PUBLIC_PATHS = ["/login", "/auth", "/api"];
 
-export async function middleware(request: NextRequest) {
+// Firewall: vulnerability-scanner probes (WordPress, PHP, dotfiles, admin panels) get a 404 before any app code runs.
+const PROBE = /\.(php\d?|asp|aspx|jsp|cgi|env|ini|sql|bak|git|svn|ds_store)(\/|$)|^\/(wp-|wordpress|phpmyadmin|xmlrpc|cgi-bin|\.well-known\/security\.txt\/)|\/\.(git|env|aws|ssh|svn|htaccess|htpasswd)/i;
+const METHODS = new Set(["GET", "HEAD", "POST", "OPTIONS"]);
+
+// API rate limit: 120 requests a minute per IP.
+// ponytail: per-instance memory, so the limit is per serverless instance; use Vercel WAF rate limiting for a global one.
+const WINDOW_MS = 60_000;
+const LIMIT = 120;
+const hits = new Map<string, { n: number; reset: number }>();
+
+function limited(ip: string): boolean {
+  const now = Date.now();
+  const h = hits.get(ip);
+  if (!h || h.reset < now) {
+    if (hits.size > 10_000) hits.clear();
+    hits.set(ip, { n: 1, reset: now + WINDOW_MS });
+    return false;
+  }
+  return ++h.n > LIMIT;
+}
+
+export async function proxy(request: NextRequest) {
+  const path = request.nextUrl.pathname;
+  if (!METHODS.has(request.method)) return new NextResponse(null, { status: 405 });
+  if (PROBE.test(path)) return new NextResponse(null, { status: 404 });
+  if (path.startsWith("/api/")) {
+    const ip = request.headers.get("x-real-ip") ?? request.headers.get("x-forwarded-for")?.split(",")[0].trim() ?? "local";
+    if (limited(ip)) return NextResponse.json({ error: "Too many requests. Try again in a minute." }, { status: 429, headers: { "Retry-After": "60" } });
+  }
+
   // Without Supabase configured there's no auth, so the app stays open.
   if (!supabaseEnabled) return NextResponse.next();
 
@@ -26,7 +55,6 @@ export async function middleware(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const path = request.nextUrl.pathname;
   const isPublic = PUBLIC_PATHS.some((p) => path === p || path.startsWith(`${p}/`));
 
   // Gate: must be signed in to reach anything that isn't a public route.
