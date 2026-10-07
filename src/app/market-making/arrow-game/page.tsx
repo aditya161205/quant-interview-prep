@@ -1,3 +1,5 @@
+import { hasPro } from "@/lib/billing";
+import { Paywall } from "@/components/paywall";
 import { ArrowGame } from "@/components/arrow-game";
 import { HowToPlay } from "@/components/how-to-play";
 import { ArrowGameRules } from "@/components/game-rules";
@@ -7,7 +9,8 @@ export const metadata = {
   title: "Arrow Game — QuantPrep",
 };
 
-export default function ArrowGamePage() {
+export default async function ArrowGamePage() {
+  if (!(await hasPro())) return <Paywall what="This game" />;
   return (
     <div className="space-y-6">
       <PageHeader

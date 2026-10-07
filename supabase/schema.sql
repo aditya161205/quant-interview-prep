@@ -55,3 +55,19 @@ create policy "own path progress" on public.path_progress
 drop policy if exists "own path code" on public.path_code;
 create policy "own path code" on public.path_code
   for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+
+-- ------------------------------------------------------------------
+-- Subscriptions (Razorpay). Written only by the server (service role)
+-- from verified checkouts and webhooks; RLS with no policies keeps
+-- browsers from reading or editing it.
+-- ------------------------------------------------------------------
+create table if not exists public.subscriptions (
+  user_id         uuid primary key references auth.users (id) on delete cascade,
+  subscription_id text not null,
+  status          text not null,
+  current_end     timestamptz not null,
+  updated_at      timestamptz not null default now()
+);
+
+alter table public.subscriptions enable row level security;
+revoke all on public.subscriptions from anon, authenticated;

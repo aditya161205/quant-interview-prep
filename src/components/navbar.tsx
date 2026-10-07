@@ -13,6 +13,7 @@ const links = [
   { href: "/paths", label: "Paths" },
   { href: "/market-making", label: "Market Making" },
   { href: "/profile", label: "Profile" },
+  { href: "/pricing", label: "Pricing" },
 ];
 
 function Brand() {

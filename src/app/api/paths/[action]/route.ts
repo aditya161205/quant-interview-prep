@@ -3,6 +3,7 @@ import {
   answer,
   getStore,
   grading,
+  isFreeItem,
   isQuestion,
   isStep,
   isTask,
@@ -14,6 +15,7 @@ import {
   step,
   task,
 } from "@/lib/paths-server";
+import { hasPro } from "@/lib/billing";
 
 export const dynamic = "force-dynamic";
 
@@ -21,15 +23,20 @@ type Ctx = { params: Promise<{ action: string }> };
 
 const json = (body: unknown, status = 200) => NextResponse.json(body, { status, headers: { "Cache-Control": "no-store" } });
 const notFound = () => json({ error: "not found" }, 404);
+const paywall = () => json({ error: "subscription_required" }, 402);
 const MAX_CODE = 200_000;
 
 export async function GET(request: Request, { params }: Ctx) {
   const { action } = await params;
   const store = await getStore();
   if (!store) return json({ error: "unauthorized" }, 401);
+  const pro = await hasPro();
   const q = new URL(request.url).searchParams;
 
-  if (action === "state") return json(state(await store.load()));
+  // The path overview and step list are free; opening a step past the first needs a subscription.
+  if (action === "state") return json(state(await store.load(), pro));
+  const item = action === "grading" ? q.get("module") : q.get("id");
+  if (!pro && action !== "code" && !isFreeItem(item)) return paywall();
   if (action === "step") {
     const id = q.get("id");
     return isStep(id) ? json(step(id, await store.load())) : notFound();
@@ -44,7 +51,7 @@ export async function GET(request: Request, { params }: Ctx) {
   }
   if (action === "code") {
     // Saved solutions of earlier tasks, so a later one can `from r13_weights import target_weights`.
-    const ids = (q.get("ids") ?? "").split(",").filter(isTask).slice(0, 50);
+    const ids = (q.get("ids") ?? "").split(",").filter(isTask).filter((t) => pro || isFreeItem(t)).slice(0, 50);
     return json(await store.code(ids));
   }
   return notFound();
@@ -61,6 +68,7 @@ export async function POST(request: Request, { params }: Ctx) {
     return json({ error: "bad body" }, 400);
   }
   const id = body.id;
+  if (!isFreeItem(id) && !(await hasPro())) return paywall();
 
   if (action === "save" && isTask(id)) {
     if (typeof body.code !== "string" || body.code.length > MAX_CODE) return json({ error: "bad code" }, 400);

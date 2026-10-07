@@ -3,6 +3,7 @@
 import * as React from "react";
 import { Loader2, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Paywall } from "@/components/paywall";
 import { api } from "@/lib/paths";
 
 type Load<T> = { status: "loading" | "ok" | "error"; data: T | null; error?: string };
@@ -38,6 +39,7 @@ export function Spinner() {
 export function Gate<T>({ load, children }: { load: Load<T> & { reload: () => void }; children: (data: T) => React.ReactNode }) {
   if (load.data) return <>{children(load.data)}</>;
   if (load.status === "loading") return <Spinner />;
+  if (load.error === "subscription_required") return <Paywall what="This step" />;
   return (
     <div className="mx-auto max-w-md space-y-4 py-16 text-center">
       <p className="text-sm text-muted">{load.error ?? "Something went wrong."}</p>

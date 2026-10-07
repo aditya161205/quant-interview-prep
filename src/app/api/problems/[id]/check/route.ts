@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getApiUser } from "@/lib/supabase/api-auth";
+import { hasPro, isFreeProblem } from "@/lib/billing";
 import { getAdminClient, problemsEnabled } from "@/lib/supabase/admin";
 import { answerMatches } from "@/lib/problems";
 
@@ -14,6 +15,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   const { id } = await params;
   const numId = Number(id);
   if (!Number.isInteger(numId)) return NextResponse.json({ error: "bad id" }, { status: 400 });
+  if (!isFreeProblem(numId) && !(await hasPro())) return NextResponse.json({ error: "subscription_required" }, { status: 402 });
 
   let body: { answer?: unknown };
   try {

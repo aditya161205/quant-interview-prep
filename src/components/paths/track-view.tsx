@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { Check } from "lucide-react";
+import { Check, Lock } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { PageHeader } from "@/components/page-header";
 import { Gate, usePaths } from "@/components/paths/load";
@@ -57,7 +57,7 @@ export function TrackView({ trackId }: { trackId: string }) {
                 return (
                   <li key={step.id}>
                     <Link
-                      href={`/paths/${t.id}/${step.id}`}
+                      href={step.locked ? "/pricing" : `/paths/${t.id}/${step.id}`}
                       className={cn(
                         "group flex items-start gap-4 rounded-2xl border bg-surface p-4 shadow-(--shadow-card) transition-colors hover:border-foreground/25 sm:p-5",
                         step.kind === "capstone" ? "border-accent/50" : "border-border",
@@ -78,6 +78,7 @@ export function TrackView({ trackId }: { trackId: string }) {
                       <div className="min-w-0 flex-1">
                         <div className="flex flex-wrap items-center gap-2">
                           <span className="font-semibold tracking-[-0.01em]">{step.title}</span>
+                          {step.locked && <Lock className="h-3.5 w-3.5 text-muted" aria-label="Pro" />}
                           {step.kind !== "core" && <Badge tone={KIND_TONE[step.kind]}>{KIND_LABEL[step.kind]}</Badge>}
                         </div>
                         <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted">
@@ -87,8 +88,12 @@ export function TrackView({ trackId }: { trackId: string }) {
                         </div>
                       </div>
                       <div className="hidden w-24 shrink-0 pt-1 text-right sm:block">
-                        <span className="font-mono text-xs tabular-nums text-muted">{Math.round(100 * k)}%</span>
-                        <ProgressBar value={k} className="mt-1.5" />
+                        {!step.locked && (
+                          <>
+                            <span className="font-mono text-xs tabular-nums text-muted">{Math.round(100 * k)}%</span>
+                            <ProgressBar value={k} className="mt-1.5" />
+                          </>
+                        )}
                       </div>
                     </Link>
                   </li>

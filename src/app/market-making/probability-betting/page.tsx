@@ -1,3 +1,5 @@
+import { hasPro } from "@/lib/billing";
+import { Paywall } from "@/components/paywall";
 import { BettingGame } from "@/components/betting-game";
 import { HowToPlay } from "@/components/how-to-play";
 import { BettingRules } from "@/components/game-rules";
@@ -7,7 +9,8 @@ export const metadata = {
   title: "Probability Betting Game — QuantPrep",
 };
 
-export default function ProbabilityBettingPage() {
+export default async function ProbabilityBettingPage() {
+  if (!(await hasPro())) return <Paywall what="This game" />;
   return (
     <div className="space-y-6">
       <PageHeader

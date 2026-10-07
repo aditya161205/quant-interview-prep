@@ -1,3 +1,5 @@
+import { hasPro } from "@/lib/billing";
+import { Paywall } from "@/components/paywall";
 import { MarketOfCardsGame } from "@/components/market-of-cards-game";
 import { HowToPlay } from "@/components/how-to-play";
 import { MarketOfCardsRules } from "@/components/game-rules";
@@ -7,7 +9,8 @@ export const metadata = {
   title: "Market of Cards — QuantPrep",
 };
 
-export default function MarketOfCardsPage() {
+export default async function MarketOfCardsPage() {
+  if (!(await hasPro())) return <Paywall what="This game" />;
   return (
     <div className="space-y-6">
       <PageHeader

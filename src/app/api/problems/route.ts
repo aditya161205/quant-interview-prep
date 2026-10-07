@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getApiUser } from "@/lib/supabase/api-auth";
+import { hasPro, isFreeProblem } from "@/lib/billing";
 import { getAdminClient, problemsEnabled } from "@/lib/supabase/admin";
 import { splitCompanies, type ProblemMeta } from "@/lib/problems";
 
@@ -12,9 +13,10 @@ const COLUMNS = "id, question_name, topic, difficulty, asked_in";
 
 type Row = Record<string, unknown>;
 
-function toMeta(r: Row): ProblemMeta {
+function toMeta(r: Row, pro: boolean): ProblemMeta {
   return {
     id: r.id as number,
+    locked: !pro && !isFreeProblem(r.id as number),
     title: (r.question_name as string) ?? "",
     category: (r.topic as string) ?? "",
     companies: splitCompanies(r.asked_in as string | null),
@@ -48,6 +50,7 @@ export async function GET(request: Request) {
   const search = searchParams.get("q");
 
   const admin = getAdminClient();
+  const pro = await hasPro();
 
   // Every read below shares these filters and this ordering; only the
   // projection and the row span differ.
@@ -85,7 +88,7 @@ export async function GET(request: Request) {
     if (ids.length === 0) return NextResponse.json({ problems: [] });
     const { data, error } = await build(COLUMNS).in("id", ids);
     if (error) return NextResponse.json({ error: "query failed" }, { status: 500 });
-    return NextResponse.json({ problems: ((data ?? []) as Row[]).map(toMeta) });
+    return NextResponse.json({ problems: ((data ?? []) as Row[]).map((r) => toMeta(r, pro)) });
   }
 
   // One page of rows plus an exact total. Callers that ask for neither a page
@@ -111,7 +114,7 @@ export async function GET(request: Request) {
     ).range(from, from + take - 1);
     if (error) return NextResponse.json({ error: "query failed" }, { status: 500 });
     if (from === offset) total = count ?? 0;
-    for (const r of (data ?? []) as Row[]) problems.push(toMeta(r));
+    for (const r of (data ?? []) as Row[]) problems.push(toMeta(r, pro));
     if (!data || data.length < take) break;
   }
 

@@ -13,6 +13,7 @@ import {
   ChevronDown,
   Check,
   RefreshCw,
+  Lock,
 } from "lucide-react";
 import { usePracticeStore, useMounted } from "@/store/practice-store";
 import { DifficultyBadge } from "@/components/difficulty-badge";
@@ -387,7 +388,10 @@ export function ProblemBrowser() {
                 <Link href={`/practice/${p.id}${qs ? `?${qs}` : ""}`} className="absolute inset-0" aria-label={p.title} />
                 <span className="pointer-events-none font-mono text-muted">{(page - 1) * pageSize + i + 1}</span>
                 <span className="pointer-events-none min-w-0">
-                  <span className="block truncate font-medium">{p.title}</span>
+                  <span className="flex items-center gap-1.5 truncate font-medium">
+                    {p.locked && <Lock className="h-3.5 w-3.5 shrink-0 text-muted" aria-label="Pro" />}
+                    <span className="truncate">{p.title}</span>
+                  </span>
                   <span className="block truncate text-xs text-muted sm:hidden">{p.category}</span>
                 </span>
                 <span className="pointer-events-none hidden truncate text-muted sm:block">{p.category}</span>

@@ -11,6 +11,7 @@ export const KIND_LABEL: Record<Kind, string> = {
 
 export interface StepSummary {
   id: string;
+  locked: boolean;
   title: string;
   summary: string;
   kind: Kind;

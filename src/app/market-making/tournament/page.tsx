@@ -1,3 +1,5 @@
+import { hasPro } from "@/lib/billing";
+import { Paywall } from "@/components/paywall";
 import { TournamentGame } from "@/components/tournament-game";
 import { HowToPlay } from "@/components/how-to-play";
 import { TournamentRules } from "@/components/game-rules";
@@ -7,7 +9,8 @@ export const metadata = {
   title: "Tournament Market — QuantPrep",
 };
 
-export default function TournamentPage() {
+export default async function TournamentPage() {
+  if (!(await hasPro())) return <Paywall what="This game" />;
   return (
     <div className="space-y-6">
       <PageHeader

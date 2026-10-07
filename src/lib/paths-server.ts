@@ -138,10 +138,24 @@ export async function getStore(): Promise<Store | null> {
 
 const qDone = (s?: QuestionStatus) => s === "correct" || s === "gotit";
 
-function summary(sid: string, p: Progress): StepSummary {
+/** The first step of each path is free; the rest needs a subscription. */
+const FREE_STEPS = new Set(CONTENT.tracks.map((t) => t.steps[0]));
+
+/** The step a step, question or task id belongs to. */
+function stepOf(id: unknown): string | null {
+  if (isStep(id)) return id;
+  if (isQuestion(id)) return CONTENT.questions[id].step;
+  if (isTask(id)) return CONTENT.problems[id].step;
+  return null;
+}
+
+export const isFreeItem = (id: unknown) => FREE_STEPS.has(stepOf(id) ?? "");
+
+function summary(sid: string, p: Progress, pro: boolean): StepSummary {
   const st = CONTENT.steps[sid];
   return {
     id: sid,
+    locked: !pro && !FREE_STEPS.has(sid),
     title: st.title,
     summary: st.summary,
     kind: st.kind,
@@ -153,9 +167,9 @@ function summary(sid: string, p: Progress): StepSummary {
   };
 }
 
-export function state(p: Progress): { tracks: Track[] } {
+export function state(p: Progress, pro: boolean): { tracks: Track[] } {
   return {
-    tracks: CONTENT.tracks.map((t) => ({ id: t.id, title: t.title, tagline: t.tagline, steps: t.steps.map((s) => summary(s, p)) })),
+    tracks: CONTENT.tracks.map((t) => ({ id: t.id, title: t.title, tagline: t.tagline, steps: t.steps.map((s) => summary(s, p, pro)) })),
   };
 }
 
@@ -194,7 +208,7 @@ function publicQuestion(qid: string, p: Progress): Question {
 export function step(sid: string, p: Progress): StepDetail {
   const st = CONTENT.steps[sid];
   return {
-    ...summary(sid, p),
+    ...summary(sid, p, true), // only served to users who can open the step
     lesson: st.lesson,
     questions: st.questions.map((q) => publicQuestion(q, p)),
     problems: st.problems.map((t) => ({

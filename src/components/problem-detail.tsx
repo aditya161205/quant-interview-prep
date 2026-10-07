@@ -6,6 +6,7 @@ import { useSearchParams } from "next/navigation";
 import { ArrowLeft, ArrowRight, Check, X, Lightbulb, Loader2, BookOpen, Timer, Hourglass, Play, Pause, RotateCcw, ChevronUp, ChevronDown, AlertTriangle } from "lucide-react";
 import { usePracticeStore } from "@/store/practice-store";
 import { ProblemActions } from "@/components/problem-actions";
+import { Paywall } from "@/components/paywall";
 import { MathText } from "@/components/math-text";
 import { DifficultyBadge } from "@/components/difficulty-badge";
 import { Card, CardContent } from "@/components/ui/card";
@@ -16,7 +17,7 @@ import type { Difficulty, ProblemDetail as Detail, ProblemMeta } from "@/lib/pro
 
 export function ProblemDetail({ id }: { id: string }) {
   const [detail, setDetail] = React.useState<Detail | null>(null);
-  const [status, setStatus] = React.useState<"loading" | "ok" | "error">("loading");
+  const [status, setStatus] = React.useState<"loading" | "ok" | "error" | "locked">("loading");
   // A check or a hint counts as an attempt — that's what earns the solution
   // reveal its emphasis (see SolutionReveal).
   const [attempted, setAttempted] = React.useState(false);
@@ -50,12 +51,12 @@ export function ProblemDetail({ id }: { id: string }) {
     setSolution(null);
     setSolutionOpen(false);
     fetch(`/api/problems/${id}`)
-      .then((r) => (r.ok ? r.json() : Promise.reject()))
+      .then((r) => (r.status === 402 ? Promise.reject("locked") : r.ok ? r.json() : Promise.reject()))
       .then((d: Detail) => {
         setDetail(d);
         setStatus("ok");
       })
-      .catch(() => setStatus("error"));
+      .catch((e) => setStatus(e === "locked" ? "locked" : "error"));
   }, [id]);
 
   // Only the server-side filters narrow the list; status is applied on the client.
@@ -157,6 +158,7 @@ export function ProblemDetail({ id }: { id: string }) {
       </div>
     );
   }
+  if (status === "locked") return <Paywall what="This problem" />;
   if (status === "error" || !detail) {
     return (
       <div className="mx-auto max-w-3xl space-y-4 text-center">

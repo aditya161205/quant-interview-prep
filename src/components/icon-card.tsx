@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowUpRight, type LucideIcon } from "lucide-react";
+import { ArrowUpRight, Lock, type LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 // `accent` follows the theme token; the rest stay distinct so each module
@@ -34,6 +34,7 @@ export function IconCard({
   icon: Icon,
   color = "accent",
   watermark,
+  locked = false,
 }: {
   href: string;
   title: string;
@@ -42,6 +43,7 @@ export function IconCard({
   icon: LucideIcon;
   color?: CardColor;
   watermark?: string;
+  locked?: boolean;
 }) {
   return (
     <Link
@@ -63,7 +65,7 @@ export function IconCard({
           <Icon className="h-6 w-6" />
         </span>
         <span className="grid h-9 w-9 place-items-center rounded-full bg-surface-2 text-foreground transition-colors group-hover:bg-foreground group-hover:text-background">
-          <ArrowUpRight className="h-4 w-4" />
+          {locked ? <Lock className="h-4 w-4" aria-label="Pro" /> : <ArrowUpRight className="h-4 w-4" />}
         </span>
       </div>
 

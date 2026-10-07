@@ -7,6 +7,8 @@ export interface ProblemMeta {
   category: string;
   companies: string[];
   difficulty: string;
+  /** Needs a subscription. */
+  locked?: boolean;
 }
 
 /** What the detail view receives (still no answer or solution). */
