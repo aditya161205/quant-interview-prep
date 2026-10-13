@@ -1,23 +1,7 @@
 "use client";
 
 import * as React from "react";
-import {
-  Play,
-  RotateCcw,
-  ArrowRight,
-  TrendingUp,
-  TrendingDown,
-  SkipForward,
-  Timer,
-  Trophy,
-  Cpu,
-  Lock,
-  CheckCircle2,
-  Settings2,
-  Zap,
-  AlertTriangle,
-  Flag,
-} from "lucide-react";
+import { RotateCcw, ArrowRight, Lock, CheckCircle2, Zap, AlertTriangle, Flag } from "lucide-react";
 import {
   useEtfStore,
   DEFAULT_ETF_CONFIG,
@@ -34,10 +18,21 @@ import {
 } from "@/lib/etf-game";
 import { cn } from "@/lib/utils";
 import { useRecordGame } from "@/store/practice-store";
-import { Countdown as StartCountdown } from "@/components/countdown";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+import { useHideRulesWhile } from "@/components/how-to-play";
+import {
+  ActionPlate,
+  FinalBand,
+  Note,
+  Panel,
+  QuietButton,
+  QuotePlates,
+  Scoreboard,
+  Segmented,
+  Standings,
+  Stat,
+  Ticket,
+  Timer,
+} from "@/components/pit/game-kit";
 
 /* money helpers — this game is denominated in dollars */
 const money = (x: number) => `$${x.toFixed(2)}`;
@@ -47,6 +42,7 @@ const signed$ = (x: number) =>
 
 export function EtfGame() {
   const phase = useEtfStore((s) => s.phase);
+  useHideRulesWhile(phase !== "intro" && phase !== "gameover");
 
   return (
     <>
@@ -94,231 +90,102 @@ function Announcer() {
 
 function Intro() {
   const start = useEtfStore((s) => s.start);
-  const [counting, setCounting] = React.useState(false);
   const saved = useEtfStore((s) => s.config);
   const [config, setConfig] = React.useState<EtfConfig>(saved ?? DEFAULT_ETF_CONFIG);
-  const set = <K extends keyof EtfConfig>(k: K, v: EtfConfig[K]) =>
-    setConfig((c) => ({ ...c, [k]: v }));
+  const set = <K extends keyof EtfConfig>(k: K, v: EtfConfig[K]) => setConfig((c) => ({ ...c, [k]: v }));
 
   return (
-    // Title, description and the rules panel live on the page — this card is
-    // just setup.
-    <Card className="obsidian-glow mx-auto max-w-2xl">
-      <CardContent className="space-y-6 py-8">
-        <div className="mx-auto max-w-xl space-y-4 rounded-xl border border-border bg-surface-2/40 p-5">
-          <div className="flex items-center gap-2 text-sm font-medium">
-            <Settings2 className="h-4 w-4 text-accent" /> Game settings
-          </div>
-          <Segmented label="Rounds" options={ROUND_OPTIONS} value={config.rounds} onChange={(v) => set("rounds", v)} />
-          <Segmented label="Max units" options={MAX_UNITS_OPTIONS} value={config.maxUnits} onChange={(v) => set("maxUnits", v)} />
-          <Segmented label="Timer" options={SECONDS_OPTIONS} value={config.seconds} onChange={(v) => set("seconds", v)} suffix="s" />
-        </div>
-
-        <div className="flex justify-center">
-          <Button size="lg" onClick={() => setCounting(true)}>
-            <Play className="h-4 w-4" /> Start game
-          </Button>
-        </div>
-
-        {counting && <StartCountdown onDone={() => start(config)} />}
-      </CardContent>
-    </Card>
-  );
-}
-
-function Segmented<T extends number>({
-  label,
-  options,
-  value,
-  onChange,
-  suffix = "",
-}: {
-  label: string;
-  options: readonly T[];
-  value: T;
-  onChange: (v: T) => void;
-  suffix?: string;
-}) {
-  return (
-    <div className="flex flex-wrap items-center justify-between gap-3">
-      <span className="text-sm text-muted">{label}</span>
-      <div className="flex gap-1.5">
-        {options.map((opt) => (
-          <button
-            key={opt}
-            onClick={() => onChange(opt)}
-            className={cn(
-              "h-9 min-w-11 rounded-lg border px-3 font-mono text-sm transition-colors",
-              value === opt
-                ? "border-accent bg-accent/15 text-accent"
-                : "border-border bg-surface text-muted hover:text-foreground",
-            )}
-          >
-            {opt}
-            {suffix}
-          </button>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-/* ------------------------------- countdown --------------------------- */
-
-function Countdown({ seconds, onExpire }: { seconds: number; onExpire: () => void }) {
-  const [left, setLeft] = React.useState(seconds);
-  const fired = React.useRef(false);
-  React.useEffect(() => {
-    const start = Date.now();
-    const id = setInterval(() => {
-      const r = Math.max(0, seconds - (Date.now() - start) / 1000);
-      setLeft(r);
-      if (r <= 0 && !fired.current) {
-        fired.current = true;
-        clearInterval(id);
-        onExpire();
-      }
-    }, 100);
-    return () => clearInterval(id);
-  }, [seconds, onExpire]);
-  const pct = Math.max(0, (left / seconds) * 100);
-  const danger = left <= seconds * 0.35;
-  return (
-    <div className="flex items-center gap-2">
-      <div className="h-1.5 w-24 overflow-hidden rounded-full bg-surface-2 sm:w-32">
-        <div
-          className={cn("h-full rounded-full transition-[width] duration-100 ease-linear", danger ? "bg-negative" : "bg-accent")}
-          style={{ width: `${pct}%` }}
-        />
-      </div>
-      <span className={cn("w-8 text-right font-mono text-sm font-semibold", danger ? "text-negative" : "text-foreground")}>
-        {Math.ceil(left)}s
-      </span>
-    </div>
+    <Ticket onStart={() => start(config)}>
+      <Segmented label="Rounds" options={ROUND_OPTIONS} value={config.rounds} onChange={(v) => set("rounds", v)} />
+      <Segmented label="Max units" options={MAX_UNITS_OPTIONS} value={config.maxUnits} onChange={(v) => set("maxUnits", v)} />
+      <Segmented label="Timer" options={SECONDS_OPTIONS} value={config.seconds} onChange={(v) => set("seconds", v)} suffix="s" />
+    </Ticket>
   );
 }
 
 /* ----------------------------------- table --------------------------- */
 
 function Table() {
-  const { phase, config, round, data, results, totals, timeout, endGame } = useEtfStore();
+  const { phase, config, round, data, results, totals, timeout, endGame, bots } = useEtfStore();
   if (!data) return null;
-  const youTotal = totals["You"] ?? 0;
   const hasChanges = data.stocks.some((s) => s.change !== 0);
+  const tone = (x: number) => (x > 0 ? ("good" as const) : x < 0 ? ("bad" as const) : undefined);
 
   return (
-    <div className="space-y-4">
-      {/* Top bar */}
-      <Card>
-        <CardContent className="flex flex-wrap items-center justify-between gap-3 p-4">
-          <div className="flex items-baseline gap-3">
-            <span className="text-base font-semibold">
-              Round {round}
-              <span className="ml-1.5 text-sm font-normal text-muted">of {config.rounds}</span>
-            </span>
-            <span className="text-sm text-muted">
-              P&amp;L{" "}
-              <span className={cn("font-mono font-semibold", youTotal > 0 && "text-positive", youTotal < 0 && "text-negative", youTotal === 0 && "text-foreground")}>
-                {total$(youTotal)}
-              </span>
-            </span>
-          </div>
-          <div className="flex items-center gap-3">
-            {phase === "trading" ? (
-              <Countdown seconds={config.seconds} onExpire={timeout} />
-            ) : (
-              <Badge tone="outline">Round complete</Badge>
-            )}
-            <Button variant="ghost" size="sm" onClick={endGame}>
-              <Flag className="h-4 w-4" /> End game
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+    <div className="space-y-5">
+      <Scoreboard
+        cells={[
+          { label: "Round", value: `${round}/${config.rounds}` },
+          ...["You", ...bots].map((name) => ({ label: name, value: total$(totals[name] ?? 0), tone: tone(totals[name] ?? 0) })),
+        ]}
+        aside={
+          <QuietButton onClick={endGame} className="text-white/70 hover:bg-white/10 hover:text-white">
+            <Flag className="h-4 w-4" /> End
+          </QuietButton>
+        }
+      />
 
-      {/* Keyed by round so the whole board re-animates on every new round */}
-      <div key={round} className="animate-round space-y-4">
+      <div key={round} className="animate-round space-y-5">
         {data.event && (
-          <div className="animate-pop flex items-center gap-2 rounded-xl border border-amber-500/40 bg-amber-500/10 px-4 py-2.5 text-sm text-amber-600 dark:text-amber-400">
-            <AlertTriangle className="h-4 w-4 shrink-0" /> {data.event}
-          </div>
+          <Note tone="warn" icon={<AlertTriangle className="h-4 w-4" />}>
+            <strong>News:</strong> {data.event}
+          </Note>
         )}
 
-        <div className="grid gap-4 lg:grid-cols-[1fr_300px]">
-        {/* Left column: basket + your action */}
-        <div className="space-y-4">
-        <Card className="animate-pop">
-          <CardHeader className="py-4">
-            <CardTitle className="text-base">{data.basket}</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
+        <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_24rem]">
+          <Panel title={data.basket} meta={<QuotePlates bid={money(data.etfBid)} ask={money(data.etfAsk)} />}>
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="text-left text-xs uppercase tracking-wider text-muted">
-                    <th className="pb-2 font-medium">Ticker</th>
-                    <th className="pb-2 text-right font-medium">Price</th>
-                    {hasChanges && <th className="pb-2 text-right font-medium">Change</th>}
-                    <th className="pb-2 text-right font-medium">Weight</th>
-                    <th className="pb-2 text-right font-medium">W × P</th>
+                  <tr className="font-x text-left text-xs font-extrabold uppercase tracking-[0.08em] text-muted">
+                    <th className="pb-3">Ticker</th>
+                    <th className="pb-3 text-right">Price</th>
+                    {hasChanges && <th className="pb-3 text-right">Change</th>}
+                    <th className="pb-3 text-right">Weight</th>
+                    <th className="pb-3 text-right">W × P</th>
                   </tr>
                 </thead>
-                <tbody className="font-mono">
+                <tbody className="tabular-nums">
                   {data.stocks.map((s) => (
                     <tr key={s.ticker} className="border-t border-border">
-                      <td className="py-2 font-sans font-semibold">{s.ticker}</td>
-                      <td className="py-2 text-right">{money(s.price)}</td>
+                      <td className="py-3">
+                        <span className="font-xx rounded-[3px] bg-foreground px-2 py-1 text-xs font-black tracking-[0.06em] text-background">{s.ticker}</span>
+                      </td>
+                      <td className="font-x py-3 text-right font-bold">{money(s.price)}</td>
                       {hasChanges && (
-                        <td className={cn("py-2 text-right", s.change > 0 ? "text-positive" : s.change < 0 ? "text-negative" : "text-muted")}>
+                        <td className={cn("font-x py-3 text-right font-bold", s.change > 0 ? "text-positive" : s.change < 0 ? "text-negative" : "text-muted")}>
                           {s.change > 0 ? "+" : ""}
                           {s.change.toFixed(2)}
                         </td>
                       )}
-                      <td className="py-2 text-right text-muted">{s.weight.toFixed(2)}</td>
-                      <td className="py-2 text-right font-semibold">{money(s.weight * s.price)}</td>
+                      <td className="py-3 text-right text-muted">{s.weight.toFixed(2)}</td>
+                      <td className="font-x py-3 text-right font-black">{money(s.weight * s.price)}</td>
                     </tr>
                   ))}
-                  <tr className="border-t-2 border-border">
-                    <td className="pt-2 font-sans text-xs uppercase tracking-wider text-muted" colSpan={hasChanges ? 4 : 3}>
-                      NAV = Σ (W × P)
-                    </td>
-                    <td className="pt-2 text-right">
-                      {phase === "trading" ? (
-                        <span className="inline-flex items-center gap-1 rounded bg-surface-2 px-2 py-0.5 text-muted">
-                          <Lock className="h-3 w-3" /> ???
-                        </span>
-                      ) : (
-                        <span className="animate-pop inline-block font-mono text-base font-bold text-accent">{money(data.nav)}</span>
-                      )}
-                    </td>
-                  </tr>
                 </tbody>
               </table>
             </div>
-
-            <div className="rounded-xl border border-border bg-surface-2/40 p-4">
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-muted">ETF bid</span>
-                <span className="font-mono font-semibold text-positive">{money(data.etfBid)}</span>
-              </div>
-              <div className="mt-1.5 flex items-center justify-between">
-                <span className="text-sm text-muted">ETF ask</span>
-                <span className="font-mono font-semibold text-negative">{money(data.etfAsk)}</span>
-              </div>
-              <div className="mt-2 border-t border-border pt-2 text-center text-xs text-muted">
-                Transaction cost: ${TX_COST} per trade
-              </div>
+            <div className="flex items-center justify-between gap-4 rounded-[8px] bg-[#0f131a] text-white dark:ring-1 dark:ring-white/10 px-5 py-4">
+              <span className="font-x text-xs font-extrabold uppercase tracking-[0.1em] opacity-75">NAV = Σ (W × P)</span>
+              {phase === "trading" ? (
+                <span className="font-xx inline-flex items-center gap-2 text-2xl font-black opacity-60">
+                  <Lock className="h-5 w-5" /> ???
+                </span>
+              ) : (
+                <span className="animate-pop font-xx text-3xl font-black tabular-nums text-gold">{money(data.nav)}</span>
+              )}
             </div>
-          </CardContent>
-        </Card>
+            <p className="text-xs text-muted">Transaction cost ${TX_COST} per trade.</p>
+          </Panel>
 
-        {phase === "trading" ? <TradeControls /> : <ResultFooter />}
-        </div>
-
-        {/* Right column: players */}
-        <div className="space-y-3">
-          <PlayersPanel results={results} totals={totals} trading={phase === "trading"} />
-        </div>
+          <div className="space-y-5">
+            <Panel title={phase === "trading" ? "Your trade" : "Round result"}>
+              {phase === "trading" ? <TradeControls seconds={config.seconds} onExpire={timeout} /> : <ResultFooter />}
+            </Panel>
+            <Panel title="The race">
+              <PlayersPanel results={results} totals={totals} trading={phase === "trading"} />
+            </Panel>
+          </div>
         </div>
       </div>
     </div>
@@ -338,79 +205,58 @@ function PlayersPanel({
   const order = ["You", ...bots];
 
   return (
-    <>
+    <ol className="-my-2 divide-y divide-border">
       {order.map((name, i) => {
         const isYou = name === "You";
         const res = results?.find((r) => r.name === name);
         const tot = totals[name] ?? 0;
         return (
-          <div
-            key={name}
-            style={{ animationDelay: `${i * 70}ms` }}
-            className={cn(
-              "animate-pop rounded-xl border p-3 transition-colors",
-              isYou ? "border-accent/70 bg-accent/[0.07] ring-1 ring-accent/30" : "border-border bg-surface",
-            )}
-          >
-            <div className="flex items-center justify-between">
-              <span className={cn("flex items-center gap-1.5 text-sm font-semibold", isYou && "text-accent")}>
-                {!isYou && <Cpu className="h-3.5 w-3.5 text-muted" />}
+          <li key={name} style={{ animationDelay: `${i * 70}ms` }} className="animate-pop flex items-center gap-3 py-3">
+            <span className={cn("font-xx grid h-9 w-11 place-items-center rounded-[4px] text-xs font-black", isYou ? "bg-jacket text-jacket-ink" : "bg-surface-2")}>
+              {isYou ? "YOU" : name.slice(0, 3).toUpperCase()}
+            </span>
+            <span className="min-w-0 flex-1 text-sm">
+              <span className="flex items-center gap-1.5 font-bold">
                 {name}
                 {res?.first && (
-                  <span className="inline-flex items-center gap-0.5 rounded-full bg-accent/15 px-1.5 text-2xs font-medium text-accent">
-                    <Zap className="h-2.5 w-2.5" /> 1st
+                  <span className="font-x inline-flex items-center gap-0.5 rounded-[3px] bg-gold px-1.5 text-[0.65rem] font-extrabold text-[#1a1300]">
+                    <Zap className="h-2.5 w-2.5" /> 1ST
                   </span>
                 )}
               </span>
-              <span className={cn("font-mono text-sm font-semibold", tot > 0 && "text-positive", tot < 0 && "text-negative")}>
-                {total$(tot)}
-              </span>
-            </div>
-
-            <div className="mt-1 text-xs">
-              {trading || !res ? (
-                <span className="text-muted">{isYou ? "your move…" : "calculating…"}</span>
-              ) : (
-                <div className="animate-pop">
-                  <RoundActionLine result={res} />
-                </div>
-              )}
-            </div>
-          </div>
+              <span className="block text-xs text-muted">{trading || !res ? (isYou ? "your move…" : "calculating…") : <RoundActionLine result={res} />}</span>
+            </span>
+            <span className={cn("font-xx text-lg font-black tabular-nums", tot > 0 && "text-positive", tot < 0 && "text-negative")}>{total$(tot)}</span>
+          </li>
         );
       })}
-    </>
+    </ol>
   );
 }
 
 function RoundActionLine({ result }: { result: PlayerResult }) {
-  if (result.action === "skip") return <span className="text-muted">Passed</span>;
-  const Icon = result.action === "buy" ? TrendingUp : TrendingDown;
+  if (result.action === "skip") return <>Passed</>;
   return (
-    <span className="flex items-center justify-between">
-      <span className="flex items-center gap-1 text-muted">
-        <Icon className="h-3 w-3" />
-        {result.action === "buy" ? "Bought" : "Sold"} {result.units}
-      </span>
-      <span className={cn("font-mono font-medium", result.pnl > 0 ? "text-positive" : result.pnl < 0 ? "text-negative" : "text-muted")}>
-        {signed$(result.pnl)}
-      </span>
-    </span>
+    <>
+      {result.action === "buy" ? "Bought" : "Sold"} {result.units} ·{" "}
+      <span className={cn("font-bold", result.pnl > 0 ? "text-positive" : result.pnl < 0 ? "text-negative" : "")}>{signed$(result.pnl)}</span>
+    </>
   );
 }
 
 /* ---------------------------- trade controls ------------------------- */
 
-function TradeControls() {
+function TradeControls({ seconds, onExpire }: { seconds: number; onExpire: () => void }) {
   const { submitTrade, config } = useEtfStore();
   const [units, setUnits] = React.useState(5);
 
   return (
-    <Card className="animate-pop">
-      <CardContent className="space-y-4 p-4">
-        <div className="flex items-center justify-between">
-          <span className="text-sm font-medium">Your trade</span>
-          <span className="rounded-md bg-surface-2 px-2.5 py-1 font-mono text-sm">Units: {units}</span>
+    <div className="animate-pop space-y-5">
+      <Timer seconds={seconds} onExpire={onExpire} />
+      <div>
+        <div className="mb-2 flex items-baseline justify-between">
+          <span className="font-x text-xs font-extrabold uppercase tracking-[0.08em] text-muted">Units</span>
+          <span className="font-xx text-2xl font-black tabular-nums">{units}</span>
         </div>
         <input
           type="range"
@@ -418,25 +264,17 @@ function TradeControls() {
           max={config.maxUnits}
           value={units}
           onChange={(e) => setUnits(Number(e.target.value))}
-          style={{ accentColor: "var(--accent)" }}
+          style={{ accentColor: "var(--jacket)" }}
           className="w-full"
+          aria-label="Units"
         />
-        <div className="grid grid-cols-3 gap-3">
-          <Button variant="outline" className="h-auto flex-col gap-0 py-2.5 border-positive/40 text-positive hover:bg-positive/10" onClick={() => submitTrade("buy", units)}>
-            <span className="flex items-center gap-1.5 font-semibold">Buy <TrendingUp className="h-4 w-4" /></span>
-            <span className="text-2xs font-normal text-muted">at the ask</span>
-          </Button>
-          <Button variant="outline" className="h-auto flex-col gap-0 py-2.5 border-negative/40 text-negative hover:bg-negative/10" onClick={() => submitTrade("sell", units)}>
-            <span className="flex items-center gap-1.5 font-semibold">Sell <TrendingDown className="h-4 w-4" /></span>
-            <span className="text-2xs font-normal text-muted">at the bid</span>
-          </Button>
-          <Button variant="outline" className="h-auto flex-col gap-0 py-2.5" onClick={() => submitTrade("skip", 0)}>
-            <span className="flex items-center gap-1.5 font-semibold">Skip <SkipForward className="h-4 w-4" /></span>
-            <span className="text-2xs font-normal text-muted">no trade</span>
-          </Button>
-        </div>
-      </CardContent>
-    </Card>
+      </div>
+      <div className="grid grid-cols-3 gap-2">
+        <ActionPlate tone="buy" onClick={() => submitTrade("buy", units)} label="Buy" sub="at the ask" />
+        <ActionPlate tone="sell" onClick={() => submitTrade("sell", units)} label="Sell" sub="at the bid" />
+        <ActionPlate tone="neutral" onClick={() => submitTrade("skip", 0)} label="Skip" sub="no trade" />
+      </div>
+    </div>
   );
 }
 
@@ -448,30 +286,22 @@ function ResultFooter() {
   const isLast = round >= config.rounds;
 
   return (
-    <Card className="animate-pop">
-      <CardContent className="flex flex-wrap items-center justify-between gap-3 p-4">
-        <div className="flex items-center gap-2 text-sm">
-          {correct ? (
-            <span className="flex items-center gap-1.5 text-positive">
-              <CheckCircle2 className="h-4 w-4" /> Correct call
-            </span>
-          ) : (
-            <span className="text-muted">
-              Best move was to <strong className="text-foreground">{optimalAction(data)}</strong>.
-            </span>
-          )}
-          <span className="text-muted">
-            Round P&amp;L{" "}
-            <span className={cn("font-mono font-semibold", you.pnl > 0 ? "text-positive" : you.pnl < 0 ? "text-negative" : "text-foreground")}>
-              {signed$(you.pnl)}
-            </span>
-          </span>
-        </div>
-        <Button onClick={next}>
-          {isLast ? "See results" : "Next round"} <ArrowRight className="h-4 w-4" />
-        </Button>
-      </CardContent>
-    </Card>
+    <div className="animate-pop space-y-4">
+      <div className={cn("rounded-[8px] px-5 py-4 text-white", you.pnl > 0 ? "bg-positive" : you.pnl < 0 ? "bg-negative" : "bg-foreground")}>
+        <div className="text-xs font-bold uppercase tracking-[0.1em] opacity-85">Round P&amp;L</div>
+        <div className="font-xx text-[2.6rem] font-black leading-none tabular-nums">{signed$(you.pnl)}</div>
+      </div>
+      {correct ? (
+        <Note tone="good" icon={<CheckCircle2 className="h-4 w-4 text-positive" />}>
+          Correct call.
+        </Note>
+      ) : (
+        <Note>
+          Best move was to <strong>{optimalAction(data)}</strong>.
+        </Note>
+      )}
+      <ActionPlate tone="jacket" onClick={next} label={isLast ? "See results" : "Next round"} icon={<ArrowRight className="h-5 w-5" />} className="w-full" />
+    </div>
   );
 }
 
@@ -489,77 +319,31 @@ function GameOver() {
   const correct = history.filter((h) => h.correct).length;
   const skipped = history.filter((h) => h.action === "skip").length;
   const traded = history.filter((h) => h.action !== "skip");
-  const avgSpeed = traded.length
-    ? (traded.reduce((s, h) => s + h.speed, 0) / traded.length).toFixed(1)
-    : "—";
+  const avgSpeed = traded.length ? (traded.reduce((s, h) => s + h.speed, 0) / traded.length).toFixed(1) : "—";
 
   return (
-    <div className="mx-auto max-w-3xl space-y-6">
-      <Card className="obsidian-glow">
-        <CardContent className="space-y-6 py-10">
-          <div className="flex flex-col items-center gap-2 text-center">
-            <span className="grid h-14 w-14 place-items-center rounded-2xl bg-accent text-accent-foreground shadow-lg">
-              <Trophy className="h-6 w-6" />
-            </span>
-            <h2 className="text-2xl font-bold tracking-[-0.02em]">
-              You finished {ordinal(youRank)} · {total$(youTotal)}
-            </h2>
-          </div>
+    <div className="mx-auto max-w-4xl space-y-6">
+      <FinalBand
+        title={`You finished ${ordinal(youRank)}`}
+        figure={total$(youTotal)}
+        figureLabel="Your P&L"
+        actions={<ActionPlate tone="jacket" onClick={reset} label="Play again" icon={<RotateCcw className="h-5 w-5" />} className="min-w-56" />}
+      >
+        <Standings rows={ranked.map((p) => ({ name: p.name, score: total$(p.total), you: p.isYou }))} />
+        <div className="grid grid-cols-3 gap-2">
+          <Stat label="Correct trades" value={`${correct}/${history.length}`} />
+          <Stat label="Avg speed" value={avgSpeed === "—" ? "—" : `${avgSpeed}s`} />
+          <Stat label="Skipped" value={String(skipped)} />
+        </div>
+      </FinalBand>
 
-          <ol className="mx-auto max-w-md space-y-2">
-            {ranked.map((p, i) => (
-              <li
-                key={p.name}
-                className={cn(
-                  "flex items-center justify-between rounded-lg border px-4 py-3",
-                  p.isYou ? "border-accent/50 bg-accent/5" : "border-border bg-surface-2/40",
-                )}
-              >
-                <span className="flex items-center gap-3">
-                  <span className="font-mono text-sm text-muted">#{i + 1}</span>
-                  <span className="font-medium">{p.name}</span>
-                  {p.isYou && <Badge tone="accent">You</Badge>}
-                </span>
-                <span className={cn("font-mono font-semibold", p.total > 0 && "text-positive", p.total < 0 && "text-negative")}>
-                  {total$(p.total)}
-                </span>
-              </li>
-            ))}
-          </ol>
-
-          <div className="mx-auto grid max-w-md grid-cols-3 gap-3">
-            <Stat label="Correct trades" value={`${correct}/${history.length}`} />
-            <Stat label="Avg speed" value={avgSpeed === "—" ? "—" : `${avgSpeed}s`} />
-            <Stat label="Skipped" value={String(skipped)} />
-          </div>
-
-          <div className="flex justify-center">
-            <Button size="lg" onClick={reset}>
-              <RotateCcw className="h-4 w-4" /> Play again
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Round-by-round breakdown</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
+      <Panel title="Round by round">
+        <ol className="divide-y divide-border">
           {history.map((r) => (
             <RecapRow key={r.round} record={r} />
           ))}
-        </CardContent>
-      </Card>
-    </div>
-  );
-}
-
-function Stat({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-lg border border-border bg-surface-2/40 px-3 py-2.5 text-center">
-      <div className="text-2xs uppercase tracking-wider text-muted">{label}</div>
-      <div className="font-mono text-lg font-semibold">{value}</div>
+        </ol>
+      </Panel>
     </div>
   );
 }
@@ -570,18 +354,20 @@ function RecapRow({ record }: { record: RoundRecord }) {
       ? "skipped"
       : `${record.action === "buy" ? "bought" : "sold"} ${record.units} @ ${money(record.action === "buy" ? record.etfAsk : record.etfBid)}`;
   return (
-    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 rounded-lg border border-border bg-surface-2/40 px-3 py-2.5 text-sm">
-      <span className="font-mono text-muted">R{record.round}</span>
-      <Badge tone={record.correct ? "positive" : "outline"}>{record.correct ? "correct" : "miss"}</Badge>
-      <span className="text-muted">{detail}</span>
-      <span className="ml-auto flex items-center gap-3 font-mono">
-        <span className="text-muted">NAV {money(record.nav)}</span>
-        <span className="text-muted">bid/ask {money(record.etfBid)}/{money(record.etfAsk)}</span>
-        <span className={cn("font-semibold", record.pnl > 0 && "text-positive", record.pnl < 0 && "text-negative")}>
-          {signed$(record.pnl)}
-        </span>
+    <li className="flex flex-wrap items-center gap-x-4 gap-y-1 py-3 text-sm">
+      <span className="font-xx grid h-9 w-11 place-items-center rounded-[4px] bg-surface-2 font-black">R{record.round}</span>
+      <span className={cn("font-x rounded-[3px] px-2 py-1 text-[0.65rem] font-extrabold uppercase", record.correct ? "bg-positive text-white" : "bg-surface-2")}>
+        {record.correct ? "Correct" : "Miss"}
       </span>
-    </div>
+      <span className="text-muted">{detail}</span>
+      <span className="ml-auto flex items-center gap-4 tabular-nums">
+        <span className="text-muted">NAV {money(record.nav)}</span>
+        <span className="text-muted">
+          {money(record.etfBid)}/{money(record.etfAsk)}
+        </span>
+        <span className={cn("font-x font-black", record.pnl > 0 && "text-positive", record.pnl < 0 && "text-negative")}>{signed$(record.pnl)}</span>
+      </span>
+    </li>
   );
 }
 

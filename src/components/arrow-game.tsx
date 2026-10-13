@@ -1,10 +1,7 @@
 "use client";
 
 import * as React from "react";
-import {
-  Play, RotateCcw, Flag, ArrowLeft, ArrowRight, Minus, X,
-  Settings2, Trophy, Timer, Clock, Target, ShieldCheck,
-} from "lucide-react";
+import { RotateCcw, Flag, ArrowLeft, ArrowRight, Minus, X } from "lucide-react";
 import {
   ARROW_OPTIONS,
   DEFAULT_ARROW_CONFIG,
@@ -23,8 +20,8 @@ import {
 import { cn } from "@/lib/utils";
 import { Countdown } from "@/components/countdown";
 import { useRecordGame } from "@/store/practice-store";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { useHideRulesWhile } from "@/components/how-to-play";
+import { ActionPlate, FinalBand, Panel, QuietButton, Scoreboard, Segmented, Stat, Ticket } from "@/components/pit/game-kit";
 
 type Phase = "intro" | "countdown" | "playing" | "over";
 
@@ -32,6 +29,7 @@ export function ArrowGame() {
   const [phase, setPhase] = React.useState<Phase>("intro");
   const [config, setConfig] = React.useState<ArrowConfig>(DEFAULT_ARROW_CONFIG);
   const [logs, setLogs] = React.useState<RoundLog[]>([]);
+  useHideRulesWhile(phase === "playing");
 
   const start = (cfg: ArrowConfig) => {
     setConfig(cfg);
@@ -80,82 +78,44 @@ export function ArrowGame() {
 
 function Intro({ saved, onStart }: { saved: ArrowConfig; onStart: (c: ArrowConfig) => void }) {
   const [config, setConfig] = React.useState<ArrowConfig>(saved);
-  const set = <K extends keyof ArrowConfig>(k: K, v: ArrowConfig[K]) =>
-    setConfig((c) => ({ ...c, [k]: v }));
+  const set = <K extends keyof ArrowConfig>(k: K, v: ArrowConfig[K]) => setConfig((c) => ({ ...c, [k]: v }));
   const totalSec = Math.round(config.rounds * config.roundSeconds);
 
   return (
-    // Title and description live in the page header — this card is just setup.
-    <Card className="obsidian-glow mx-auto max-w-2xl">
-      <CardContent className="space-y-6 py-8">
-        <div className="mx-auto max-w-xl space-y-4 rounded-xl border border-border bg-surface-2/40 p-5">
-          <div className="flex items-center gap-2 text-sm font-medium">
-            <Settings2 className="h-4 w-4 text-accent" /> Game settings
-          </div>
-          <Segmented label="Rounds" options={ARROW_OPTIONS.rounds} value={config.rounds} onChange={(v) => set("rounds", v)} />
-          <Segmented label="Seconds per round" options={ARROW_OPTIONS.roundSeconds} value={config.roundSeconds} onChange={(v) => set("roundSeconds", v)} suffix="s" />
-          <div className="flex items-center justify-between gap-3 border-t border-border pt-3 text-sm">
-            <span className="text-muted">Total time</span>
-            <span className="font-mono font-semibold text-foreground">
+    <div className="space-y-6">
+      <Ticket
+        onStart={() => onStart(config)}
+        countdown={false}
+        note={
+          <span>
+            Total time{" "}
+            <strong className="font-x text-foreground">
               {Math.floor(totalSec / 60)}:{String(totalSec % 60).padStart(2, "0")}
-            </span>
-          </div>
-        </div>
-
-        <div className="flex justify-center">
-          <Button size="lg" onClick={() => onStart(config)}>
-            <Play className="h-4 w-4" /> Start game
-          </Button>
-        </div>
-
-        {/* Below the CTA on purpose — it's a supporting illustration, and it
-            keeps the settings and Start button above the fold. */}
-        <ExampleGrid />
-      </CardContent>
-    </Card>
+            </strong>
+          </span>
+        }
+      >
+        <Segmented label="Rounds" options={ARROW_OPTIONS.rounds} value={config.rounds} onChange={(v) => set("rounds", v)} />
+        <Segmented label="Seconds per round" options={ARROW_OPTIONS.roundSeconds} value={config.roundSeconds} onChange={(v) => set("roundSeconds", v)} suffix="s" />
+      </Ticket>
+      <ExampleGrid />
+    </div>
   );
 }
 
 function ExampleGrid() {
-  // Illustrates a "go" trial: react to the bright middle arrow, ignore the rest.
-  const example: CellKind[] = [
-    "left", "left", "left", "left", "left",
-    "left", "left", "right", "left", "left",
-    "left", "left", "left", "left", "left",
-  ];
+  // Illustrates a "go" trial: react to the middle arrow, ignore the rest.
+  const example: CellKind[] = ["left", "left", "left", "left", "left", "left", "left", "right", "left", "left", "left", "left", "left", "left", "left"];
   return (
-    <div className="mx-auto max-w-md rounded-xl border border-border bg-surface-2/40 p-4 text-center">
-      <div className="mb-3 text-2xs font-semibold uppercase tracking-wider text-muted">Example</div>
-      <Grid grid={example} />
-      <p className="mt-3 text-sm text-muted">
-        Middle points <span className="font-semibold text-foreground">right</span> → press{" "}
-        <Kbd>P</Kbd> / <Kbd>→</Kbd>. Ignore the surrounding arrows.
-      </p>
-    </div>
-  );
-}
-
-function Segmented<T extends number>({
-  label, options, value, onChange, suffix = "",
-}: { label: string; options: readonly T[]; value: T; onChange: (v: T) => void; suffix?: string }) {
-  return (
-    <div className="flex flex-wrap items-center justify-between gap-3">
-      <span className="text-sm text-muted">{label}</span>
-      <div className="flex gap-1.5">
-        {options.map((opt) => (
-          <button
-            key={opt}
-            onClick={() => onChange(opt)}
-            className={cn(
-              "h-9 min-w-11 rounded-lg border px-3 font-mono text-sm transition-colors",
-              value === opt ? "border-accent bg-accent/15 text-accent" : "border-border bg-surface text-muted hover:text-foreground",
-            )}
-          >
-            {opt}{suffix}
-          </button>
-        ))}
+    <Panel title="Example" className="mx-auto max-w-3xl">
+      <div className="mx-auto max-w-md">
+        <Grid grid={example} />
       </div>
-    </div>
+      <p className="text-center text-sm text-muted">
+        The middle arrow points <strong className="text-foreground">right</strong>: press <Kbd>P</Kbd> or <Kbd>→</Kbd>. Ignore
+        the arrows around it.
+      </p>
+    </Panel>
   );
 }
 
@@ -235,59 +195,40 @@ function Playing({ config, onEnd }: { config: ArrowConfig; onEnd: (logs: RoundLo
   const secondsLeft = Math.max(0, Math.round(totalSec - (now - sessionStartRef.current) / 1000));
 
   return (
-    <div className="space-y-4">
-      <div className="grid grid-cols-3 gap-3">
-        <StatTile label="Round" value={`${roundIdx + 1}/${trials.length}`} />
-        <StatTile label="Correct" value={String(correctCount)} accent />
-        <StatTile
-          label="Time left"
-          value={`${Math.floor(secondsLeft / 60)}:${String(secondsLeft % 60).padStart(2, "0")}`}
-        />
-      </div>
+    <div className="space-y-5">
+      <Scoreboard
+        cells={[
+          { label: "Round", value: `${roundIdx + 1}/${trials.length}` },
+          { label: "Correct", value: correctCount, tone: "hot" },
+          { label: "Time left", value: `${Math.floor(secondsLeft / 60)}:${String(secondsLeft % 60).padStart(2, "0")}` },
+        ]}
+        aside={
+          <QuietButton onClick={() => onEnd(logsRef.current)} className="text-white/70 hover:bg-white/10 hover:text-white">
+            <Flag className="h-4 w-4" /> End
+          </QuietButton>
+        }
+      />
 
-      <Card>
-        <CardContent className="space-y-6 p-6 sm:p-8">
-          {/* round progress */}
-          <div className="h-1 w-full overflow-hidden rounded-full bg-surface-2">
-            <div
-              className="h-full bg-accent transition-[width] duration-100 ease-linear"
-              style={{ width: `${roundProgress * 100}%` }}
-            />
-          </div>
-
-          <div className="mx-auto max-w-md">
+      <section className="overflow-hidden rounded-2xl bg-surface shadow-(--shadow-card)">
+        {/* round progress */}
+        <div className="h-2 bg-surface-2">
+          <div className="h-full bg-jacket transition-[width] duration-100 ease-linear" style={{ width: `${roundProgress * 100}%` }} />
+        </div>
+        <div className="space-y-6 p-6 sm:p-8">
+          <div className="mx-auto max-w-sm">
             <Grid grid={trial.grid} />
           </div>
-
           {/* tap controls (also works with Q/P or ← / →) */}
-          <div className="mx-auto flex max-w-md items-stretch gap-3">
+          <div className="mx-auto grid max-w-sm grid-cols-2 gap-3">
             <TapButton dir="left" pressed={pressed === "left"} onPress={() => record("left")} />
             <TapButton dir="right" pressed={pressed === "right"} onPress={() => record("right")} />
           </div>
           <p className="text-center text-xs text-muted">
-            Press <Kbd>Q</Kbd>/<Kbd>←</Kbd> for left, <Kbd>P</Kbd>/<Kbd>→</Kbd> for right. If the
-            middle arrow is surrounded by <span className="font-mono text-foreground">✕</span>, press nothing.
+            <Kbd>Q</Kbd>/<Kbd>←</Kbd> left · <Kbd>P</Kbd>/<Kbd>→</Kbd> right · middle arrow boxed in by ✕: press nothing
           </p>
-        </CardContent>
-      </Card>
-
-      <div className="flex justify-end">
-        <Button variant="ghost" size="sm" onClick={() => onEnd(logsRef.current)}>
-          <Flag className="h-4 w-4" /> End game
-        </Button>
-      </div>
+        </div>
+      </section>
     </div>
-  );
-}
-
-function StatTile({ label, value, accent = false }: { label: string; value: string; accent?: boolean }) {
-  return (
-    <Card>
-      <CardContent className="px-4 py-3 text-center">
-        <div className="text-2xs font-semibold uppercase tracking-wider text-muted">{label}</div>
-        <div className={cn("mt-0.5 font-mono text-2xl font-bold tabular-nums", accent && "text-accent")}>{value}</div>
-      </CardContent>
-    </Card>
   );
 }
 
@@ -298,13 +239,11 @@ function TapButton({ dir, pressed, onPress }: { dir: Dir; pressed: boolean; onPr
       onClick={onPress}
       aria-label={dir === "left" ? "Press left" : "Press right"}
       className={cn(
-        "flex h-14 flex-1 items-center justify-center rounded-xl border text-lg font-semibold transition-colors",
-        pressed
-          ? "border-accent bg-accent/15 text-accent"
-          : "border-border bg-surface-2/40 text-foreground hover:border-foreground/25",
+        "flex h-20 items-center justify-center rounded-[8px] transition-colors active:scale-[0.98]",
+        pressed ? "bg-jacket text-jacket-ink" : "bg-foreground text-background hover:bg-foreground/85",
       )}
     >
-      <Icon className="h-6 w-6" />
+      <Icon className="h-9 w-9" strokeWidth={2.5} />
     </button>
   );
 }
@@ -320,15 +259,12 @@ const CELL_ICON: Record<CellKind, typeof ArrowLeft> = {
 
 function Grid({ grid }: { grid: CellKind[] }) {
   return (
-    <div
-      className="grid gap-2 sm:gap-3"
-      style={{ gridTemplateColumns: `repeat(${GRID_COLS}, minmax(0, 1fr))` }}
-    >
+    <div className="grid gap-2 sm:gap-3" style={{ gridTemplateColumns: `repeat(${GRID_COLS}, minmax(0, 1fr))` }}>
       {grid.map((kind, i) => {
         const Icon = CELL_ICON[kind];
         return (
-          <div key={i} className="grid aspect-square place-items-center">
-            <Icon className="h-6 w-6 text-foreground sm:h-8 sm:w-8" strokeWidth={2.25} />
+          <div key={i} className="grid aspect-square place-items-center rounded-[6px] bg-surface-2">
+            <Icon className="h-6 w-6 text-foreground sm:h-7 sm:w-7" strokeWidth={2.5} />
           </div>
         );
       })}
@@ -337,11 +273,7 @@ function Grid({ grid }: { grid: CellKind[] }) {
 }
 
 function Kbd({ children }: { children: React.ReactNode }) {
-  return (
-    <kbd className="rounded border border-border bg-surface-2 px-1.5 py-0.5 font-mono text-2xs text-foreground">
-      {children}
-    </kbd>
-  );
+  return <kbd className="font-x rounded-[3px] bg-foreground px-1.5 py-0.5 text-xs font-extrabold text-background">{children}</kbd>;
 }
 
 /* --------------------------------- game over ------------------------- */
@@ -352,44 +284,20 @@ function GameOver({ logs, roundMs, onAgain }: { logs: RoundLog[]; roundMs: numbe
   const savedSec = s.savedMs / 1000;
 
   return (
-    <div className="mx-auto max-w-3xl space-y-6">
-      <Card className="obsidian-glow">
-        <CardContent className="space-y-6 py-10">
-          <div className="flex flex-col items-center gap-2 text-center">
-            <span className="grid h-14 w-14 place-items-center rounded-2xl bg-sky-500 text-white shadow-lg">
-              <Trophy className="h-6 w-6" />
-            </span>
-            <h2 className="text-2xl font-bold tracking-[-0.02em]">Score</h2>
-            <div className="font-mono text-4xl font-bold">{s.score}</div>
-            <div className="font-mono text-sm font-semibold text-muted">
-              {s.correct}/{s.total} correct · {(s.accuracy * 100).toFixed(0)}% accuracy
-            </div>
-          </div>
-
-          <div className="mx-auto grid max-w-lg grid-cols-2 gap-3 sm:grid-cols-4">
-            <Metric icon={Target} label="Accuracy" value={`${(s.accuracy * 100).toFixed(0)}%`} />
-            <Metric icon={Clock} label="Time saved" value={`${savedSec.toFixed(1)}s`} />
-            <Metric icon={Timer} label="Avg speed" value={s.avgRtMs != null ? `${s.avgRtMs}ms` : "—"} />
-            <Metric icon={ShieldCheck} label="Inhibition" value={`${s.noGoCorrect}/${s.noGoTotal}`} />
-          </div>
-
-          <div className="flex justify-center">
-            <Button size="lg" onClick={onAgain}>
-              <RotateCcw className="h-4 w-4" /> Play again
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-    </div>
-  );
-}
-
-function Metric({ icon: Icon, label, value }: { icon: typeof Target; label: string; value: string }) {
-  return (
-    <div className="rounded-lg border border-border bg-surface-2/40 px-3 py-3 text-center">
-      <Icon className="mx-auto mb-1 h-4 w-4 text-accent" />
-      <div className="font-mono text-lg font-semibold">{value}</div>
-      <div className="text-2xs uppercase tracking-wider text-muted">{label}</div>
+    <div className="mx-auto max-w-4xl">
+      <FinalBand
+        title={`${s.correct}/${s.total} correct`}
+        figure={s.score}
+        figureLabel="Score"
+        actions={<ActionPlate tone="jacket" onClick={onAgain} label="Play again" icon={<RotateCcw className="h-5 w-5" />} className="min-w-56" />}
+      >
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+          <Stat label="Accuracy" value={`${(s.accuracy * 100).toFixed(0)}%`} />
+          <Stat label="Time saved" value={`${savedSec.toFixed(1)}s`} />
+          <Stat label="Avg speed" value={s.avgRtMs != null ? `${s.avgRtMs}ms` : "—"} />
+          <Stat label="Held back" value={`${s.noGoCorrect}/${s.noGoTotal}`} />
+        </div>
+      </FinalBand>
     </div>
   );
 }

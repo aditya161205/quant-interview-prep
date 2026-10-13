@@ -1,10 +1,7 @@
 "use client";
 
 import * as React from "react";
-import {
-  Play, RotateCcw, ArrowRight, Settings2, Flag, Dices, Coins, Spade,
-  ChevronDown, Check, X, Trophy, Timer,
-} from "lucide-react";
+import { RotateCcw, ArrowRight, Flag, Dices, Coins, Spade, ChevronDown, Check, X } from "lucide-react";
 import {
   useBettingStore,
   DEFAULT_BETTING_CONFIG,
@@ -21,15 +18,14 @@ import {
 } from "@/lib/betting-game";
 import { cn, formatSigned } from "@/lib/utils";
 import { useRecordGame } from "@/store/practice-store";
-import { Countdown } from "@/components/countdown";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+import { useHideRulesWhile } from "@/components/how-to-play";
+import { ActionPlate, FinalBand, Panel, QuietButton, Scoreboard, Segmented, Stat, Ticket, ToggleRow } from "@/components/pit/game-kit";
 
 const CAT_ICON: Record<Category, typeof Dices> = { Dice: Dices, Cards: Spade, Coins: Coins };
 
 export function BettingGame() {
   const phase = useBettingStore((s) => s.phase);
+  useHideRulesWhile(phase !== "intro" && phase !== "gameover");
 
   return (
     <>
@@ -73,66 +69,15 @@ function Intro() {
   const start = useBettingStore((s) => s.start);
   const saved = useBettingStore((s) => s.config);
   const [config, setConfig] = React.useState<BettingConfig>(saved ?? DEFAULT_BETTING_CONFIG);
-  const [counting, setCounting] = React.useState(false);
-  const set = <K extends keyof BettingConfig>(k: K, v: BettingConfig[K]) =>
-    setConfig((c) => ({ ...c, [k]: v }));
+  const set = <K extends keyof BettingConfig>(k: K, v: BettingConfig[K]) => setConfig((c) => ({ ...c, [k]: v }));
 
   return (
-    // Title and description live in the page header — this card is just setup.
-    <Card className="obsidian-glow mx-auto max-w-2xl">
-      <CardContent className="space-y-6 py-8">
-        <div className="mx-auto max-w-xl space-y-4 rounded-xl border border-border bg-surface-2/40 p-5">
-          <div className="flex items-center gap-2 text-sm font-medium">
-            <Settings2 className="h-4 w-4 text-accent" /> Game settings
-          </div>
-          <Segmented label="Rounds" options={BETTING_OPTIONS.rounds} value={config.rounds} onChange={(v) => set("rounds", v)} />
-          <Segmented label="Events per category" options={BETTING_OPTIONS.eventsPerCategory} value={config.eventsPerCategory} onChange={(v) => set("eventsPerCategory", v)} />
-          <Segmented label="Minutes per round" options={BETTING_OPTIONS.roundMinutes} value={config.roundMinutes} onChange={(v) => set("roundMinutes", v)} suffix="m" />
-          <label className="flex items-center justify-between gap-3">
-            <span className="text-sm text-muted">Skip results animation</span>
-            <input
-              type="checkbox"
-              checked={config.skipAnimation}
-              onChange={(e) => set("skipAnimation", e.target.checked)}
-              style={{ accentColor: "var(--accent)" }}
-              className="h-4 w-4"
-            />
-          </label>
-        </div>
-
-        <div className="flex justify-center">
-          <Button size="lg" onClick={() => setCounting(true)}>
-            <Play className="h-4 w-4" /> Start game
-          </Button>
-        </div>
-
-        {counting && <Countdown onDone={() => start(config)} />}
-      </CardContent>
-    </Card>
-  );
-}
-
-function Segmented<T extends number>({
-  label, options, value, onChange, suffix = "",
-}: { label: string; options: readonly T[]; value: T; onChange: (v: T) => void; suffix?: string }) {
-  return (
-    <div className="flex flex-wrap items-center justify-between gap-3">
-      <span className="text-sm text-muted">{label}</span>
-      <div className="flex gap-1.5">
-        {options.map((opt) => (
-          <button
-            key={opt}
-            onClick={() => onChange(opt)}
-            className={cn(
-              "h-9 min-w-11 rounded-lg border px-3 font-mono text-sm transition-colors",
-              value === opt ? "border-accent bg-accent/15 text-accent" : "border-border bg-surface text-muted hover:text-foreground",
-            )}
-          >
-            {opt}{suffix}
-          </button>
-        ))}
-      </div>
-    </div>
+    <Ticket onStart={() => start(config)}>
+      <Segmented label="Rounds" options={BETTING_OPTIONS.rounds} value={config.rounds} onChange={(v) => set("rounds", v)} />
+      <Segmented label="Events per category" options={BETTING_OPTIONS.eventsPerCategory} value={config.eventsPerCategory} onChange={(v) => set("eventsPerCategory", v)} />
+      <Segmented label="Minutes per round" options={BETTING_OPTIONS.roundMinutes} value={config.roundMinutes} onChange={(v) => set("roundMinutes", v)} suffix="m" />
+      <ToggleRow label="Skip results animation" checked={config.skipAnimation} onChange={(v) => set("skipAnimation", v)} />
+    </Ticket>
   );
 }
 
@@ -157,10 +102,8 @@ function MinutesCountdown({ minutes, onExpire }: { minutes: number; onExpire: ()
 
   const m = Math.floor(left / 60);
   const s = Math.floor(left % 60);
-  const danger = left <= 30;
   return (
-    <span className={cn("inline-flex items-center gap-1.5 font-mono text-sm font-semibold", danger ? "text-negative" : "text-foreground")}>
-      <Timer className="h-4 w-4" />
+    <span className={cn(left <= 30 && "text-[#ff7c8a]")}>
       {m}:{String(s).padStart(2, "0")}
     </span>
   );
@@ -173,33 +116,24 @@ function BoardScreen() {
   const available = bankroll - committed();
 
   return (
-    <div className="space-y-4">
-      <Card>
-        <CardContent className="flex flex-wrap items-center justify-between gap-3 p-4">
-          <div className="flex flex-wrap items-baseline gap-x-5 gap-y-1">
-            <span className="text-base font-semibold">
-              Round {round}
-              <span className="ml-1.5 text-sm font-normal text-muted">of {config.rounds}</span>
-            </span>
-            <span className="text-sm text-muted">
-              Bankroll <span className="font-mono font-semibold text-foreground">{bankroll}</span>
-            </span>
-            {phase === "betting" && (
-              <span className="text-sm text-muted">
-                Available <span className="font-mono font-semibold text-accent">{available}</span>
-              </span>
-            )}
-          </div>
-          <div className="flex items-center gap-3">
-            {phase === "betting" && (
-              <MinutesCountdown key={round} minutes={config.roundMinutes} onExpire={resolve} />
-            )}
-            <Button variant="ghost" size="sm" onClick={endGame}>
-              <Flag className="h-4 w-4" /> End game
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+    <div className="space-y-5">
+      <Scoreboard
+        cells={[
+          { label: "Round", value: `${round}/${config.rounds}` },
+          { label: "Bankroll", value: bankroll },
+          ...(phase === "betting"
+            ? [
+                { label: "Available", value: available, tone: "hot" as const },
+                { label: "Clock", value: <MinutesCountdown key={round} minutes={config.roundMinutes} onExpire={resolve} /> },
+              ]
+            : []),
+        ]}
+        aside={
+          <QuietButton onClick={endGame} className="text-white/70 hover:bg-white/10 hover:text-white">
+            <Flag className="h-4 w-4" /> End
+          </QuietButton>
+        }
+      />
 
       <div key={round} className="animate-round">
         {phase === "betting" ? <BettingBoard /> : <ResultView />}
@@ -213,40 +147,38 @@ function BettingBoard() {
   const cats: Category[] = ["Dice", "Cards", "Coins"];
 
   return (
-    <div className="space-y-4">
-      <div className="grid gap-4 lg:grid-cols-3">
+    <div className="space-y-5">
+      <div className="grid gap-5 lg:grid-cols-3">
         {cats.map((cat) => {
           const Icon = CAT_ICON[cat];
           const props = board.filter((b) => b.prop.category === cat);
           return (
-            <Card key={cat} className="animate-pop">
-              <CardHeader className="py-3">
-                <CardTitle className="flex items-center gap-2 text-sm">
-                  <Icon className="h-4 w-4 text-accent" /> {cat}
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                {props.map((bp) => <PropRow key={bp.prop.id} bp={bp} />)}
-              </CardContent>
-            </Card>
+            <Panel key={cat} title={cat} meta={<Icon className="h-5 w-5 text-muted" />} className="animate-pop">
+              <ul className="-my-2 divide-y divide-border">
+                {props.map((bp) => (
+                  <PropRow key={bp.prop.id} bp={bp} />
+                ))}
+              </ul>
+            </Panel>
           );
         })}
       </div>
 
-      <Card className="animate-pop">
-        <CardHeader className="py-3">
-          <CardTitle className="text-sm">Special bets</CardTitle>
-        </CardHeader>
-        <CardContent className="grid gap-3 sm:grid-cols-2">
+      <Panel title="Specials" className="animate-pop">
+        <ul className="grid gap-x-8 sm:grid-cols-2">
           <SpecialRow kind="put" label="Put" sub="Wins if your other bets net a loss" b={putOdds.b} />
           <SpecialRow kind="call" label="Call" sub="Wins if your other bets net a profit" b={callOdds.b} />
-        </CardContent>
-      </Card>
+        </ul>
+      </Panel>
 
-      <Button size="lg" className="w-full" onClick={resolve}>
-        Resolve round <ArrowRight className="h-4 w-4" />
-      </Button>
+      <ActionPlate tone="jacket" onClick={resolve} label="Resolve round" icon={<ArrowRight className="h-5 w-5" />} className="w-full" />
     </div>
+  );
+}
+
+function OddsPlate({ b }: { b: number }) {
+  return (
+    <span className="font-xx shrink-0 rounded-[4px] bg-gold px-2.5 py-1.5 text-sm font-black tabular-nums text-[#1a1300]">{b.toFixed(2)}:1</span>
   );
 }
 
@@ -254,10 +186,33 @@ function StakeInput({ value, onChange }: { value: string; onChange: (v: string) 
   return (
     <input
       inputMode="numeric"
+      aria-label="Stake"
       value={value}
       onChange={(e) => onChange(e.target.value.replace(/[^0-9]/g, ""))}
-      className="h-9 w-20 rounded-lg border border-border bg-surface-2 px-2 text-center font-mono text-sm outline-none focus:ring-2 focus:ring-ring"
+      className="font-xx h-10 w-20 rounded-[6px] border-[1.5px] border-foreground bg-surface px-2 text-center font-black tabular-nums outline-none focus:ring-2 focus:ring-ring"
     />
+  );
+}
+
+function TakenPlate({ stake, onRemove }: { stake: number; onRemove: () => void }) {
+  return (
+    <div className="flex flex-1 items-center justify-between rounded-[6px] bg-foreground px-3 py-2 text-sm text-background">
+      <span className="font-x font-extrabold">Taken · {stake}</span>
+      <button onClick={onRemove} aria-label="Remove bet" className="opacity-70 hover:opacity-100">
+        <X className="h-4 w-4" />
+      </button>
+    </div>
+  );
+}
+
+function TakeButton({ onClick }: { onClick: () => void }) {
+  return (
+    <button
+      onClick={onClick}
+      className="font-x h-10 flex-1 rounded-[6px] bg-jacket text-sm font-extrabold uppercase text-jacket-ink transition hover:brightness-110"
+    >
+      Take
+    </button>
   );
 }
 
@@ -267,39 +222,27 @@ function PropRow({ bp }: { bp: BoardProp }) {
   const [stake, setStake] = React.useState("10");
 
   return (
-    <div className="rounded-lg border border-border bg-surface-2/40 p-3">
-      <div className="flex items-start justify-between gap-2">
-        <span className="text-sm leading-snug">{bp.prop.label}</span>
-        <span className="shrink-0 text-right">
-          <span className="block text-2xs uppercase tracking-wider text-muted">Odds</span>
-          <span className="font-mono text-sm font-semibold text-amber-600 dark:text-amber-400">{bp.odds.b.toFixed(2)}:1</span>
-        </span>
+    <li className="space-y-3 py-4">
+      <div className="flex items-start justify-between gap-3">
+        <span className="text-sm font-semibold leading-snug">{bp.prop.label}</span>
+        <OddsPlate b={bp.odds.b} />
       </div>
-      <div className="mt-2 flex items-center gap-2">
+      <div className="flex items-center gap-2">
         {taken ? (
-          <div className="flex flex-1 items-center justify-between rounded-lg border border-accent/40 bg-accent/10 px-3 py-1.5 text-sm text-accent">
-            <span className="font-mono">Taken · {taken.stake}</span>
-            <button onClick={() => removeBet(bp.prop.id)} aria-label="Remove bet" className="hover:text-foreground">
-              <X className="h-4 w-4" />
-            </button>
-          </div>
+          <TakenPlate stake={taken.stake} onRemove={() => removeBet(bp.prop.id)} />
         ) : (
           <>
             <StakeInput value={stake} onChange={setStake} />
-            <Button
-              size="sm"
-              className="flex-1"
+            <TakeButton
               onClick={() => {
                 const ok = placeBet({ id: bp.prop.id, category: bp.prop.category, label: bp.prop.label, b: bp.odds.b, stake: Number(stake) });
                 if (ok) setStake("10");
               }}
-            >
-              Take
-            </Button>
+            />
           </>
         )}
       </div>
-    </div>
+    </li>
   );
 }
 
@@ -309,35 +252,25 @@ function SpecialRow({ kind, label, sub, b }: { kind: "put" | "call"; label: stri
   const [stake, setStake] = React.useState("10");
 
   return (
-    <div className="rounded-lg border border-border bg-surface-2/40 p-3">
-      <div className="flex items-start justify-between gap-2">
+    <li className="space-y-3 py-2">
+      <div className="flex items-start justify-between gap-3">
         <span>
-          <span className="text-sm font-medium">{label}</span>
+          <span className="font-x block font-extrabold uppercase">{label}</span>
           <span className="block text-xs text-muted">{sub}</span>
         </span>
-        <span className="shrink-0 text-right">
-          <span className="block text-2xs uppercase tracking-wider text-muted">Odds</span>
-          <span className="font-mono text-sm font-semibold text-amber-600 dark:text-amber-400">{b.toFixed(2)}:1</span>
-        </span>
+        <OddsPlate b={b} />
       </div>
-      <div className="mt-2 flex items-center gap-2">
+      <div className="flex items-center gap-2">
         {taken ? (
-          <div className="flex flex-1 items-center justify-between rounded-lg border border-accent/40 bg-accent/10 px-3 py-1.5 text-sm text-accent">
-            <span className="font-mono">Taken · {taken.stake}</span>
-            <button onClick={() => removeSpecial(kind)} aria-label="Remove bet" className="hover:text-foreground">
-              <X className="h-4 w-4" />
-            </button>
-          </div>
+          <TakenPlate stake={taken.stake} onRemove={() => removeSpecial(kind)} />
         ) : (
           <>
             <StakeInput value={stake} onChange={setStake} />
-            <Button size="sm" className="flex-1" onClick={() => placeSpecial(kind, Number(stake), b)}>
-              Take
-            </Button>
+            <TakeButton onClick={() => placeSpecial(kind, Number(stake), b)} />
           </>
         )}
       </div>
-    </div>
+    </li>
   );
 }
 
@@ -347,10 +280,12 @@ const DIE_FACES = ["", "⚀", "⚁", "⚂", "⚃", "⚄", "⚅"];
 
 function OutcomeStrip({ outcome, compact = false }: { outcome: RoundOutcome; compact?: boolean }) {
   return (
-    <div className="grid gap-3 sm:grid-cols-3">
+    <div className={cn("grid gap-3 sm:grid-cols-3", !compact && "rounded-2xl bg-jacket p-4 text-jacket-ink shadow-(--shadow-card)")}>
       <OutcomeTile title="Dice" compact={compact}>
         {outcome.dice.map((d, i) => (
-          <span key={i} className={cn("leading-none text-foreground", compact ? "text-4xl" : "text-6xl")}>{DIE_FACES[d]}</span>
+          <span key={i} className={cn("leading-none", compact ? "text-4xl" : "text-6xl")}>
+            {DIE_FACES[d]}
+          </span>
         ))}
       </OutcomeTile>
       <OutcomeTile title="Cards" compact={compact}>
@@ -360,7 +295,7 @@ function OutcomeStrip({ outcome, compact = false }: { outcome: RoundOutcome; com
             <span
               key={i}
               className={cn(
-                "inline-flex flex-col items-center justify-center rounded-lg border border-zinc-300 bg-white font-bold leading-none shadow-sm",
+                "inline-flex flex-col items-center justify-center rounded-[6px] border border-zinc-300 bg-white font-bold leading-none shadow-(--shadow-raised)",
                 compact ? "h-11 w-8 text-sm" : "h-16 w-12 text-xl",
               )}
               style={{ color: red ? "#d4163c" : "#17171d" }}
@@ -376,9 +311,9 @@ function OutcomeStrip({ outcome, compact = false }: { outcome: RoundOutcome; com
           <span
             key={i}
             className={cn(
-              "grid place-items-center rounded-full border font-mono font-bold",
-              compact ? "h-9 w-9 text-xs" : "h-14 w-14 text-base",
-              c === "H" ? "border-accent/50 bg-accent/15 text-accent" : "border-border bg-surface-2 text-muted",
+              "font-xx grid place-items-center rounded-full font-black",
+              compact ? "h-9 w-9 text-xs" : "h-14 w-14 text-lg",
+              c === "H" ? "bg-[#1a1300] text-gold" : "bg-white text-[#1a1300]",
             )}
           >
             {c}
@@ -391,8 +326,8 @@ function OutcomeStrip({ outcome, compact = false }: { outcome: RoundOutcome; com
 
 function OutcomeTile({ title, children, compact = false }: { title: string; children: React.ReactNode; compact?: boolean }) {
   return (
-    <div className={cn("rounded-xl border border-border bg-surface-2/40 text-center", compact ? "p-2.5" : "p-4")}>
-      <div className="mb-2 text-2xs uppercase tracking-wider text-muted">{title}</div>
+    <div className={cn("rounded-[8px] text-center", compact ? "bg-surface-2 p-2.5" : "bg-black/12 p-4")}>
+      <div className="font-x mb-2 text-xs font-extrabold uppercase tracking-[0.08em] opacity-80">{title}</div>
       <div className={cn("flex items-center justify-center", compact ? "gap-2" : "gap-3")}>{children}</div>
     </div>
   );
@@ -401,34 +336,32 @@ function OutcomeTile({ title, children, compact = false }: { title: string; chil
 function ResultView() {
   const { result, next, round, config } = useBettingStore();
   if (!result) return null;
-  const won = result.roundPnl >= 0;
   const isLast = round >= config.rounds;
 
   return (
-    <div className="animate-pop space-y-4">
+    <div className="animate-pop space-y-5">
       <OutcomeStrip outcome={result.outcome} />
 
-      <Card>
-        <CardHeader className="py-3">
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-sm">Your bets</CardTitle>
-            <span className={cn("font-mono text-base font-semibold", won ? "text-positive" : "text-negative")}>
-              Round {formatSigned(result.roundPnl)}
-            </span>
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-2">
-          {result.lines.length === 0 ? (
-            <p className="py-2 text-center text-sm text-muted">You placed no bets this round.</p>
-          ) : (
-            result.lines.map((l) => <ResultLine key={l.id} line={l} />)
-          )}
-        </CardContent>
-      </Card>
+      <Panel
+        title="Your bets"
+        meta={
+          <span className={cn("font-xx text-2xl font-black tabular-nums", result.roundPnl >= 0 ? "text-positive" : "text-negative")}>
+            {formatSigned(result.roundPnl)}
+          </span>
+        }
+      >
+        {result.lines.length === 0 ? (
+          <p className="text-sm text-muted">You placed no bets this round.</p>
+        ) : (
+          <ul className="-my-2 divide-y divide-border">
+            {result.lines.map((l) => (
+              <ResultLine key={l.id} line={l} />
+            ))}
+          </ul>
+        )}
+      </Panel>
 
-      <Button size="lg" className="w-full" onClick={next}>
-        {isLast ? "See final results" : "Next round"} <ArrowRight className="h-4 w-4" />
-      </Button>
+      <ActionPlate tone="jacket" onClick={next} label={isLast ? "Final results" : "Next round"} icon={<ArrowRight className="h-5 w-5" />} className="w-full" />
     </div>
   );
 }
@@ -439,30 +372,31 @@ function ResultLine({ line }: { line: ResolvedLine }) {
   const hadEdge = trueProb !== null && implied < trueProb;
 
   return (
-    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-lg border border-border bg-surface-2/40 px-3 py-2 text-sm">
-      <span className={cn(
-        "grid h-6 w-6 shrink-0 place-items-center rounded-full",
-        line.voided ? "bg-surface-2 text-muted" : line.won ? "bg-positive/15 text-positive" : "bg-negative/15 text-negative",
-      )}>
-        {line.voided ? "–" : line.won ? <Check className="h-3.5 w-3.5" /> : <X className="h-3.5 w-3.5" />}
+    <li className="flex flex-wrap items-center gap-x-3 gap-y-1 py-3 text-sm">
+      <span
+        className={cn(
+          "grid h-8 w-8 shrink-0 place-items-center rounded-[4px] text-white",
+          line.voided ? "bg-surface-2 text-muted" : line.won ? "bg-positive" : "bg-negative",
+        )}
+      >
+        {line.voided ? "–" : line.won ? <Check className="h-4 w-4" /> : <X className="h-4 w-4" />}
       </span>
       <span className="min-w-0 flex-1">
-        <span className="block truncate">{line.label}</span>
+        <span className="block truncate font-semibold">{line.label}</span>
         <span className="text-xs text-muted">
           stake {line.stake} @ {line.b.toFixed(2)}:1
           {trueProb !== null && (
             <>
-              {" · "}true {(trueProb * 100).toFixed(0)}% vs implied {(implied * 100).toFixed(0)}%
-              {" · "}
-              <span className={hadEdge ? "text-positive" : "text-negative"}>{hadEdge ? "+EV" : "−EV"}</span>
+              {" · "}true {(trueProb * 100).toFixed(0)}% vs implied {(implied * 100).toFixed(0)}%{" · "}
+              <span className={cn("font-bold", hadEdge ? "text-positive" : "text-negative")}>{hadEdge ? "+EV" : "−EV"}</span>
             </>
           )}
         </span>
       </span>
-      <span className={cn("shrink-0 font-mono font-semibold", line.pnl > 0 && "text-positive", line.pnl < 0 && "text-negative", line.pnl === 0 && "text-muted")}>
+      <span className={cn("font-x shrink-0 font-black tabular-nums", line.pnl > 0 && "text-positive", line.pnl < 0 && "text-negative", line.pnl === 0 && "text-muted")}>
         {formatSigned(line.pnl)}
       </span>
-    </div>
+    </li>
   );
 }
 
@@ -476,53 +410,29 @@ function GameOver() {
   const wins = history.reduce((s, r) => s + r.lines.filter((l) => !l.voided && l.won).length, 0);
 
   return (
-    <div className="mx-auto max-w-3xl space-y-6">
-      <Card className="obsidian-glow">
-        <CardContent className="space-y-6 py-10">
-          <div className="flex flex-col items-center gap-2 text-center">
-            <span className="grid h-14 w-14 place-items-center rounded-2xl bg-accent text-accent-foreground shadow-lg">
-              <Trophy className="h-6 w-6" />
-            </span>
-            <h2 className="text-2xl font-bold tracking-[-0.02em]">Final bankroll</h2>
-            <div className="font-mono text-4xl font-bold">{bankroll}</div>
-            <div className={cn("font-mono text-sm font-semibold", net > 0 ? "text-positive" : net < 0 ? "text-negative" : "text-muted")}>
-              {formatSigned(net)} net · peak {peak}
-            </div>
-          </div>
-
-          <div className="mx-auto grid max-w-md grid-cols-3 gap-3">
-            <Stat label="Bets placed" value={String(totalBets)} />
-            <Stat label="Bets won" value={`${wins}/${totalBets}`} />
-            <Stat label="Rounds" value={String(history.length)} />
-          </div>
-
-          <div className="flex justify-center">
-            <Button size="lg" onClick={reset}>
-              <RotateCcw className="h-4 w-4" /> Play again
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+    <div className="mx-auto max-w-4xl space-y-6">
+      <FinalBand
+        title="Final bankroll"
+        figure={bankroll}
+        figureLabel={`${formatSigned(net)} net · peak ${peak}`}
+        actions={<ActionPlate tone="jacket" onClick={reset} label="Play again" icon={<RotateCcw className="h-5 w-5" />} className="min-w-56" />}
+      >
+        <div className="grid grid-cols-3 gap-2">
+          <Stat label="Bets placed" value={String(totalBets)} />
+          <Stat label="Bets won" value={`${wins}/${totalBets}`} />
+          <Stat label="Rounds" value={String(history.length)} />
+        </div>
+      </FinalBand>
 
       {history.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Round-by-round breakdown</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {history.map((r, i) => <RoundBreakdown key={i} index={i} result={r} />)}
-          </CardContent>
-        </Card>
+        <Panel title="Round by round">
+          <div className="space-y-2">
+            {history.map((r, i) => (
+              <RoundBreakdown key={i} index={i} result={r} />
+            ))}
+          </div>
+        </Panel>
       )}
-    </div>
-  );
-}
-
-function Stat({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-lg border border-border bg-surface-2/40 px-3 py-2 text-center">
-      <div className="font-mono text-lg font-semibold">{value}</div>
-      <div className="text-2xs uppercase tracking-wider text-muted">{label}</div>
     </div>
   );
 }
@@ -531,24 +441,28 @@ function RoundBreakdown({ index, result }: { index: number; result: RoundResult 
   const [open, setOpen] = React.useState(false);
 
   return (
-    <div className="overflow-hidden rounded-xl border border-border bg-surface-2/30">
-      <button onClick={() => setOpen((o) => !o)} className="flex w-full items-center gap-3 px-3 py-2.5 text-left text-sm">
-        <span className="font-mono text-muted">Round {index + 1}</span>
-        <span className="text-xs text-muted">{result.lines.length} bet{result.lines.length === 1 ? "" : "s"}</span>
-        <span className={cn("ml-auto font-mono font-semibold", result.roundPnl > 0 && "text-positive", result.roundPnl < 0 && "text-negative", result.roundPnl === 0 && "text-muted")}>
+    <div className="overflow-hidden rounded-[8px] bg-surface-2">
+      <button onClick={() => setOpen((o) => !o)} aria-expanded={open} className="flex w-full items-center gap-3 px-4 py-3 text-left text-sm">
+        <span className="font-xx grid h-9 w-11 place-items-center rounded-[4px] bg-surface font-black">R{index + 1}</span>
+        <span className="text-muted">
+          {result.lines.length} bet{result.lines.length === 1 ? "" : "s"}
+        </span>
+        <span className={cn("font-x ml-auto font-black tabular-nums", result.roundPnl > 0 && "text-positive", result.roundPnl < 0 && "text-negative", result.roundPnl === 0 && "text-muted")}>
           {formatSigned(result.roundPnl)}
         </span>
         <ChevronDown className={cn("h-4 w-4 text-muted transition-transform", open && "rotate-180")} />
       </button>
       {open && (
-        <div className="animate-pop space-y-3 border-t border-border p-3">
+        <div className="animate-pop space-y-3 bg-surface p-4">
           <OutcomeStrip outcome={result.outcome} compact />
           {result.lines.length === 0 ? (
-            <p className="text-center text-xs text-muted">No bets placed.</p>
+            <p className="text-xs text-muted">No bets placed.</p>
           ) : (
-            <div className="space-y-2">
-              {result.lines.map((l) => <ResultLine key={l.id} line={l} />)}
-            </div>
+            <ul className="divide-y divide-border">
+              {result.lines.map((l) => (
+                <ResultLine key={l.id} line={l} />
+              ))}
+            </ul>
           )}
         </div>
       )}

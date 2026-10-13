@@ -41,7 +41,19 @@ export function Step({ n, title, children }: { n: number; title: string; childre
   );
 }
 
-/** A game page: the gold band with the game's badge, then the game beside its standing rules sheet. */
+/** Lets a running game hide the rules column so play gets the full width. */
+const PlayingContext = React.createContext<(playing: boolean) => void>(() => {});
+
+/** Call from a game: rules stay beside the setup and results screens, and step aside while `playing`. */
+export function useHideRulesWhile(playing: boolean) {
+  const setPlaying = React.useContext(PlayingContext);
+  React.useEffect(() => {
+    setPlaying(playing);
+    return () => setPlaying(false);
+  }, [playing, setPlaying]);
+}
+
+/** A game page: the gold band with the game's badge, then the game beside its rules sheet (hidden during play). */
 export function GameFrame({
   code,
   title,
@@ -55,7 +67,13 @@ export function GameFrame({
   rules: React.ReactNode;
   children: React.ReactNode;
 }) {
+  const [playing, setPlaying] = React.useState(false);
+  // A game that starts below the fold opens with its scoreboard in view.
+  React.useEffect(() => {
+    if (playing) window.scrollTo({ top: 0 });
+  }, [playing]);
   return (
+    <PlayingContext.Provider value={setPlaying}>
     <div>
       <header className="full-bleed mb-8 bg-jacket text-jacket-ink">
         <div className="mx-auto flex max-w-[96rem] flex-col gap-5 px-4 py-8 sm:flex-row sm:items-center sm:px-6">
@@ -74,10 +92,11 @@ export function GameFrame({
           </div>
         </div>
       </header>
-      <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_22rem]">
+      <div className={cn("grid items-start gap-6", !playing && "xl:grid-cols-[minmax(0,1fr)_22rem]")}>
         <div className="min-w-0 xl:order-1">{children}</div>
-        <div className="xl:order-2">{rules}</div>
+        {!playing && <div className="xl:order-2">{rules}</div>}
       </div>
     </div>
+    </PlayingContext.Provider>
   );
 }

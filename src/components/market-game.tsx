@@ -1,30 +1,12 @@
 "use client";
 
 import * as React from "react";
-import {
-  Play,
-  RotateCcw,
-  ArrowRight,
-  TrendingUp,
-  TrendingDown,
-  SkipForward,
-  Crown,
-  Trophy,
-  Timer,
-  EyeOff,
-  Eye,
-  Settings2,
-  Lock,
-  AlertTriangle,
-  ArrowLeftRight,
-  Flag,
-} from "lucide-react";
+import { RotateCcw, ArrowRight, SkipForward, EyeOff, Eye, Lock, AlertTriangle, ArrowLeftRight, Flag } from "lucide-react";
 import {
   useGameStore,
   YOU_INDEX,
   REVEAL_SECONDS,
   WRONG_PNL_PENALTY,
-  type Player,
   type RoundRecord,
   type CardSnapshot,
 } from "@/store/game-store";
@@ -39,14 +21,27 @@ import {
 } from "@/lib/market-game";
 import { cn, formatSigned } from "@/lib/utils";
 import { useRecordGame } from "@/store/practice-store";
-import { Countdown as StartCountdown } from "@/components/countdown";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+import { useHideRulesWhile } from "@/components/how-to-play";
 import { PlayingCard } from "@/components/playing-card";
+import {
+  ActionPlate,
+  FinalBand,
+  Note,
+  Panel,
+  PriceField,
+  QuietButton,
+  QuotePlates,
+  Scoreboard,
+  Segmented,
+  Standings,
+  Stat,
+  Ticket,
+  Timer,
+} from "@/components/pit/game-kit";
 
 export function MarketGame() {
   const phase = useGameStore((s) => s.phase);
+  useHideRulesWhile(phase !== "intro" && phase !== "gameover");
 
   return (
     <>
@@ -92,124 +87,18 @@ function Announcer() {
 
 function Intro() {
   const start = useGameStore((s) => s.start);
-  const [counting, setCounting] = React.useState(false);
   const savedConfig = useGameStore((s) => s.config);
   const [config, setConfig] = React.useState<GameConfig>(savedConfig ?? DEFAULT_CONFIG);
 
-  const set = <K extends keyof GameConfig>(key: K, value: GameConfig[K]) =>
-    setConfig((c) => ({ ...c, [key]: value }));
+  const set = <K extends keyof GameConfig>(key: K, value: GameConfig[K]) => setConfig((c) => ({ ...c, [key]: value }));
 
   return (
-    // Title and description live in the page header — this card is just setup.
-    <Card className="obsidian-glow mx-auto max-w-2xl">
-      <CardContent className="space-y-6 py-8">
-        <div className="mx-auto max-w-xl space-y-4 rounded-xl border border-border bg-surface-2/40 p-5">
-          <div className="flex items-center gap-2 text-sm font-medium">
-            <Settings2 className="h-4 w-4 text-accent" /> Game settings
-          </div>
-          <Segmented label="Cards per round" options={CONFIG_OPTIONS.numCards} value={config.numCards} onChange={(v) => set("numCards", v)} />
-          <Segmented label="Number of rounds" options={CONFIG_OPTIONS.totalRounds} value={config.totalRounds} onChange={(v) => set("totalRounds", v)} />
-          <Segmented label="Market-making timer" options={CONFIG_OPTIONS.makeSeconds} value={config.makeSeconds} onChange={(v) => set("makeSeconds", v)} suffix="s" />
-          <Segmented label="Trading timer" options={CONFIG_OPTIONS.tradeSeconds} value={config.tradeSeconds} onChange={(v) => set("tradeSeconds", v)} suffix="s" />
-        </div>
-
-        <div className="flex justify-center">
-          <Button size="lg" onClick={() => setCounting(true)}>
-            <Play className="h-4 w-4" /> Start game
-          </Button>
-        </div>
-
-        {counting && <StartCountdown onDone={() => start(config)} />}
-      </CardContent>
-    </Card>
-  );
-}
-
-function Segmented<T extends number>({
-  label,
-  options,
-  value,
-  onChange,
-  suffix = "",
-}: {
-  label: string;
-  options: readonly T[];
-  value: T;
-  onChange: (v: T) => void;
-  suffix?: string;
-}) {
-  return (
-    <div className="flex flex-wrap items-center justify-between gap-3">
-      <span className="text-sm text-muted">{label}</span>
-      <div className="flex gap-1.5">
-        {options.map((opt) => (
-          <button
-            key={opt}
-            onClick={() => onChange(opt)}
-            className={cn(
-              "h-9 min-w-11 rounded-xl border px-3 font-mono text-sm transition-colors",
-              value === opt
-                ? "border-accent bg-accent/15 text-accent"
-                : "border-border bg-surface text-muted hover:text-foreground",
-            )}
-          >
-            {opt}
-            {suffix}
-          </button>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-/* ------------------------------- countdown --------------------------- */
-
-function Countdown({
-  seconds,
-  onExpire,
-  label = "Time to act",
-}: {
-  seconds: number;
-  onExpire: () => void;
-  label?: string;
-}) {
-  const [left, setLeft] = React.useState(seconds);
-  const firedRef = React.useRef(false);
-
-  React.useEffect(() => {
-    const start = Date.now();
-    const id = setInterval(() => {
-      const remaining = Math.max(0, seconds - (Date.now() - start) / 1000);
-      setLeft(remaining);
-      if (remaining <= 0 && !firedRef.current) {
-        firedRef.current = true;
-        clearInterval(id);
-        onExpire();
-      }
-    }, 100);
-    return () => clearInterval(id);
-  }, [seconds, onExpire]);
-
-  const pct = Math.max(0, (left / seconds) * 100);
-  const danger = left <= seconds * 0.35;
-
-  return (
-    <div className="space-y-1.5">
-      <div className="flex items-center justify-between text-xs">
-        <span className="flex items-center gap-1.5 text-muted">
-          <Timer className="h-3.5 w-3.5" /> {label}
-        </span>
-        <span className={cn("font-mono font-semibold", danger ? "text-negative" : "text-foreground")}>
-          {Math.ceil(left)}s
-        </span>
-      </div>
-      <div className="h-1.5 w-full overflow-hidden rounded-full bg-surface-2">
-        <div
-          className={cn("h-full rounded-full transition-[width] duration-100 ease-linear", danger ? "bg-negative" : "bg-accent")}
-          style={{ width: `${pct}%` }}
-        />
-      </div>
-    </div>
+    <Ticket onStart={() => start(config)}>
+      <Segmented label="Cards per round" options={CONFIG_OPTIONS.numCards} value={config.numCards} onChange={(v) => set("numCards", v)} />
+      <Segmented label="Rounds" options={CONFIG_OPTIONS.totalRounds} value={config.totalRounds} onChange={(v) => set("totalRounds", v)} />
+      <Segmented label="Quote timer" options={CONFIG_OPTIONS.makeSeconds} value={config.makeSeconds} onChange={(v) => set("makeSeconds", v)} suffix="s" />
+      <Segmented label="Trade timer" options={CONFIG_OPTIONS.tradeSeconds} value={config.tradeSeconds} onChange={(v) => set("tradeSeconds", v)} suffix="s" />
+    </Ticket>
   );
 }
 
@@ -221,54 +110,58 @@ function Table() {
   const makerName = players[mmIndex].isYou ? "Your" : `${players[mmIndex].name}'s`;
 
   return (
-    <div className="space-y-4">
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        {players.map((p, i) => (
-          <PlayerCard key={p.id} player={p} isMaker={i === mmIndex} quote={i === mmIndex ? quote : null} />
-        ))}
-      </div>
+    <div className="space-y-5">
+      <Scoreboard
+        cells={[
+          { label: "Round", value: `${round}/${config.totalRounds}` },
+          ...players.map((p, i) => ({
+            label: `${p.isYou ? "You" : p.name}${i === mmIndex ? " · maker" : ""}`,
+            value: p.score,
+            tone: i === mmIndex ? ("hot" as const) : undefined,
+          })),
+        ]}
+      />
 
-      <Card key={round} className="obsidian-glow animate-round">
-        <CardHeader className="py-4">
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-base">
-              Round {round}
-              <span className="ml-2 text-sm font-normal text-muted">of {config.totalRounds}</span>
-            </CardTitle>
-            <Badge tone={youAreMaker ? "accent" : "outline"}>
-              {youAreMaker ? "You are the market maker" : `${players[mmIndex].name} is making`}
-            </Badge>
+      <div key={round} className="animate-round grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_26rem]">
+        <section className="overflow-hidden rounded-2xl bg-jacket text-jacket-ink shadow-(--shadow-card)">
+          <div className="flex flex-wrap items-center justify-between gap-3 px-6 pt-5">
+            <h2 className="font-xx text-2xl font-black uppercase">The pit</h2>
+            <span className="font-x rounded-[4px] bg-jacket-ink px-2.5 py-1 text-xs font-extrabold uppercase tracking-[0.06em] text-jacket">
+              {youAreMaker ? "You are making the market" : `${players[mmIndex].name} is making`}
+            </span>
           </div>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {/* Cards */}
-          <div
-            key={dealId}
-            className="flex flex-wrap items-center justify-center gap-3 rounded-xl border border-border bg-surface-2/40 py-4"
-          >
+          <div key={dealId} className="flex min-h-[14rem] flex-wrap items-center justify-center gap-3 px-6 py-8">
             {hand?.cards.map((c, i) => (
               <PlayingCard key={`${dealId}-${i}`} card={c} delayMs={i * 100} />
             ))}
           </div>
-
-          {/* Quote + your trade — one clearly visible section below the cards */}
           {quote && <QuoteBar quote={quote} makerName={makerName} result={result} />}
+        </section>
 
+        <Panel title={PHASE_TITLE[phase] ?? "Trade"}>
           {phase === "make" && <MakeMarket />}
           {phase === "trade" && <TradePhase />}
           {phase === "reveal" && <RevealPanel />}
           {phase === "settle" && <SettlePanel />}
           {phase === "result" && <ResultPanel />}
-        </CardContent>
-      </Card>
+        </Panel>
+      </div>
 
-      <div className="flex justify-end gap-2">
+      <div className="flex justify-end gap-1">
         <EndGameButton />
         <ResetButton />
       </div>
     </div>
   );
 }
+
+const PHASE_TITLE: Record<string, string> = {
+  make: "Make the market",
+  trade: "Your trade",
+  reveal: "Memorise",
+  settle: "Settle from memory",
+  result: "Round result",
+};
 
 function QuoteBar({
   quote,
@@ -282,88 +175,24 @@ function QuoteBar({
   const showTrade = !!result && result.role === "trader" && !!result.action;
 
   return (
-    <div className="rounded-xl border border-accent/30 bg-accent/5 px-4 py-3">
-      <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2">
-        <span className="text-xs font-medium uppercase tracking-wider text-muted">
-          {makerName} market
-        </span>
-        <div className="flex items-center gap-2 font-mono text-lg">
-          <span className="rounded-md bg-positive/10 px-3 py-1 font-semibold text-positive">bid {quote.bid}</span>
-          <span className="text-muted">@</span>
-          <span className="rounded-md bg-negative/10 px-3 py-1 font-semibold text-negative">ask {quote.ask}</span>
-        </div>
-      </div>
-
+    <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3 bg-black/20 px-6 py-4">
+      <span className="text-xs font-bold uppercase tracking-[0.1em] opacity-85">{makerName} market</span>
+      <QuotePlates bid={quote.bid} ask={quote.ask} />
       {showTrade && (
-        <div className="mt-2.5 flex flex-wrap items-center justify-center gap-x-3 gap-y-1 border-t border-border pt-2.5">
-          <span className="text-xs font-medium uppercase tracking-wider text-muted">Your trade</span>
+        <span className="font-x inline-flex items-center gap-1.5 text-sm font-extrabold">
           {result.action === "skip" ? (
-            <span className="inline-flex items-center gap-1.5 text-base font-semibold text-muted">
-              <SkipForward className="h-4 w-4" /> Skipped — no trade
-            </span>
+            <>
+              <SkipForward className="h-4 w-4" /> You skipped
+            </>
           ) : (
-            // Neutral yellow on purpose — colour/arrows would hint profit vs loss.
-            <span className="inline-flex items-center gap-1.5 text-base font-semibold text-amber-600 dark:text-amber-400">
+            // Neutral on purpose: colour would hint at profit or loss before settlement.
+            <>
               <ArrowLeftRight className="h-4 w-4" />
-              {result.action === "buy" ? "Bought" : "Sold"} {result.qty} @{" "}
-              {result.action === "buy" ? quote.ask : quote.bid}
-            </span>
+              You {result.action === "buy" ? "bought" : "sold"} {result.qty} @ {result.action === "buy" ? quote.ask : quote.bid}
+            </>
           )}
-        </div>
-      )}
-    </div>
-  );
-}
-
-function PlayerCard({
-  player,
-  isMaker,
-  quote,
-}: {
-  player: Player;
-  isMaker: boolean;
-  quote: { bid: number; ask: number } | null;
-}) {
-  return (
-    <div
-      className={cn(
-        "rounded-xl border p-3 transition-colors",
-        player.isYou
-          ? "border-accent/70 bg-accent/[0.07] ring-1 ring-accent/30"
-          : isMaker
-            ? "border-accent/40 bg-surface"
-            : "border-border bg-surface",
-      )}
-    >
-      <div className="flex items-center justify-between">
-        <span className={cn("text-[0.9375rem] font-semibold", player.isYou && "text-accent")}>
-          {player.name}
         </span>
-        <Badge tone={player.isYou ? "accent" : "default"}>{player.isYou ? "You" : "Bot"}</Badge>
-      </div>
-
-      {isMaker ? (
-        <div className="mt-2">
-          <span className="inline-flex h-5 items-center rounded-full bg-accent/15 px-2 text-2xs font-medium text-accent animate-pulse-badge">
-            <Crown className="mr-1 h-3 w-3" /> Maker
-          </span>
-          {quote ? (
-            <div className="mt-2 flex gap-2 font-mono text-sm">
-              <span className="rounded-md bg-positive/10 px-2 py-0.5 text-positive">bid {quote.bid}</span>
-              <span className="rounded-md bg-negative/10 px-2 py-0.5 text-negative">ask {quote.ask}</span>
-            </div>
-          ) : (
-            <div className="mt-2 text-[0.8125rem] text-muted">quoting…</div>
-          )}
-        </div>
-      ) : (
-        <div className="mt-2 h-5 text-[0.8125rem] text-muted">Trader</div>
       )}
-
-      <div className="mt-3 flex items-baseline justify-between border-t border-border pt-2">
-        <span className="text-xs text-muted">Score</span>
-        <span className="font-mono text-lg font-semibold">{player.score}</span>
-      </div>
     </div>
   );
 }
@@ -395,48 +224,18 @@ function MakeMarket() {
 
   return (
     <form onSubmit={submit} className="animate-pop space-y-4">
-      <Countdown seconds={makeSeconds} onExpire={timeoutRound} />
-      <div className="rounded-xl border border-border bg-surface-2/50 px-4 py-3 text-sm text-foreground">
-        You&apos;re the market maker. Quote a bid &amp; ask on the total sum — the
-        bots will trade against you and your PnL is settled automatically.
+      <Timer seconds={makeSeconds} onExpire={timeoutRound} />
+      <Note>
+        Quote a bid and ask on the total of all the cards. The bots trade against you and your P&amp;L settles
+        automatically. Spread {MIN_SPREAD} to {MAX_SPREAD}.
+      </Note>
+      <div className="grid grid-cols-2 gap-3">
+        <PriceField label="Your bid" value={bid} onChange={setBid} placeholder="e.g. 20" />
+        <PriceField label="Your ask" value={ask} onChange={setAsk} placeholder="e.g. 24" />
       </div>
-      <div className="flex justify-center">
-        <Badge tone="outline">Min spread {MIN_SPREAD} · Max spread {MAX_SPREAD}</Badge>
-      </div>
-      <div className="grid grid-cols-2 gap-4">
-        <PriceInput label="Your bid" value={bid} onChange={setBid} placeholder="e.g. 20" />
-        <PriceInput label="Your ask" value={ask} onChange={setAsk} placeholder="e.g. 24" />
-      </div>
-      {error && <p className="text-center text-sm text-negative">{error}</p>}
-      <Button type="submit" size="lg" className="w-full">
-        Submit market <ArrowRight className="h-4 w-4" />
-      </Button>
+      {error && <p className="text-sm font-semibold text-negative">{error}</p>}
+      <ActionPlate type="submit" tone="jacket" label="Submit market" icon={<ArrowRight className="h-5 w-5" />} className="w-full" />
     </form>
-  );
-}
-
-function PriceInput({
-  label,
-  value,
-  onChange,
-  placeholder,
-}: {
-  label: string;
-  value: string;
-  onChange: (v: string) => void;
-  placeholder: string;
-}) {
-  return (
-    <label className="space-y-1.5">
-      <span className="text-xs font-medium uppercase tracking-wider text-muted">{label}</span>
-      <input
-        inputMode="decimal"
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder={placeholder}
-        className="h-11 w-full rounded-xl border border-border bg-surface-2 px-3 font-mono text-lg outline-none focus:ring-2 focus:ring-ring"
-      />
-    </label>
   );
 }
 
@@ -457,17 +256,14 @@ function TradePhase() {
   const canSell = canAfford("sell", quote, qty, numCards, balance);
 
   return (
-    <div className="animate-pop space-y-4">
-      <Countdown seconds={tradeSeconds} onExpire={timeoutRound} />
-      <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-border bg-surface-2/50 px-4 py-3 text-sm text-foreground">
-        <span>Lift the offer if it&apos;s cheap, hit the bid if it&apos;s rich, or skip.</span>
-        <span className="font-mono text-muted">balance {balance}</span>
-      </div>
+    <div className="animate-pop space-y-5">
+      <Timer seconds={tradeSeconds} onExpire={timeoutRound} />
+      <Note>Lift the offer if it&apos;s cheap, hit the bid if it&apos;s rich, or skip.</Note>
 
       <div>
-        <div className="mb-2 flex items-center justify-between">
-          <span className="text-xs font-medium uppercase tracking-wider text-muted">Order size</span>
-          <span className="rounded-md bg-surface-2 px-2.5 py-1 font-mono text-sm">Size: {qty}</span>
+        <div className="mb-2 flex items-baseline justify-between">
+          <span className="font-x text-xs font-extrabold uppercase tracking-[0.08em] text-muted">Size</span>
+          <span className="font-xx text-2xl font-black tabular-nums">{qty}</span>
         </div>
         <input
           type="range"
@@ -475,30 +271,21 @@ function TradePhase() {
           max={MAX_SIZE}
           value={qty}
           onChange={(e) => setQty(Number(e.target.value))}
-          style={{ accentColor: "var(--accent)" }}
+          style={{ accentColor: "var(--jacket)" }}
           className="w-full"
+          aria-label="Order size"
         />
+        <p className="mt-1 text-xs text-muted">Balance {balance}</p>
       </div>
 
-      <div className="grid grid-cols-3 gap-3">
-        <Button variant="outline" disabled={!canBuy} className="h-auto flex-col gap-0 py-2.5 border-positive/40 text-positive hover:bg-positive/10" onClick={() => trade("buy", qty)}>
-          <span className="flex items-center gap-1.5 font-semibold">Buy <TrendingUp className="h-4 w-4" /></span>
-          <span className="text-2xs font-normal text-muted">at {quote.ask}</span>
-        </Button>
-        <Button variant="outline" disabled={!canSell} className="h-auto flex-col gap-0 py-2.5 border-negative/40 text-negative hover:bg-negative/10" onClick={() => trade("sell", qty)}>
-          <span className="flex items-center gap-1.5 font-semibold">Sell <TrendingDown className="h-4 w-4" /></span>
-          <span className="text-2xs font-normal text-muted">at {quote.bid}</span>
-        </Button>
-        <Button variant="outline" className="h-auto flex-col gap-0 py-2.5" onClick={() => trade("skip", qty)}>
-          <span className="flex items-center gap-1.5 font-semibold">Skip <SkipForward className="h-4 w-4" /></span>
-          <span className="text-2xs font-normal text-muted">no trade</span>
-        </Button>
+      <div className="grid grid-cols-3 gap-2">
+        <ActionPlate tone="buy" disabled={!canBuy} onClick={() => trade("buy", qty)} label="Buy" sub={`at ${quote.ask}`} />
+        <ActionPlate tone="sell" disabled={!canSell} onClick={() => trade("sell", qty)} label="Sell" sub={`at ${quote.bid}`} />
+        <ActionPlate tone="neutral" onClick={() => trade("skip", qty)} label="Skip" sub="no trade" />
       </div>
 
       {(!canBuy || !canSell) && (
-        <p className="text-center text-xs text-muted">
-          Greyed-out actions would risk more than your balance of {balance} at size {qty}.
-        </p>
+        <p className="text-xs text-muted">Greyed-out trades would risk more than your balance of {balance} at size {qty}.</p>
       )}
     </div>
   );
@@ -512,17 +299,12 @@ function RevealPanel() {
 
   return (
     <div className="animate-pop space-y-4">
-      <Countdown seconds={REVEAL_SECONDS} onExpire={finishReveal} label="Memorise — hiding in" />
-      <div className="flex items-center gap-2 rounded-xl border border-accent/30 bg-accent/5 px-4 py-3 text-sm">
-        <Eye className="h-4 w-4 shrink-0 text-accent" />
-        <span>
-          Cards are face-up — <strong className="text-foreground">memorise them</strong>.
-          You&apos;ll work out the settlement &amp; PnL from memory next.
-        </span>
-      </div>
-      <Button variant="outline" className="w-full" onClick={finishReveal}>
-        <EyeOff className="h-4 w-4" /> Hide now &amp; continue
-      </Button>
+      <Timer seconds={REVEAL_SECONDS} onExpire={finishReveal} label="Hiding in" />
+      <Note tone="warn" icon={<Eye className="h-4 w-4" />}>
+        Every card is face-up. <strong>Memorise them</strong>: you&apos;ll work out the settlement and your P&amp;L
+        from memory next.
+      </Note>
+      <ActionPlate tone="neutral" onClick={finishReveal} label="Hide now" icon={<EyeOff className="h-5 w-5" />} className="w-full" />
     </div>
   );
 }
@@ -551,23 +333,16 @@ function SettlePanel() {
 
   return (
     <form onSubmit={submit} className="animate-pop space-y-4">
-      <div className="flex items-center gap-2 rounded-xl border border-border bg-surface-2/50 px-4 py-3 text-sm">
-        <EyeOff className="h-4 w-4 shrink-0 text-muted" />
-        <span>
-          Cards hidden. From memory: what was the{" "}
-          <strong className="text-foreground">settlement</strong> (sum of all
-          cards) and your <strong className="text-foreground">P/L</strong>? A
-          wrong PnL costs {WRONG_PNL_PENALTY} points.
-        </span>
+      <Note icon={<EyeOff className="h-4 w-4" />}>
+        From memory: the <strong>settlement</strong> (the sum of every card) and your <strong>P/L</strong>. A wrong
+        P/L costs {WRONG_PNL_PENALTY} points.
+      </Note>
+      <div className="grid grid-cols-2 gap-3">
+        <PriceField label="Settlement" value={settlement} onChange={setSettlement} placeholder="sum" />
+        <PriceField label="Your P/L" value={pnl} onChange={setPnl} placeholder="P/L" />
       </div>
-      <div className="grid grid-cols-2 gap-4">
-        <PriceInput label="Settlement price" value={settlement} onChange={setSettlement} placeholder="sum of cards" />
-        <PriceInput label="Your P/L" value={pnl} onChange={setPnl} placeholder="compute it" />
-      </div>
-      {error && <p className="text-center text-sm text-negative">{error}</p>}
-      <Button type="submit" size="lg" className="w-full">
-        <Lock className="h-4 w-4" /> Lock in
-      </Button>
+      {error && <p className="text-sm font-semibold text-negative">{error}</p>}
+      <ActionPlate type="submit" tone="jacket" label="Lock in" icon={<Lock className="h-5 w-5" />} className="w-full" />
     </form>
   );
 }
@@ -579,56 +354,51 @@ function ResultPanel() {
   if (!result) return null;
 
   const final = result.finalPnl ?? 0;
-  const won = final >= 0;
   const isLast = round >= config.totalRounds;
 
   return (
     <div className="animate-pop space-y-4">
-      <div className={cn("rounded-xl border p-4", won ? "border-positive/30 bg-positive/5" : "border-negative/30 bg-negative/5")}>
-        <div className="flex items-center gap-2">
-          {won ? <TrendingUp className="h-5 w-5 text-positive" /> : <TrendingDown className="h-5 w-5 text-negative" />}
-          <span className="font-semibold">Round PnL {formatSigned(final)}</span>
-          {result.timedOut && <Badge tone="outline" className="ml-auto">Skipped — timed out</Badge>}
-        </div>
+      <div className={cn("rounded-[8px] px-5 py-4 text-white", final >= 0 ? "bg-positive" : "bg-negative")}>
+        <div className="text-xs font-bold uppercase tracking-[0.1em] opacity-85">Round P&amp;L</div>
+        <div className="font-xx text-[2.6rem] font-black leading-none tabular-nums">{formatSigned(final)}</div>
+        {result.timedOut && <div className="mt-1 text-sm font-semibold">Timed out: round skipped</div>}
+      </div>
 
-        <dl className="mt-3 grid grid-cols-2 gap-x-4 gap-y-1.5 text-sm sm:grid-cols-3">
-          <Stat label="Settlement" value={String(result.trueSum)} />
-          {result.role === "maker" ? (
-            <Stat label="Auto PnL (bot flow)" value={formatSigned(result.actualPnl)} />
-          ) : (
-            !result.timedOut && <Stat label="Trade PnL" value={formatSigned(result.actualPnl)} />
-          )}
-          {result.role === "trader" && !result.timedOut && (
-            <Stat
-              label="Your settlement guess"
-              value={String(result.guessedSettlement ?? "—")}
-              ok={result.guessedSettlement === result.trueSum}
-            />
-          )}
-        </dl>
-
-        {result.role === "trader" && !result.timedOut && (
-          <div className="mt-3 text-sm">
-            {result.penalized ? (
-              <p className="flex items-center gap-2 text-negative">
-                <AlertTriangle className="h-4 w-4" />
-                Your PnL guess {formatSigned(result.guessedPnl ?? 0)} was wrong (actual{" "}
-                {formatSigned(result.actualPnl)}) — {WRONG_PNL_PENALTY}-point penalty applied.
-              </p>
-            ) : (
-              <p className="text-positive">Correct PnL — no penalty. Nicely counted.</p>
-            )}
-          </div>
+      <div className="grid grid-cols-2 gap-2">
+        <Stat label="Settlement" value={String(result.trueSum)} />
+        {result.role === "maker" ? (
+          <Stat label="Bot-flow P&L" value={formatSigned(result.actualPnl)} />
+        ) : (
+          !result.timedOut && <Stat label="Trade P&L" value={formatSigned(result.actualPnl)} />
         )}
-
-        {result.role === "maker" && !result.timedOut && (
-          <BotTrades trades={result.botTrades ?? []} />
+        {result.role === "trader" && !result.timedOut && (
+          <Stat
+            label="Your settlement"
+            value={String(result.guessedSettlement ?? "—")}
+            ok={result.guessedSettlement === result.trueSum}
+          />
         )}
       </div>
 
-      <Button size="lg" className="w-full" onClick={next}>
-        {isLast ? "See final standings" : "Next round"} <ArrowRight className="h-4 w-4" />
-      </Button>
+      {result.role === "trader" && !result.timedOut &&
+        (result.penalized ? (
+          <Note tone="bad" icon={<AlertTriangle className="h-4 w-4 text-negative" />}>
+            Your P/L {formatSigned(result.guessedPnl ?? 0)} was wrong (actual {formatSigned(result.actualPnl)}):{" "}
+            {WRONG_PNL_PENALTY}-point penalty.
+          </Note>
+        ) : (
+          <Note tone="good">Correct P/L, no penalty. Nicely counted.</Note>
+        ))}
+
+      {result.role === "maker" && !result.timedOut && <BotTrades trades={result.botTrades ?? []} />}
+
+      <ActionPlate
+        tone="jacket"
+        onClick={next}
+        label={isLast ? "Final standings" : "Next round"}
+        icon={<ArrowRight className="h-5 w-5" />}
+        className="w-full"
+      />
     </div>
   );
 }
@@ -638,52 +408,28 @@ function BotTrades({ trades }: { trades: BotTrade[] }) {
   if (trades.length === 0) return null;
 
   return (
-    <div className="mt-3 space-y-1.5">
-      <div className="text-2xs uppercase tracking-wider text-muted">
-        How the bots traded your market
-      </div>
-      {trades.map((t) => {
-        const name = players[t.player]?.name ?? `Player ${t.player + 1}`;
-        if (t.action === "skip") {
+    <div>
+      <div className="font-x mb-1 text-xs font-extrabold uppercase tracking-[0.08em] text-muted">How the bots traded you</div>
+      <ul className="divide-y divide-border">
+        {trades.map((t) => {
+          const name = players[t.player]?.name ?? `Player ${t.player + 1}`;
           return (
-            <div key={t.player} className="flex items-center justify-between text-sm">
-              <span className="text-muted">{name} passed — no edge</span>
-              <span className="font-mono text-muted">$0.00</span>
-            </div>
-          );
-        }
-        const verb = t.action === "buy" ? "lifted your offer" : "hit your bid";
-        return (
-          <div key={t.player} className="flex items-center justify-between text-sm">
-            <span>
-              <span className="font-medium">{name}</span>{" "}
-              <span className="text-muted">
-                {verb} — {t.action === "buy" ? "bought" : "sold"} {t.qty} @ {t.price}
+            <li key={t.player} className="flex items-center justify-between gap-3 py-2 text-sm">
+              <span>
+                <span className="font-bold">{name}</span>{" "}
+                <span className="text-muted">
+                  {t.action === "skip"
+                    ? "passed"
+                    : `${t.action === "buy" ? "lifted your offer" : "hit your bid"}: ${t.qty} @ ${t.price}`}
+                </span>
               </span>
-            </span>
-            <span className={cn("font-mono font-medium", t.makerDelta >= 0 ? "text-positive" : "text-negative")}>
-              {formatSigned(t.makerDelta)}
-            </span>
-          </div>
-        );
-      })}
-    </div>
-  );
-}
-
-function Stat({ label, value, ok }: { label: string; value: string; ok?: boolean }) {
-  return (
-    <div className="rounded-xl border border-border bg-surface-2/40 px-3 py-2">
-      <div className="text-2xs uppercase tracking-wider text-muted">{label}</div>
-      <div
-        className={cn(
-          "font-mono text-base font-semibold",
-          ok === true && "text-positive",
-          ok === false && "text-negative",
-        )}
-      >
-        {value}
-      </div>
+              <span className={cn("font-x font-black tabular-nums", t.makerDelta > 0 && "text-positive", t.makerDelta < 0 && "text-negative")}>
+                {formatSigned(t.makerDelta)}
+              </span>
+            </li>
+          );
+        })}
+      </ul>
     </div>
   );
 }
@@ -694,55 +440,28 @@ function GameOver() {
   const { players, history, reset } = useGameStore();
   useRecordGame();
   const ranked = [...players].sort((a, b) => b.score - a.score);
+  const place = ranked.findIndex((p) => p.isYou) + 1;
 
   return (
-    <div className="mx-auto max-w-3xl space-y-6">
-      <Card className="obsidian-glow">
-        <CardContent className="space-y-6 py-10">
-          <div className="flex flex-col items-center gap-2 text-center">
-            <span className="grid h-14 w-14 place-items-center rounded-2xl bg-accent text-accent-foreground shadow-lg">
-              <Trophy className="h-7 w-7" />
-            </span>
-            <h2 className="text-2xl font-bold tracking-[-0.02em]">Final standings</h2>
-          </div>
+    <div className="mx-auto max-w-4xl space-y-6">
+      <FinalBand
+        title="Final standings"
+        figure={`#${place}`}
+        figureLabel={`of ${ranked.length}`}
+        actions={
+          <ActionPlate tone="jacket" onClick={reset} label="Play again" icon={<RotateCcw className="h-5 w-5" />} className="min-w-56" />
+        }
+      >
+        <Standings rows={ranked.map((p) => ({ name: p.name, score: p.score, you: p.isYou }))} />
+      </FinalBand>
 
-          <ol className="mx-auto max-w-md space-y-2">
-            {ranked.map((p, i) => (
-              <li
-                key={p.id}
-                className={cn("flex items-center justify-between rounded-xl border px-4 py-3", p.isYou ? "border-accent/50 bg-accent/5" : "border-border bg-surface-2/40")}
-              >
-                <span className="flex items-center gap-3">
-                  <span className="font-mono text-sm text-muted">#{i + 1}</span>
-                  <span className="font-medium">{p.name}</span>
-                  {p.isYou && <Badge tone="accent">You</Badge>}
-                </span>
-                <span className="font-mono font-semibold">{p.score}</span>
-              </li>
-            ))}
-          </ol>
-
-          <div className="flex justify-center">
-            <Button size="lg" onClick={reset}>
-              <RotateCcw className="h-4 w-4" /> Play again
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Round-by-round recap</CardTitle>
-          <p className="flex items-center gap-1.5 text-xs text-muted">
-            <EyeOff className="h-3.5 w-3.5" /> Purple cards were face-down when you decided.
-          </p>
-        </CardHeader>
-        <CardContent className="space-y-3">
+      <Panel title="Round by round" meta={<span className="text-xs text-muted">Cards with a jacket rim were face-down when you decided.</span>}>
+        <ol className="divide-y divide-border">
           {history.map((r) => (
             <RecapRow key={r.round} record={r} />
           ))}
-        </CardContent>
-      </Card>
+        </ol>
+      </Panel>
     </div>
   );
 }
@@ -752,8 +471,8 @@ function CardChip({ card }: { card: CardSnapshot }) {
   return (
     <span
       className={cn(
-        "inline-flex h-9 w-7 flex-col items-center justify-center rounded-md border bg-white text-[0.8125rem] font-bold leading-none",
-        card.wasFaceUp ? "border-zinc-300" : "border-accent ring-1 ring-accent/40",
+        "inline-flex h-9 w-7 flex-col items-center justify-center rounded-[4px] bg-white text-[0.8125rem] font-bold leading-none",
+        card.wasFaceUp ? "border border-zinc-300" : "border-2 border-jacket",
       )}
       style={{ color: red ? "#d4163c" : "#17171d" }}
       title={card.wasFaceUp ? "Was face-up" : "Was face-down"}
@@ -768,54 +487,54 @@ function RecapRow({ record }: { record: RoundRecord }) {
   const { round, role, cards, quote, action, qty, trueSum, ev, finalPnl, guessedPnl, penalized, timedOut } = record;
 
   const detail = timedOut
-    ? "timed out — skipped"
+    ? "timed out"
     : role === "maker"
-      ? `you quoted ${quote?.bid}–${quote?.ask}`
+      ? `quoted ${quote?.bid}–${quote?.ask}`
       : action === "skip"
-        ? `skipped (quote ${quote?.bid}–${quote?.ask})`
+        ? `skipped ${quote?.bid}–${quote?.ask}`
         : `${action} ${qty} @ ${action === "buy" ? quote?.ask : quote?.bid}`;
 
   return (
-    <div className="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-xl border border-border bg-surface-2/40 px-3 py-2.5 text-sm">
-      <span className="font-mono text-muted">R{round}</span>
-      <Badge tone={role === "maker" ? "accent" : "outline"}>{role === "maker" ? "Maker" : "Trader"}</Badge>
-      <div className="flex gap-1.5">
+    <li className="flex flex-wrap items-center gap-x-4 gap-y-2 py-3 text-sm">
+      <span className="font-xx grid h-9 w-11 place-items-center rounded-[4px] bg-surface-2 font-black">R{round}</span>
+      <span className={cn("font-x rounded-[3px] px-2 py-1 text-[0.65rem] font-extrabold uppercase tracking-[0.06em]", role === "maker" ? "bg-jacket text-jacket-ink" : "bg-surface-2")}>
+        {role === "maker" ? "Maker" : "Trader"}
+      </span>
+      <div className="flex gap-1">
         {cards.map((c, i) => (
           <CardChip key={i} card={c} />
         ))}
       </div>
       <span className="text-muted">{detail}</span>
-      <span className="ml-auto flex items-center gap-3 font-mono">
+      <span className="ml-auto flex items-center gap-4 tabular-nums">
         <span className="text-muted">fair {ev.toFixed(0)}</span>
-        <span className="text-foreground">true {trueSum}</span>
+        <span>true {trueSum}</span>
         {role === "trader" && !timedOut && (
           <span className={cn(penalized ? "text-negative" : "text-muted")}>
             guess {formatSigned(guessedPnl ?? 0)}
             {penalized && " ✗"}
           </span>
         )}
-        <span className={cn("font-semibold", finalPnl > 0 && "text-positive", finalPnl < 0 && "text-negative")}>
-          {formatSigned(finalPnl)}
-        </span>
+        <span className={cn("font-x font-black", finalPnl > 0 && "text-positive", finalPnl < 0 && "text-negative")}>{formatSigned(finalPnl)}</span>
       </span>
-    </div>
+    </li>
   );
 }
 
 function ResetButton() {
   const reset = useGameStore((s) => s.reset);
   return (
-    <Button variant="ghost" size="sm" onClick={reset}>
+    <QuietButton onClick={reset}>
       <RotateCcw className="h-4 w-4" /> Restart
-    </Button>
+    </QuietButton>
   );
 }
 
 function EndGameButton() {
   const endGame = useGameStore((s) => s.endGame);
   return (
-    <Button variant="ghost" size="sm" onClick={endGame}>
+    <QuietButton onClick={endGame}>
       <Flag className="h-4 w-4" /> End game
-    </Button>
+    </QuietButton>
   );
 }

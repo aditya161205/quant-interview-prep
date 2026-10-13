@@ -85,7 +85,7 @@ function CardFront({ card }: { card: CardType }) {
   const isAce = card.rank === "A";
 
   return (
-    <div className="card-face overflow-hidden rounded-xl border border-zinc-300 bg-white shadow-lg">
+    <div className="card-face overflow-hidden rounded-[8px] border border-zinc-300 bg-white shadow-(--shadow-raised)">
       <Corner rank={card.rank} suit={card.suit} />
       <Corner rank={card.rank} suit={card.suit} flip />
 
@@ -106,11 +106,9 @@ function CardFront({ card }: { card: CardType }) {
 
 function CardBack() {
   return (
-    <div className="card-face card-face--back overflow-hidden rounded-xl border border-accent/40">
-      <div className="grid h-full w-full place-items-center bg-surface-2 bg-[repeating-linear-gradient(45deg,transparent,transparent_8px,rgba(139,92,246,0.16)_8px,rgba(139,92,246,0.16)_16px)]">
-        <span className="grid h-11 w-11 place-items-center rounded-full border border-accent/50 bg-background/50 text-xl font-bold text-accent">
-          Q
-        </span>
+    <div className="card-face card-face--back overflow-hidden rounded-[8px] border-[5px] border-white bg-jacket shadow-(--shadow-raised)">
+      <div className="grid h-full w-full place-items-center">
+        <span className="font-xx grid h-11 min-w-14 place-items-center rounded-[4px] bg-jacket-ink px-1.5 text-lg font-black text-jacket">QP</span>
       </div>
     </div>
   );

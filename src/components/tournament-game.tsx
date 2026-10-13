@@ -1,10 +1,7 @@
 "use client";
 
 import * as React from "react";
-import {
-  Play, RotateCcw, ArrowRight, Settings2, Trophy, Timer,
-  TrendingUp, TrendingDown, MinusCircle, Check, X, Info, ArrowUp, ArrowDown, Equal, ChevronDown,
-} from "lucide-react";
+import { RotateCcw, ArrowRight, Check, X, Info, ArrowUp, ArrowDown, Equal, ChevronDown } from "lucide-react";
 import {
   buildGame,
   scoreTradeDecision,
@@ -26,10 +23,21 @@ import {
 } from "@/lib/tournament-game";
 import { cn, formatSigned } from "@/lib/utils";
 import { useRecordGame } from "@/store/practice-store";
+import { useHideRulesWhile } from "@/components/how-to-play";
 import { Countdown as StartCountdown } from "@/components/countdown";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+import {
+  ActionPlate,
+  FinalBand,
+  Note,
+  Panel,
+  PriceField,
+  QuotePlates,
+  Scoreboard,
+  Segmented,
+  Stat,
+  Ticket,
+  TimerBar,
+} from "@/components/pit/game-kit";
 
 type Phase = "intro" | "countdown" | "playing" | "over";
 
@@ -40,6 +48,7 @@ export function TournamentGame() {
   const [roundIdx, setRoundIdx] = React.useState(0);
   const [score, setScore] = React.useState(0);
   const [history, setHistory] = React.useState<RoundOutcome[]>([]);
+  useHideRulesWhile(phase === "playing");
   // One polite live region for the whole game: the round verdict and the final
   // score. The matrix and the stat tiles are left out of it on purpose.
   const [status, setStatus] = React.useState("");
@@ -88,22 +97,18 @@ export function TournamentGame() {
     content = <GameOver history={history} score={score} matrix={game.matrix} onAgain={() => setPhase("intro")} />;
   } else if (game && round) {
     content = (
-      <div className="space-y-4">
-        <div className="grid grid-cols-3 gap-3">
-          <StatTile label="Round" value={`${roundIdx + 1}/${game.rounds.length}`} />
-          <StatTile label="Score" value={String(score)} accent />
-          <StatTile label="Phase" value={round.kind === "trade" ? "Pricing" : "News"} />
-        </div>
-
-        <MatrixTable matrix={game.matrix} />
-
-        <RoundCard
-          key={roundIdx}
-          round={round}
-          decisionSeconds={config.decisionSeconds}
-          onResult={onResult}
-          onNext={onNext}
+      <div className="space-y-5">
+        <Scoreboard
+          cells={[
+            { label: "Round", value: `${roundIdx + 1}/${game.rounds.length}` },
+            { label: "Score", value: score, tone: "hot" },
+            { label: "Phase", value: round.kind === "trade" ? "Pricing" : "News" },
+          ]}
         />
+        <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+          <MatrixTable matrix={game.matrix} />
+          <RoundCard key={roundIdx} round={round} decisionSeconds={config.decisionSeconds} onResult={onResult} onNext={onNext} />
+        </div>
       </div>
     );
   }
@@ -122,53 +127,14 @@ export function TournamentGame() {
 
 function Intro({ saved, onStart }: { saved: TournamentConfig; onStart: (c: TournamentConfig) => void }) {
   const [config, setConfig] = React.useState<TournamentConfig>(saved);
-  const set = <K extends keyof TournamentConfig>(k: K, v: TournamentConfig[K]) =>
-    setConfig((c) => ({ ...c, [k]: v }));
+  const set = <K extends keyof TournamentConfig>(k: K, v: TournamentConfig[K]) => setConfig((c) => ({ ...c, [k]: v }));
 
   return (
-    // Title and description live in the page header — this card is just setup.
-    <Card className="obsidian-glow mx-auto max-w-2xl">
-      <CardContent className="space-y-6 py-8">
-        <div className="mx-auto max-w-xl space-y-4 rounded-xl border border-border bg-surface-2/40 p-5">
-          <div className="flex items-center gap-2 text-sm font-medium">
-            <Settings2 className="h-4 w-4 text-accent" /> Game settings
-          </div>
-          <Segmented label="Pricing rounds" options={TOURNAMENT_OPTIONS.tradeRounds} value={config.tradeRounds} onChange={(v) => set("tradeRounds", v)} />
-          <Segmented label="News rounds" options={TOURNAMENT_OPTIONS.infoRounds} value={config.infoRounds} onChange={(v) => set("infoRounds", v)} />
-          <Segmented label="Seconds to decide" options={TOURNAMENT_OPTIONS.decisionSeconds} value={config.decisionSeconds} onChange={(v) => set("decisionSeconds", v)} suffix="s" />
-        </div>
-
-        <div className="flex justify-center">
-          <Button size="lg" onClick={() => onStart(config)}>
-            <Play className="h-4 w-4" /> Start game
-          </Button>
-        </div>
-      </CardContent>
-    </Card>
-  );
-}
-
-function Segmented<T extends number>({
-  label, options, value, onChange, suffix = "",
-}: { label: string; options: readonly T[]; value: T; onChange: (v: T) => void; suffix?: string }) {
-  return (
-    <div className="flex flex-wrap items-center justify-between gap-3">
-      <span className="text-sm text-muted">{label}</span>
-      <div className="flex gap-1.5">
-        {options.map((opt) => (
-          <button
-            key={opt}
-            onClick={() => onChange(opt)}
-            className={cn(
-              "h-9 min-w-11 rounded-lg border px-3 font-mono text-sm transition-colors",
-              value === opt ? "border-accent bg-accent/15 text-accent" : "border-border bg-surface text-muted hover:text-foreground",
-            )}
-          >
-            {opt}{suffix}
-          </button>
-        ))}
-      </div>
-    </div>
+    <Ticket onStart={() => onStart(config)} countdown={false}>
+      <Segmented label="Pricing rounds" options={TOURNAMENT_OPTIONS.tradeRounds} value={config.tradeRounds} onChange={(v) => set("tradeRounds", v)} />
+      <Segmented label="News rounds" options={TOURNAMENT_OPTIONS.infoRounds} value={config.infoRounds} onChange={(v) => set("infoRounds", v)} />
+      <Segmented label="Seconds to decide" options={TOURNAMENT_OPTIONS.decisionSeconds} value={config.decisionSeconds} onChange={(v) => set("decisionSeconds", v)} suffix="s" />
+    </Ticket>
   );
 }
 
@@ -176,23 +142,15 @@ function Segmented<T extends number>({
 
 function MatrixTable({ matrix, highlight }: { matrix: Matrix; highlight?: string }) {
   return (
-    <Card>
-      <CardHeader className="py-3">
-        <CardTitle className="flex items-center gap-2 text-sm">
-          Win-probability matrix
-          <span className="font-normal text-muted">— P(row beats column)</span>
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="flex justify-center pb-6">
-        <table className="border-separate border-spacing-1.5 text-center font-mono text-sm sm:border-spacing-2">
+    <Panel title="Win probabilities" meta={<span className="text-xs text-muted">P(row beats column)</span>}>
+      <div className="flex justify-center overflow-x-auto">
+        <table className="border-separate border-spacing-1.5 text-center sm:border-spacing-2">
           <thead>
             <tr>
               <th className="h-10 w-10" />
               {TEAMS.map((t) => (
                 <th key={t} className="p-0">
-                  <div className="mx-auto grid h-9 w-14 place-items-center rounded-lg bg-accent/10 text-xs font-bold uppercase tracking-wider text-accent sm:w-16">
-                    {t}
-                  </div>
+                  <div className="font-xx mx-auto grid h-9 w-14 place-items-center rounded-[4px] bg-foreground text-xs font-black uppercase text-background sm:w-16">{t}</div>
                 </th>
               ))}
             </tr>
@@ -201,9 +159,7 @@ function MatrixTable({ matrix, highlight }: { matrix: Matrix; highlight?: string
             {TEAMS.map((row, i) => (
               <tr key={row}>
                 <th className="p-0">
-                  <div className="grid h-14 w-10 place-items-center rounded-lg bg-accent/10 text-xs font-bold uppercase tracking-wider text-accent">
-                    {row}
-                  </div>
+                  <div className="font-xx grid h-14 w-10 place-items-center rounded-[4px] bg-foreground text-xs font-black uppercase text-background">{row}</div>
                 </th>
                 {TEAMS.map((col, j) => {
                   const key = `${Math.min(i, j)}-${Math.max(i, j)}`;
@@ -211,9 +167,7 @@ function MatrixTable({ matrix, highlight }: { matrix: Matrix; highlight?: string
                   if (i === j) {
                     return (
                       <td key={col} className="p-0">
-                        <div className="grid h-14 w-14 place-items-center rounded-lg border border-dashed border-border bg-surface-2/30 text-border sm:w-16">
-                          —
-                        </div>
+                        <div className="grid h-14 w-14 place-items-center rounded-[4px] bg-surface-2 text-muted sm:w-16">—</div>
                       </td>
                     );
                   }
@@ -223,12 +177,9 @@ function MatrixTable({ matrix, highlight }: { matrix: Matrix; highlight?: string
                     <td key={col} className="p-0">
                       <div
                         className={cn(
-                          "grid h-14 w-14 place-items-center rounded-lg border font-semibold tabular-nums shadow-sm transition-transform hover:-translate-y-0.5 hover:shadow-md sm:w-16",
-                          p >= 0.5
-                            ? "border-positive/30 bg-positive/10 text-positive"
-                            : "border-negative/30 bg-negative/10 text-negative",
-                          strong && (p >= 0.5 ? "bg-positive/20" : "bg-negative/20"),
-                          isHi && "ring-2 ring-accent ring-offset-1 ring-offset-surface",
+                          "font-xx grid h-14 w-14 place-items-center rounded-[4px] text-sm font-black tabular-nums sm:w-16",
+                          p >= 0.5 ? (strong ? "bg-positive text-white" : "bg-positive/25 text-foreground") : strong ? "bg-negative text-white" : "bg-negative/25 text-foreground",
+                          isHi && "ring-[3px] ring-jacket ring-offset-2 ring-offset-surface",
                         )}
                       >
                         {p.toFixed(2)}
@@ -240,8 +191,8 @@ function MatrixTable({ matrix, highlight }: { matrix: Matrix; highlight?: string
             ))}
           </tbody>
         </table>
-      </CardContent>
-    </Card>
+      </div>
+    </Panel>
   );
 }
 
@@ -324,196 +275,107 @@ function RoundCard({
   };
 
   return (
-    <Card className="obsidian-glow">
-      <CardContent className="space-y-5 p-6">
-        {round.kind === "info" && round.reveal && (
-          <div className="flex items-start gap-2 rounded-xl border border-amber-500/30 bg-amber-500/5 p-3 text-sm">
-            <Info className="mt-0.5 h-4 w-4 shrink-0 text-amber-500" />
-            <span>
-              <span className="font-semibold text-foreground">{round.reveal.text}</span>{" "}
-              Your earlier fair value was <span className="font-mono text-foreground">{round.priorValue}</span>.
-              Re-price it.
-            </span>
-          </div>
-        )}
+    <Panel title={round.kind === "trade" ? "Price this market" : "Re-price on the news"}>
+      {round.kind === "info" && round.reveal && (
+        <Note tone="warn" icon={<Info className="h-4 w-4" />}>
+          <strong>{round.reveal.text}</strong> Your earlier fair value was <strong>{round.priorValue}</strong>. Re-price it.
+        </Note>
+      )}
 
-        <div className="text-center">
-          <div className="text-2xs font-semibold uppercase tracking-wider text-muted">
-            {round.kind === "trade" ? "Price this market" : "Re-price on the news"}
+      <h3 className="font-xx text-[1.6rem] font-black leading-tight tracking-[-0.01em]">{round.event.label}</h3>
+
+      {step === "decide" && (
+        <>
+          <TimerBar left={left} total={decisionSeconds} label="Decide" />
+          {round.kind === "trade" ? (
+            <div className="space-y-3">
+              <QuotePlates bid={round.quote!.bid} ask={round.quote!.ask} />
+              <div className="grid grid-cols-3 gap-2">
+                <ActionPlate tone="buy" label="Buy" sub={`@ ${round.quote!.ask}`} onClick={() => choose("buy")} />
+                <ActionPlate tone="neutral" label="Pass" onClick={() => choose("pass")} />
+                <ActionPlate tone="sell" label="Sell" sub={`@ ${round.quote!.bid}`} onClick={() => choose("sell")} />
+              </div>
+              <p className="text-xs text-muted">
+                Buy if fair value is above {round.quote!.ask}; sell if below {round.quote!.bid}.
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              <p className="text-sm text-muted">Does this outcome&apos;s fair value move?</p>
+              <div className="grid grid-cols-3 gap-2">
+                <ActionPlate tone="buy" label="Up" icon={<ArrowUp className="h-5 w-5" />} onClick={() => choose("up")} />
+                <ActionPlate tone="neutral" label="Same" icon={<Equal className="h-5 w-5" />} onClick={() => choose("same")} />
+                <ActionPlate tone="sell" label="Down" icon={<ArrowDown className="h-5 w-5" />} onClick={() => choose("down")} />
+              </div>
+            </div>
+          )}
+        </>
+      )}
+
+      {step === "estimate" && (
+        <div className="space-y-4">
+          <Note>
+            You chose <strong className={decisionTone(decision!)}>{decisionLabel(decision!)}</strong>
+            {timedOut && <span className="text-negative"> (timed out)</span>}. Now lock in your estimate.
+          </Note>
+          <div className="flex items-end gap-2">
+            <div className="flex-1">
+              <PriceField label="Fair value (0–100)" value={estimate} onChange={(v) => setEstimate(v.replace(/[^0-9]/g, "").slice(0, 3))} placeholder="e.g. 42" />
+            </div>
+            <ActionPlate tone="jacket" label="Lock in" onClick={submitEstimate} disabled={estimate === ""} className="h-14 min-h-0" />
           </div>
-          <h3 className="mt-1 text-xl font-bold leading-snug tracking-[-0.02em] sm:text-2xl">
-            {round.event.label}
-          </h3>
         </div>
+      )}
 
-        {step === "decide" && (
-          <>
-            <DecisionTimer left={left} total={decisionSeconds} />
-            {round.kind === "trade" ? (
-              <div className="space-y-3">
-                <QuoteBar quote={round.quote!} />
-                <div className="grid grid-cols-3 gap-2">
-                  <DecisionBtn tone="positive" icon={TrendingUp} label="Buy" sub={`@ ${round.quote!.ask}`} onClick={() => choose("buy")} />
-                  <DecisionBtn tone="neutral" icon={MinusCircle} label="Pass" onClick={() => choose("pass")} />
-                  <DecisionBtn tone="negative" icon={TrendingDown} label="Sell" sub={`@ ${round.quote!.bid}`} onClick={() => choose("sell")} />
-                </div>
-                <p className="text-center text-xs text-muted">
-                  Buy if you think fair value is above {round.quote!.ask}; sell if below {round.quote!.bid}.
-                </p>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                <p className="text-center text-sm text-muted">Does this outcome&apos;s fair value move?</p>
-                <div className="grid grid-cols-3 gap-2">
-                  <DecisionBtn tone="positive" icon={ArrowUp} label="Up" onClick={() => choose("up")} />
-                  <DecisionBtn tone="neutral" icon={Equal} label="Same" onClick={() => choose("same")} />
-                  <DecisionBtn tone="negative" icon={ArrowDown} label="Down" onClick={() => choose("down")} />
-                </div>
-              </div>
-            )}
-          </>
-        )}
-
-        {step === "estimate" && (
-          <div className="space-y-3">
-            <div className="rounded-xl border border-border bg-surface-2/40 p-3 text-center text-sm text-muted">
-              You chose{" "}
-              <span className={cn("font-semibold", decisionTone(decision!))}>{decisionLabel(decision!)}</span>
-              {timedOut && <span className="text-negative"> (timed out)</span>}. Now lock in your estimate.
-            </div>
-            <label className="block text-center text-sm text-muted">
-              Your fair-value estimate (0–100)
-            </label>
-            <div className="mx-auto flex max-w-xs items-center gap-2">
-              <input
-                autoFocus
-                inputMode="numeric"
-                value={estimate}
-                onChange={(e) => setEstimate(e.target.value.replace(/[^0-9]/g, "").slice(0, 3))}
-                onKeyDown={(e) => e.key === "Enter" && estimate !== "" && submitEstimate()}
-                placeholder="e.g. 42"
-                className="h-11 flex-1 rounded-lg border border-border bg-surface-2 px-3 text-center font-mono text-lg outline-none focus:ring-2 focus:ring-ring"
-              />
-              <Button onClick={submitEstimate} disabled={estimate === ""}>
-                Lock in <ArrowRight className="h-4 w-4" />
-              </Button>
-            </div>
-          </div>
-        )}
-
-        {step === "result" && outcome && <ResultView outcome={outcome} onNext={() => onNext(outcome)} />}
-      </CardContent>
-    </Card>
-  );
-}
-
-function DecisionTimer({ left, total }: { left: number; total: number }) {
-  const pctLeft = Math.max(0, (left / total) * 100);
-  const danger = left <= total * 0.3;
-  return (
-    <div className="space-y-1.5">
-      <div className="flex items-center justify-between text-xs">
-        <span className="flex items-center gap-1.5 text-muted"><Timer className="h-3.5 w-3.5" /> Decide</span>
-        <span className={cn("font-mono font-semibold", danger ? "text-negative" : "text-foreground")}>{Math.ceil(left)}s</span>
-      </div>
-      <div className="h-1.5 w-full overflow-hidden rounded-full bg-surface-2">
-        <div className={cn("h-full rounded-full transition-[width] duration-100 ease-linear", danger ? "bg-negative" : "bg-accent")} style={{ width: `${pctLeft}%` }} />
-      </div>
-    </div>
-  );
-}
-
-function QuoteBar({ quote }: { quote: { bid: number; ask: number } }) {
-  return (
-    <div className="flex items-stretch overflow-hidden rounded-xl border border-border">
-      <div className="flex-1 bg-negative/10 px-4 py-3 text-center">
-        <div className="text-2xs font-semibold uppercase tracking-wider text-muted">Bid (sell here)</div>
-        <div className="font-mono text-2xl font-bold text-negative">{quote.bid}</div>
-      </div>
-      <div className="flex-1 bg-positive/10 px-4 py-3 text-center">
-        <div className="text-2xs font-semibold uppercase tracking-wider text-muted">Ask (buy here)</div>
-        <div className="font-mono text-2xl font-bold text-positive">{quote.ask}</div>
-      </div>
-    </div>
-  );
-}
-
-function DecisionBtn({
-  tone, icon: Icon, label, sub, onClick,
-}: { tone: "positive" | "negative" | "neutral"; icon: typeof TrendingUp; label: string; sub?: string; onClick: () => void }) {
-  const tones = {
-    positive: "border-positive/40 bg-positive/10 text-positive hover:bg-positive/20",
-    negative: "border-negative/40 bg-negative/10 text-negative hover:bg-negative/20",
-    neutral: "border-border bg-surface-2/50 text-foreground hover:border-foreground/25",
-  }[tone];
-  return (
-    <button onClick={onClick} className={cn("flex flex-col items-center gap-1 rounded-xl border py-3 font-semibold transition-colors", tones)}>
-      <Icon className="h-5 w-5" />
-      {label}
-      {sub && <span className="font-mono text-xs opacity-80">{sub}</span>}
-    </button>
+      {step === "result" && outcome && <ResultView outcome={outcome} onNext={() => onNext(outcome)} />}
+    </Panel>
   );
 }
 
 function ResultView({ outcome, onNext }: { outcome: RoundOutcome; onNext: () => void }) {
-  const won = outcome.totalPts > 0;
   return (
     <div className="animate-pop space-y-4">
-      <div className="rounded-xl border border-border bg-surface-2/40 p-4 text-center">
-        <div className="text-2xs font-semibold uppercase tracking-wider text-muted">True fair value</div>
-        <div className="font-mono text-4xl font-black">{outcome.trueValue}</div>
+      <div className="flex items-end justify-between gap-4 rounded-[8px] bg-[#0f131a] text-white dark:ring-1 dark:ring-white/10 px-5 py-4">
+        <div>
+          <div className="text-xs font-bold uppercase tracking-[0.1em] opacity-70">True fair value</div>
+          <div className="font-xx text-[2.6rem] font-black leading-none tabular-nums text-gold">{outcome.trueValue}</div>
+        </div>
         {outcome.kind === "info" && outcome.priorValue != null && (
-          <div className="mt-1 text-xs text-muted">
-            was <span className="font-mono">{outcome.priorValue}</span> → {" "}
-            <span className={outcome.trueValue >= outcome.priorValue ? "text-positive" : "text-negative"}>
+          <div className="text-right text-sm">
+            was {outcome.priorValue} →{" "}
+            <span className={cn("font-bold", outcome.trueValue >= outcome.priorValue ? "text-[#5ee09a]" : "text-[#ff7c8a]")}>
               {actualDirection(outcome.priorValue, outcome.trueValue)}
             </span>
           </div>
         )}
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
-        <ScoreLine
-          ok={outcome.decisionCorrect}
-          label={outcome.kind === "trade" ? "Decision" : "Direction"}
-          detail={decisionLabel(outcome.decision)}
-          pts={outcome.decisionPts}
-        />
-        <ScoreLine
-          ok={outcome.estimatePts > 0}
-          label="Estimate"
-          detail={`you said ${outcome.estimate}`}
-          pts={outcome.estimatePts}
-        />
+      <div className="grid grid-cols-2 gap-2">
+        <ScoreLine ok={outcome.decisionCorrect} label={outcome.kind === "trade" ? "Decision" : "Direction"} detail={decisionLabel(outcome.decision)} pts={outcome.decisionPts} />
+        <ScoreLine ok={outcome.estimatePts > 0} label="Estimate" detail={`you said ${outcome.estimate}`} pts={outcome.estimatePts} />
       </div>
 
-      <div className="flex items-center justify-between rounded-xl border border-border bg-surface-2/40 px-4 py-2.5">
-        <span className="text-sm text-muted">Round total</span>
-        <span className={cn("font-mono text-lg font-bold", won ? "text-positive" : outcome.totalPts < 0 ? "text-negative" : "text-muted")}>
-          {formatSigned(outcome.totalPts)}
-        </span>
+      <div className={cn("flex items-center justify-between rounded-[8px] px-5 py-3 text-white", outcome.totalPts > 0 ? "bg-positive" : outcome.totalPts < 0 ? "bg-negative" : "bg-foreground")}>
+        <span className="font-x text-sm font-extrabold uppercase">Round total</span>
+        <span className="font-xx text-2xl font-black tabular-nums">{formatSigned(outcome.totalPts)}</span>
       </div>
 
-      <Button size="lg" className="w-full" onClick={onNext}>
-        Next <ArrowRight className="h-4 w-4" />
-      </Button>
+      <ActionPlate tone="jacket" label="Next" icon={<ArrowRight className="h-5 w-5" />} onClick={onNext} className="w-full" />
     </div>
   );
 }
 
 function ScoreLine({ ok, label, detail, pts }: { ok: boolean; label: string; detail: string; pts: number }) {
   return (
-    <div className="rounded-xl border border-border bg-surface-2/40 p-3">
+    <div className="rounded-[6px] bg-surface-2 p-4">
       <div className="flex items-center justify-between">
-        <span className="text-2xs font-semibold uppercase tracking-wider text-muted">{label}</span>
-        <span className={cn("grid h-5 w-5 place-items-center rounded-full", ok ? "bg-positive/15 text-positive" : "bg-negative/15 text-negative")}>
+        <span className="text-[0.65rem] font-bold uppercase tracking-[0.1em] text-muted">{label}</span>
+        <span className={cn("grid h-6 w-6 place-items-center rounded-[3px] text-white", ok ? "bg-positive" : "bg-negative")}>
           {ok ? <Check className="h-3.5 w-3.5" /> : <X className="h-3.5 w-3.5" />}
         </span>
       </div>
       <div className="mt-1 truncate text-sm">{detail}</div>
-      <div className={cn("font-mono text-sm font-semibold", pts > 0 ? "text-positive" : pts < 0 ? "text-negative" : "text-muted")}>
-        {formatSigned(pts)}
-      </div>
+      <div className={cn("font-xx text-xl font-black tabular-nums", pts > 0 ? "text-positive" : pts < 0 ? "text-negative" : "text-muted")}>{formatSigned(pts)}</div>
     </div>
   );
 }
@@ -531,75 +393,39 @@ function decisionTone(d: TradeDecision | InfoDecision): string {
   return "text-foreground";
 }
 
-function StatTile({ label, value, accent = false }: { label: string; value: string; accent?: boolean }) {
-  return (
-    <Card>
-      <CardContent className="px-4 py-3 text-center">
-        <div className="text-2xs font-semibold uppercase tracking-wider text-muted">{label}</div>
-        <div className={cn("mt-0.5 font-mono text-2xl font-bold tabular-nums", accent && "text-accent")}>{value}</div>
-      </CardContent>
-    </Card>
-  );
-}
-
 /* --------------------------------- game over ------------------------- */
 
 function GameOver({ history, score, matrix, onAgain }: { history: RoundOutcome[]; score: number; matrix: Matrix; onAgain: () => void }) {
   useRecordGame();
   const decisions = history.filter((h) => h.decisionCorrect).length;
   const estimates = history.filter((h) => h.estimatePts > 0).length;
-  const avgErr = history.length
-    ? Math.round(history.reduce((s, h) => s + Math.abs(h.estimate - h.trueValue), 0) / history.length)
-    : 0;
+  const avgErr = history.length ? Math.round(history.reduce((s, h) => s + Math.abs(h.estimate - h.trueValue), 0) / history.length) : 0;
 
   return (
-    <div className="mx-auto max-w-3xl space-y-6">
-      <Card className="obsidian-glow">
-        <CardContent className="space-y-6 py-10">
-          <div className="flex flex-col items-center gap-2 text-center">
-            <span className="grid h-14 w-14 place-items-center rounded-2xl bg-indigo-500 text-white shadow-lg">
-              <Trophy className="h-6 w-6" />
-            </span>
-            <h2 className="text-2xl font-bold tracking-[-0.02em]">Final score</h2>
-            <div className="font-mono text-4xl font-bold">{score}</div>
+    <div className="mx-auto max-w-5xl space-y-6">
+      <FinalBand
+        title="Final score"
+        figure={score}
+        figureLabel={`${history.length} rounds`}
+        actions={<ActionPlate tone="jacket" onClick={onAgain} label="Play again" icon={<RotateCcw className="h-5 w-5" />} className="min-w-56" />}
+      >
+        <div className="grid grid-cols-3 gap-2">
+          <Stat label="Right calls" value={`${decisions}/${history.length}`} />
+          <Stat label="Good estimates" value={`${estimates}/${history.length}`} />
+          <Stat label="Avg error" value={`${avgErr}`} />
+        </div>
+      </FinalBand>
+
+      <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)]">
+        <MatrixTable matrix={matrix} />
+        <Panel title="Round by round" meta={<span className="text-xs text-muted">Open a round for the working</span>}>
+          <div className="space-y-2">
+            {history.map((h, i) => (
+              <RoundBreakdown key={i} outcome={h} matrix={matrix} />
+            ))}
           </div>
-
-          <div className="mx-auto grid max-w-md grid-cols-3 gap-3">
-            <Stat label="Right calls" value={`${decisions}/${history.length}`} />
-            <Stat label="Good estimates" value={`${estimates}/${history.length}`} />
-            <Stat label="Avg error" value={`${avgErr}`} />
-          </div>
-
-          <div className="flex justify-center">
-            <Button size="lg" onClick={onAgain}>
-              <RotateCcw className="h-4 w-4" /> Play again
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-
-      <MatrixTable matrix={matrix} />
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Round-by-round</CardTitle>
-          <p className="text-sm text-muted">Tap a round to see how its fair value is worked out — the matrix above shows the win probabilities used.</p>
-        </CardHeader>
-        <CardContent className="space-y-2">
-          {history.map((h, i) => (
-            <RoundBreakdown key={i} outcome={h} matrix={matrix} />
-          ))}
-        </CardContent>
-      </Card>
-    </div>
-  );
-}
-
-function Stat({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-lg border border-border bg-surface-2/40 px-3 py-2 text-center">
-      <div className="font-mono text-lg font-semibold">{value}</div>
-      <div className="text-2xs uppercase tracking-wider text-muted">{label}</div>
+        </Panel>
+      </div>
     </div>
   );
 }
@@ -612,52 +438,53 @@ function RoundBreakdown({ outcome: h, matrix }: { outcome: RoundOutcome; matrix:
   let verdict = "";
   if (h.kind === "trade" && h.quote) {
     const { bid, ask } = h.quote;
-    if (h.trueValue > ask) verdict = `Fair value ${h.trueValue} is above the ask ${ask} — Buy was the +EV call.`;
-    else if (h.trueValue < bid) verdict = `Fair value ${h.trueValue} is below the bid ${bid} — Sell was the +EV call.`;
-    else verdict = `Fair value ${h.trueValue} sits inside the ${bid}–${ask} market — Pass was correct (no edge).`;
+    if (h.trueValue > ask) verdict = `Fair value ${h.trueValue} is above the ask ${ask}: Buy was the +EV call.`;
+    else if (h.trueValue < bid) verdict = `Fair value ${h.trueValue} is below the bid ${bid}: Sell was the +EV call.`;
+    else verdict = `Fair value ${h.trueValue} sits inside the ${bid}–${ask} market: Pass was correct (no edge).`;
   } else if (h.kind === "info" && h.reveal && h.priorValue != null) {
     verdict = explainReveal(h.event, h.reveal, h.priorValue, h.trueValue);
   }
 
   return (
-    <div className="overflow-hidden rounded-xl border border-border bg-surface-2/30">
-      <button onClick={() => setOpen((o) => !o)} className="flex w-full flex-wrap items-center gap-x-3 gap-y-1 px-3 py-2.5 text-left text-sm">
-        <Badge tone={h.kind === "trade" ? "outline" : "accent"}>{h.kind === "trade" ? "Price" : "News"}</Badge>
-        <span className="min-w-0 flex-1 truncate">{h.eventLabel}</span>
-        <span className="font-mono text-xs text-muted">true {h.trueValue} · you {h.estimate}</span>
-        <span className={cn("font-mono font-semibold", h.totalPts > 0 ? "text-positive" : h.totalPts < 0 ? "text-negative" : "text-muted")}>
+    <div className="overflow-hidden rounded-[8px] bg-surface-2">
+      <button onClick={() => setOpen((o) => !o)} aria-expanded={open} className="flex w-full flex-wrap items-center gap-x-3 gap-y-1 px-4 py-3 text-left text-sm">
+        <span className={cn("font-x rounded-[3px] px-2 py-1 text-[0.65rem] font-extrabold uppercase", h.kind === "trade" ? "bg-surface" : "bg-jacket text-jacket-ink")}>
+          {h.kind === "trade" ? "Price" : "News"}
+        </span>
+        <span className="min-w-0 flex-1 truncate font-semibold">{h.eventLabel}</span>
+        <span className="text-xs text-muted">
+          true {h.trueValue} · you {h.estimate}
+        </span>
+        <span className={cn("font-x font-black tabular-nums", h.totalPts > 0 ? "text-positive" : h.totalPts < 0 ? "text-negative" : "text-muted")}>
           {formatSigned(h.totalPts)}
         </span>
         <ChevronDown className={cn("h-4 w-4 text-muted transition-transform", open && "rotate-180")} />
       </button>
 
       {open && (
-        <div className="animate-pop space-y-3 border-t border-border px-3 py-3 text-sm">
+        <div className="animate-pop space-y-3 bg-surface px-4 py-4 text-sm">
           {h.kind === "trade" && h.quote && (
-            <div className="flex flex-wrap gap-x-4 gap-y-1 font-mono text-xs text-muted">
-              <span>Market <span className="text-foreground">{h.quote.bid} / {h.quote.ask}</span></span>
-              <span>Fair value <span className="text-foreground">{h.trueValue}</span></span>
-              <span>Your estimate <span className="text-foreground">{h.estimate}</span></span>
+            <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted">
+              <span>
+                Market <strong className="text-foreground">{h.quote.bid} / {h.quote.ask}</strong>
+              </span>
+              <span>
+                Fair value <strong className="text-foreground">{h.trueValue}</strong>
+              </span>
+              <span>
+                Your estimate <strong className="text-foreground">{h.estimate}</strong>
+              </span>
             </div>
           )}
-
-          <div>
-            <div className="mb-1 text-2xs font-semibold uppercase tracking-wider text-muted">How the fair value works out</div>
-            <ul className="space-y-1 text-muted">
-              {bullets.map((b, i) => (
-                <li key={i} className="flex gap-2">
-                  <span className="text-accent">•</span>
-                  <span>{b}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          {verdict && (
-            <div className="rounded-lg border border-accent/25 bg-accent/5 px-3 py-2 text-foreground/90">
-              {verdict}
-            </div>
-          )}
+          <ul className="space-y-1.5 text-muted">
+            {bullets.map((b, i) => (
+              <li key={i} className="flex gap-2">
+                <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-[1px] bg-jacket" />
+                <span>{b}</span>
+              </li>
+            ))}
+          </ul>
+          {verdict && <Note>{verdict}</Note>}
         </div>
       )}
     </div>
