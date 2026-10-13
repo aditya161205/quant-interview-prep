@@ -35,7 +35,7 @@ export function HomeFloor({ pro }: { pro: boolean }) {
       <section className="full-bleed bg-jacket text-jacket-ink">
         <div className="mx-auto grid max-w-[96rem] gap-10 px-4 py-12 sm:px-6 lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)] lg:py-16">
           <div>
-            <h1 className="font-xx text-[2.05rem] font-black uppercase leading-[1.02] tracking-[-0.03em] sm:text-[4.4rem]">
+            <h1 className="font-xx text-[clamp(2.05rem,5.2vw,4.4rem)] font-black uppercase leading-[1.02] tracking-[-0.03em]">
               Crack the{" "}
               <mark className="rounded-[6px] bg-jacket-ink px-[0.18em] text-jacket [box-decoration-break:clone] [-webkit-box-decoration-break:clone]">
                 trading desk

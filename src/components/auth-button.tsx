@@ -62,14 +62,15 @@ export function AuthButton() {
           {name.charAt(0).toUpperCase()}
         </span>
       )}
-      <span className="hidden max-w-[7.5rem] truncate text-sm font-semibold opacity-85 lg:inline">{name}</span>
+      <span className="hidden max-w-[9rem] truncate text-sm font-semibold opacity-85 2xl:inline">{name}</span>
       <button
         onClick={() => supabase.auth.signOut()}
         aria-label="Sign out"
+        title="Sign out"
         className="inline-flex h-9 items-center gap-1.5 rounded-[6px] px-2.5 text-sm font-bold opacity-85 transition hover:bg-jacket-ink/15 hover:opacity-100"
       >
         <LogOut className="h-4 w-4" />
-        <span className="hidden sm:inline">Sign out</span>
+        <span className="hidden 2xl:inline">Sign out</span>
       </button>
     </div>
   );
