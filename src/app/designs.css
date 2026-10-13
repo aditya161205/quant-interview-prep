@@ -1,0 +1,537 @@
+/* ==================================================================
+   Redesign candidates, compared locally with the floating switcher.
+   html[data-design] selects one; "original" (or none) leaves globals.css
+   untouched. These rules are unlayered, so they win over Tailwind's
+   layered utilities without !important.
+   ================================================================== */
+
+/* ---------- switcher (development only) ---------- */
+.design-switcher {
+  position: fixed;
+  left: 50%;
+  bottom: 1rem;
+  z-index: 70;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 0.15rem;
+  padding: 0.2rem;
+  border-radius: 0.6rem;
+  background: #0d0d0f;
+  box-shadow: 0 8px 28px -10px rgba(0, 0, 0, 0.6);
+  font: 600 0.62rem/1 ui-sans-serif, system-ui, sans-serif;
+  letter-spacing: 0.04em;
+}
+.design-switcher button {
+  cursor: pointer;
+  border: 0;
+  border-radius: 0.45rem;
+  padding: 0.45rem 0.7rem;
+  background: transparent;
+  color: #a1a1aa;
+}
+.design-switcher button:hover { color: #fafafa; }
+.design-switcher button[aria-checked="true"] { background: #fafafa; color: #0d0d0f; }
+
+/* ---------- shared across the three new versions ---------- */
+html:is([data-design="pit"], [data-design="board"], [data-design="pad"]) {
+  body::before,
+  body::after { content: none; }
+
+  .site-main {
+    border: 0;
+    background: transparent;
+    backdrop-filter: none;
+    border-radius: 0;
+    padding-inline: 0;
+  }
+  .site-footer { display: none; }
+  .theme-toggle { display: none; }
+  .module-mark, .module-glow { display: none; }
+  .dash-label { display: none; }
+  .glass { backdrop-filter: none; -webkit-backdrop-filter: none; }
+  ::selection { background: var(--accent); color: var(--accent-foreground); }
+  caret-color: var(--accent);
+}
+
+/* ==================================================================
+   PIT: the open-outcry trading pit, worn. Each part of the site is a
+   firm's jacket colour and the header is the jacket; labels are trader
+   badges. Light: practice happens between lectures, in daylight.
+   ================================================================== */
+html[data-design="pit"] {
+  --jacket: #0b6b46;              /* home: floor green */
+  --jacket-ink: #ffffff;
+  --background: #eceef1;
+  --surface: #ffffff;
+  --surface-2: #e2e5ea;
+  --border: #cdd2da;
+  --foreground: #0f131a;
+  --muted: #535c6a;
+  --accent: var(--jacket);
+  --accent-foreground: var(--jacket-ink);
+  --positive: #0f7a3f;
+  --negative: #c81e2b;
+  --ring: var(--jacket);
+  --font-sans: var(--font-archivo), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-archivo), ui-monospace, monospace;
+  --radius-xl: 0.4rem;
+  --radius-2xl: 0.75rem;
+  --radius-lg: 0.35rem;
+  --shadow-card: 0 1px 2px rgba(15, 19, 26, 0.06), 0 10px 24px -14px rgba(15, 19, 26, 0.22);
+  --shadow-raised: 0 2px 6px -2px rgba(15, 19, 26, 0.35);
+}
+html[data-design="pit"][data-section="practice"] { --jacket: #c8102e; }
+html[data-design="pit"][data-section="paths"] { --jacket: #1d3fbf; }
+html[data-design="pit"][data-section="games"] { --jacket: #e8a400; --jacket-ink: #1a1300; }
+html[data-design="pit"][data-section="account"] { --jacket: #1b2a4a; }
+
+html[data-design="pit"] {
+  body { font-variation-settings: "wdth" 100; }
+  * { border-color: var(--border); }
+
+  /* The header is the jacket: a full-bleed field in the section's colour. */
+  .site-header { padding: 0; background: var(--jacket); transition: background-color 250ms ease-out; }
+  .site-nav {
+    background: transparent;
+    border: 0;
+    box-shadow: none;
+    border-radius: 0;
+    height: 4rem;
+    color: var(--jacket-ink);
+  }
+  .site-brand { color: var(--jacket-ink); }
+  .site-brand-mark {
+    background: var(--jacket-ink);
+    color: var(--jacket);
+    border-radius: 0.3rem;
+  }
+  .site-brand span:last-child span { color: inherit; opacity: 0.75; }
+  .site-nav-link {
+    border-radius: 0.3rem;
+    color: color-mix(in srgb, var(--jacket-ink) 78%, transparent);
+    font-variation-settings: "wdth" 112;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+  }
+  .site-nav-link:hover { color: var(--jacket-ink); background: color-mix(in srgb, var(--jacket-ink) 12%, transparent); }
+  /* The current page wears its badge: a white plate with the jacket's ink. */
+  .site-nav-link[aria-current="page"] { background: var(--jacket-ink); color: var(--jacket); }
+  .site-nav-tools, .site-nav-tools * { color: var(--jacket-ink); }
+  .site-nav-tools .ui-btn-outline { border-color: color-mix(in srgb, var(--jacket-ink) 40%, transparent); }
+  .site-nav-tools .ui-btn-outline:hover { background: color-mix(in srgb, var(--jacket-ink) 12%, transparent); }
+
+  .site-shell { padding-top: 2rem; }
+
+  .page-kicker { display: none; }
+  .page-title {
+    font-variation-settings: "wdth" 118;
+    font-weight: 800;
+    font-size: 2.4rem;
+    letter-spacing: -0.02em;
+  }
+
+  .ui-card { border: 0; }
+  .ui-btn { font-variation-settings: "wdth" 108; font-weight: 700; letter-spacing: 0.01em; }
+  .ui-btn-outline { border-width: 1.5px; border-color: var(--foreground); }
+  .ui-btn-outline:hover { background: var(--foreground); color: var(--background); }
+
+  /* Trader badges: rectangular plastic, expanded caps, a solid rule. */
+  .ui-badge {
+    border-radius: 0.2rem;
+    font-variation-settings: "wdth" 115;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    border: 1.5px solid currentColor;
+  }
+
+  .ui-progress { height: 0.5rem; border-radius: 0.15rem; background: var(--surface-2); }
+  .ui-progress-fill { border-radius: 0; }
+
+  .num-cell { font-variation-settings: "wdth" 112; font-weight: 800; color: var(--foreground); }
+  .step-num { border-radius: 0.3rem; border-width: 1.5px; }
+
+  /* Dashboard: one jacket per module, filling its card. */
+  .dash-title {
+    font-variation-settings: "wdth" 125;
+    font-weight: 900;
+    font-size: 4.6rem;
+    line-height: 0.92;
+    letter-spacing: -0.03em;
+  }
+  .dash-title span { color: var(--jacket); }
+  .dash .module-grid { gap: 0.9rem; }
+  .dash .module-card {
+    min-height: 15rem;
+    border: 0;
+    color: #fff;
+    justify-content: flex-end;
+    box-shadow: var(--shadow-card);
+  }
+  .dash .module-card .module-icon { background: #fff; color: inherit; }
+  .dash .module-card[href="/practice"] .module-icon { color: #c8102e; }
+  .dash .module-card[href="/paths"] .module-icon { color: #1d3fbf; }
+  .dash .module-card[href="/market-making"] .module-icon { color: #e8a400; background: #1a1300; }
+  .dash .module-card .module-go { background: rgba(255, 255, 255, 0.18); color: inherit; }
+  .dash .module-card[href="/practice"] { background: #c8102e; }
+  .dash .module-card[href="/paths"] { background: #1d3fbf; }
+  .dash .module-card[href="/market-making"] { background: #e8a400; color: #1a1300; }
+  .dash .module-card .module-title {
+    margin-top: auto;
+    font-variation-settings: "wdth" 120;
+    font-weight: 900;
+    font-size: 1.9rem;
+    line-height: 1;
+  }
+  .dash .module-card .module-sub { color: inherit; opacity: 0.8; font-variation-settings: "wdth" 112; }
+  .dash .module-card:hover { transform: translateY(-3px); transition: transform 200ms cubic-bezier(0.16, 1, 0.3, 1); }
+
+  /* Elsewhere module cards are white, with the icon as a badge plate. */
+  .module-card { border: 0; box-shadow: var(--shadow-card); }
+  .module-icon { border-radius: 0.3rem; box-shadow: none; }
+  .module-go { border-radius: 0.3rem; }
+}
+
+/* ==================================================================
+   BOARD: the split-flap departure board. Charcoal housing, printed
+   off-white flaps, amber for what is boarding now; every number sits on
+   a flap. Dark: the late-night session before a morning superday.
+   ================================================================== */
+html[data-design="board"] {
+  --background: #121315;
+  --surface: #1b1c1f;
+  --surface-2: #25262a;
+  --border: #303237;
+  --foreground: #efeadf;
+  --muted: #a29e94;
+  --accent: #f5b800;
+  --accent-foreground: #141210;
+  --positive: #74d18f;
+  --negative: #ff7366;
+  --ring: #f5b800;
+  --flap-top: #1f2023;
+  --flap-bottom: #18191b;
+  --font-sans: var(--font-barlow), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-barlow-condensed), ui-monospace, monospace;
+  --radius-xl: 0.3rem;
+  --radius-2xl: 0.5rem;
+  --radius-lg: 0.25rem;
+  --shadow-card: 0 1px 0 rgba(255, 255, 255, 0.03) inset, 0 12px 24px -16px rgba(0, 0, 0, 0.7);
+  --shadow-raised: 0 2px 0 rgba(0, 0, 0, 0.5);
+}
+
+html[data-design="board"] {
+  * { border-color: var(--border); }
+
+  /* The header is the board's housing: flat black, links on flaps. */
+  .site-header { padding: 0; background: #0b0b0c; border-bottom: 1px solid #000; }
+  .site-nav { background: transparent; border: 0; box-shadow: none; border-radius: 0; height: 4.2rem; }
+  .site-brand-mark { background: var(--accent); color: var(--accent-foreground); border-radius: 0.2rem; }
+  .site-brand span:last-child { font-family: var(--font-barlow-condensed); font-weight: 700; font-size: 1.15rem; letter-spacing: 0.04em; text-transform: uppercase; }
+  .site-brand span:last-child span { color: var(--accent); }
+  .site-nav-links { gap: 0.3rem; }
+  .site-nav-link {
+    position: relative;
+    border-radius: 0.2rem;
+    padding: 0.5rem 0.75rem;
+    font-family: var(--font-barlow-condensed);
+    font-size: 0.82rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    color: #cfc9bc;
+    background: linear-gradient(var(--flap-top) 50%, var(--flap-bottom) 50%);
+    box-shadow: 0 1px 0 #000;
+  }
+  /* The hinge line across every flap. */
+  .site-nav-link::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 50%;
+    height: 1px;
+    background: rgba(0, 0, 0, 0.75);
+  }
+  .site-nav-link:hover { color: #fff; }
+  .site-nav-link[aria-current="page"] { color: var(--accent-foreground); background: linear-gradient(#ffc61a 50%, #f0b000 50%); }
+
+  .site-shell { padding-top: 2rem; }
+
+  .page-kicker { display: none; }
+  .page-title {
+    font-family: var(--font-barlow-condensed);
+    font-weight: 700;
+    font-size: 2.6rem;
+    line-height: 1;
+    letter-spacing: 0.01em;
+    text-transform: uppercase;
+  }
+  h2, h3 { letter-spacing: 0; }
+
+  .ui-card { border-color: #26272b; }
+  .ui-btn { border-radius: 0.25rem; font-family: var(--font-barlow-condensed); font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; font-size: 0.95rem; }
+  .ui-btn-outline { border-color: #4a4c52; }
+
+  .ui-badge, .num-cell, .num-pct {
+    position: relative;
+    display: inline-grid;
+    place-items: center;
+    border-radius: 0.2rem;
+    border: 0;
+    font-family: var(--font-barlow-condensed);
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    color: var(--foreground);
+    background: linear-gradient(var(--flap-top) 50%, var(--flap-bottom) 50%);
+    box-shadow: 0 1px 0 #000;
+  }
+  .ui-badge::after, .num-cell::after, .num-pct::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 50%;
+    height: 1px;
+    background: rgba(0, 0, 0, 0.7);
+  }
+  .num-cell { min-width: 2.2rem; height: 1.7rem; padding-inline: 0.35rem; font-size: 0.95rem; }
+  .num-pct { padding: 0.15rem 0.4rem; font-size: 0.8rem; }
+  .step-num { width: 2.6rem; height: 2.2rem; font-size: 1.1rem; }
+
+  /* Signature: the board refreshes. Flaps drop into place as a page arrives. */
+  .num-cell, .step-num, .num-pct, .site-nav-link[aria-current="page"] {
+    transform-origin: 50% 50%;
+    animation: flap-in 380ms cubic-bezier(0.2, 0.9, 0.3, 1) both;
+  }
+  .num-cell { animation-delay: 40ms; }
+
+  .ui-progress { height: 0.4rem; border-radius: 0.1rem; background: #0b0b0c; }
+  .ui-progress-fill { border-radius: 0; }
+
+  .dash-title {
+    font-family: var(--font-barlow-condensed);
+    font-weight: 800;
+    font-size: 5rem;
+    line-height: 0.9;
+    letter-spacing: 0;
+  }
+  .dash-title span { color: var(--accent); }
+  .dash-lede { color: var(--muted); }
+
+  /* Dashboard modules become departures: one row each, destination left. */
+  .dash .module-grid { grid-template-columns: 1fr; gap: 0.4rem; }
+  .dash .module-card {
+    flex-direction: row;
+    align-items: center;
+    gap: 1.25rem;
+    padding: 1.1rem 1.4rem;
+    border-radius: 0.3rem;
+    background: #0e0f10;
+    border: 1px solid #000;
+  }
+  .dash .module-card .module-head { order: 3; margin-left: auto; }
+  .dash .module-card .module-icon { display: none; }
+  .dash .module-card .module-title {
+    margin: 0;
+    font-family: var(--font-barlow-condensed);
+    font-weight: 700;
+    font-size: 1.7rem;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+  .dash .module-card .module-sub { margin: 0; font-size: 0.8rem; color: var(--accent); }
+  .module-go { background: var(--accent); color: var(--accent-foreground); border-radius: 0.2rem; }
+  .module-card { border-radius: 0.5rem; }
+  .module-icon { border-radius: 0.25rem; box-shadow: none; }
+}
+
+@keyframes flap-in {
+  from { transform: perspective(300px) rotateX(-88deg); filter: brightness(1.6); }
+  to { transform: none; filter: none; }
+}
+
+/* ==================================================================
+   PAD: the engineering computation pad. Pale green squared paper,
+   graphite ink, drafting-blue for what you can act on; every page opens
+   with a title block. Light: working problems by hand at a desk.
+   ================================================================== */
+html[data-design="pad"] {
+  --background: #e4ecd9;
+  --surface: #f3f7ec;
+  --surface-2: #dce6cf;
+  --border: #aebf9a;
+  --foreground: #1c281e;
+  --muted: #4a5a4c;
+  --accent: #1f4fbf;
+  --accent-foreground: #ffffff;
+  --positive: #23733a;
+  --negative: #b8321d;
+  --ring: #1f4fbf;
+  --grid: rgba(122, 150, 96, 0.22);
+  --rail: 13.5rem;
+  --font-sans: var(--font-overpass), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-overpass-mono), ui-monospace, monospace;
+  --radius-xl: 0.2rem;
+  --radius-2xl: 0.25rem;
+  --radius-lg: 0.2rem;
+  --shadow-card: none;
+  --shadow-raised: none;
+}
+
+html[data-design="pad"] {
+  * { border-color: var(--border); }
+
+  /* Squared paper: the grid is the material this world is made of. */
+  body {
+    background-color: var(--background);
+    background-image:
+      linear-gradient(var(--grid) 1px, transparent 1px),
+      linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+    background-size: 1rem 1rem;
+  }
+
+  /* Navigation lives in the pad's binding margin: a left rail. */
+  @media (min-width: 640px) {
+    .site-header {
+      position: fixed;
+      inset: 0 auto 0 0;
+      width: var(--rail);
+      padding: 0;
+      background: var(--surface);
+      border-right: 1.5px solid var(--foreground);
+    }
+    .site-nav {
+      height: 100%;
+      max-width: none;
+      flex-direction: column;
+      align-items: stretch;
+      gap: 2rem;
+      padding: 1.5rem 1rem;
+      background: transparent;
+      border: 0;
+      border-radius: 0;
+      box-shadow: none;
+    }
+    .site-nav-links { flex-direction: column; align-items: stretch; gap: 0; }
+    .site-nav-link {
+      border-radius: 0;
+      padding: 0.7rem 0.4rem;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.72rem;
+      letter-spacing: 0.12em;
+      color: var(--muted);
+    }
+    .site-nav-link[aria-current="page"] { background: transparent; color: var(--accent); box-shadow: inset 0 -2px 0 var(--accent); }
+    .site-nav-tools { margin: auto 0 0; flex-direction: column; align-items: stretch; }
+    .site-shell { padding-left: calc(var(--rail) + 2rem); padding-right: 2rem; max-width: none; }
+  }
+  .site-brand { font-weight: 800; letter-spacing: 0.02em; text-transform: uppercase; font-size: 0.85rem; }
+  .site-brand-mark { background: var(--foreground); color: var(--surface); border-radius: 0.15rem; }
+  .site-brand span:last-child span { color: var(--accent); }
+
+  .site-shell { padding-top: 1.75rem; }
+
+  /* Signature: every page opens with the pad's title block. */
+  .page-header > div:last-child {
+    display: grid;
+    grid-template-columns: 9rem 1fr;
+    border: 1.5px solid var(--foreground);
+    background: var(--surface);
+  }
+  .page-header > div:last-child > * { margin: 0; padding: 0.7rem 0.9rem; }
+  .page-kicker {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: 0.4rem;
+    border-right: 1.5px solid var(--foreground);
+    color: var(--foreground);
+    letter-spacing: 0.12em;
+  }
+  .page-kicker::before {
+    content: "Subject";
+    font-size: 0.55rem;
+    font-weight: 600;
+    color: var(--muted);
+  }
+  .page-header > div:last-child > :not(.page-kicker):first-child { grid-column: 1 / -1; }
+  .page-title {
+    font-weight: 800;
+    font-size: 2.1rem;
+    letter-spacing: -0.01em;
+    text-transform: uppercase;
+  }
+  .page-header > div:last-child > p { grid-column: 1 / -1; border-top: 1px solid var(--border); }
+
+  .ui-card { background: var(--surface); border: 1px solid var(--border); }
+  .ui-btn { border-radius: 0.2rem; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; font-size: 0.82rem; }
+  .ui-btn-outline { border: 1.5px solid var(--foreground); }
+  .ui-btn-outline:hover { background: var(--foreground); color: var(--surface); }
+  .ui-badge { border-radius: 0.15rem; border: 1px solid currentColor; background: transparent; }
+
+  .ui-progress { height: 0.45rem; border-radius: 0; border: 1px solid var(--foreground); background: transparent; }
+  .ui-progress-fill { border-radius: 0; background: var(--accent); }
+
+  .num-cell { font-family: var(--font-mono); font-weight: 600; color: var(--foreground); }
+  .step-num { border-radius: 0.15rem; border: 1.5px solid var(--foreground); background: var(--surface); }
+
+  .dash-hero { border: 1.5px solid var(--foreground); background: var(--surface); padding: 2.25rem; }
+  .dash-title {
+    font-weight: 800;
+    font-size: 4rem;
+    line-height: 0.95;
+    letter-spacing: -0.02em;
+  }
+  .dash-title span { color: var(--accent); }
+
+  /* Dashboard modules: rows of the pad's index table. */
+  .dash .module-grid { grid-template-columns: 1fr; gap: 0; border: 1.5px solid var(--foreground); background: var(--surface); }
+  .dash .module-card {
+    flex-direction: row;
+    align-items: center;
+    gap: 1.25rem;
+    padding: 1.1rem 1.4rem;
+    border: 0;
+    border-bottom: 1px solid var(--border);
+    border-radius: 0;
+    background: transparent;
+  }
+  .dash .module-card:last-child { border-bottom: 0; }
+  .dash .module-card:hover { background: var(--surface-2); }
+  .dash .module-card .module-head { order: 3; margin-left: auto; }
+  .dash .module-card .module-icon { display: none; }
+  .dash .module-card .module-title { margin: 0; font-size: 1.35rem; text-transform: uppercase; }
+  .dash .module-card .module-sub { margin: 0; font-family: var(--font-mono); letter-spacing: 0.02em; text-transform: none; }
+
+  .module-card { border-radius: 0.25rem; border: 1px solid var(--border); background: var(--surface); }
+  .module-icon { border-radius: 0.15rem; box-shadow: none; }
+  .module-go { border-radius: 0.15rem; background: transparent; border: 1.5px solid var(--foreground); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html[data-design="board"] :is(.num-cell, .step-num, .num-pct, .site-nav-link) { animation: none; }
+  html[data-design="pit"] .site-header { transition: none; }
+}
+
+/* ---------- phone widths ---------- */
+@media (max-width: 639px) {
+  html[data-design="pit"] .dash-title { font-size: 2.5rem; }
+  html[data-design="pit"] .page-title { font-size: 1.9rem; }
+  html[data-design="board"] .dash-title { font-size: 3.1rem; }
+  html[data-design="board"] .page-title { font-size: 2.1rem; }
+  html[data-design="pad"] .dash-title { font-size: 2.4rem; }
+  html[data-design="pad"] .dash-hero { padding: 1.4rem; }
+  html:is([data-design="board"], [data-design="pad"]) .dash .module-card { flex-wrap: wrap; gap: 0.3rem 1rem; padding: 1rem; }
+  html:is([data-design="board"], [data-design="pad"]) .dash .module-card .module-head { order: 0; margin-left: 0; }
+  html:is([data-design="board"], [data-design="pad"]) .dash .module-card .module-title { flex: 1 1 100%; order: 1; font-size: 1.3rem; }
+  html:is([data-design="board"], [data-design="pad"]) .dash .module-card .module-sub { flex: 1 1 100%; order: 2; }
+  html[data-design="pad"] .page-title { font-size: 1.5rem; }
+  html[data-design="pad"] .page-header > div:last-child { grid-template-columns: 5.5rem 1fr; }
+  html[data-design="pad"] .site-header { padding: 0; }
+  html[data-design="pad"] .site-nav {
+    border: 0;
+    border-bottom: 1.5px solid var(--foreground);
+    border-radius: 0;
+    box-shadow: none;
+    background: var(--surface);
+  }
+}

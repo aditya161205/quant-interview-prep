@@ -65,7 +65,7 @@ export function TrackView({ trackId }: { trackId: string }) {
                     >
                       <span
                         className={cn(
-                          "grid h-9 w-9 shrink-0 place-items-center rounded-full border font-mono text-sm font-bold tabular-nums",
+                          "num-cell step-num grid h-9 w-9 shrink-0 place-items-center rounded-full border font-mono text-sm font-bold tabular-nums",
                           k >= 1
                             ? "border-positive bg-positive/15 text-positive"
                             : k > 0
@@ -90,7 +90,7 @@ export function TrackView({ trackId }: { trackId: string }) {
                       <div className="hidden w-24 shrink-0 pt-1 text-right sm:block">
                         {!step.locked && (
                           <>
-                            <span className="font-mono text-xs tabular-nums text-muted">{Math.round(100 * k)}%</span>
+                            <span className="num-pct font-mono text-xs tabular-nums text-muted">{Math.round(100 * k)}%</span>
                             <ProgressBar value={k} className="mt-1.5" />
                           </>
                         )}

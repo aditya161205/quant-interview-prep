@@ -18,8 +18,8 @@ const links = [
 
 function Brand() {
   return (
-    <Link href="/" className="flex items-center gap-2 font-semibold">
-      <span className="grid h-7 w-7 place-items-center rounded-lg bg-accent text-accent-foreground">
+    <Link href="/" className="site-brand flex items-center gap-2 font-semibold">
+      <span className="site-brand-mark grid h-7 w-7 place-items-center rounded-lg bg-accent text-accent-foreground">
         <Activity className="h-4 w-4" />
       </span>
       <span className="tracking-tight">
@@ -34,21 +34,22 @@ export function Navbar() {
   const isLogin = pathname === "/login";
 
   return (
-    <header className="sticky top-0 z-50 px-4 pt-3">
-      <div className="glass mx-auto flex h-14 max-w-[96rem] items-center gap-4 rounded-2xl px-3 sm:px-4">
+    <header className="site-header sticky top-0 z-50 px-4 pt-3">
+      <div className="site-nav glass mx-auto flex h-14 max-w-[96rem] items-center gap-4 rounded-2xl px-3 sm:px-4">
         <Brand />
 
         {!isLogin && (
           <>
-            <nav className="hidden items-center gap-0.5 sm:flex">
+            <nav className="site-nav-links hidden items-center gap-0.5 sm:flex">
               {links.map((l) => {
                 const active = l.href === "/" ? pathname === "/" : pathname.startsWith(l.href);
                 return (
                   <Link
                     key={l.href}
                     href={l.href}
+                    aria-current={active ? "page" : undefined}
                     className={cn(
-                      "rounded-full px-3.5 py-1.5 text-2xs font-semibold uppercase tracking-[0.14em] transition-colors duration-200",
+                      "site-nav-link rounded-full px-3.5 py-1.5 text-2xs font-semibold uppercase tracking-[0.14em] transition-colors duration-200",
                       active ? "bg-foreground text-background" : "text-muted hover:text-foreground",
                     )}
                   >
@@ -58,7 +59,7 @@ export function Navbar() {
               })}
             </nav>
 
-            <div className="ml-auto flex items-center gap-2">
+            <div className="site-nav-tools ml-auto flex items-center gap-2">
               <AuthButton />
               <ThemeToggle />
             </div>

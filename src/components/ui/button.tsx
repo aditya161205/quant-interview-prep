@@ -38,7 +38,7 @@ export function Button({
       className={cn(
         // Rounded rectangles, not pills: pills are the language of chips and
         // nav here, so actions need their own shape to read as actions.
-        "inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl font-semibold",
+        `ui-btn ui-btn-${variant} inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl font-semibold`,
         // Expo-out easing and a small press scale, per the motion guidance:
         // 150-300ms, and the press should be felt rather than seen.
         "transition-[background-color,border-color,color,opacity,transform] duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] active:scale-[0.97]",

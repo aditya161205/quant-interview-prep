@@ -8,9 +8,9 @@ export function ProgressBar({ value, className }: { value: number; className?: s
       aria-valuenow={pct}
       aria-valuemin={0}
       aria-valuemax={100}
-      className={cn("h-1.5 overflow-hidden rounded-full bg-surface-2", className)}
+      className={cn("ui-progress h-1.5 overflow-hidden rounded-full bg-surface-2", className)}
     >
-      <div className="h-full rounded-full bg-accent transition-[width] duration-500" style={{ width: `${pct}%` }} />
+      <div className="ui-progress-fill h-full rounded-full bg-accent transition-[width] duration-500" style={{ width: `${pct}%` }} />
     </div>
   );
 }

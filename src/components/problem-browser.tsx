@@ -386,7 +386,7 @@ export function ProblemBrowser() {
                 className="group relative grid grid-cols-[2.25rem_1fr_5rem_2.25rem] items-center gap-3 border-b border-border px-4 py-3 text-sm transition-colors last:border-b-0 hover:bg-surface-2/40 sm:grid-cols-[3rem_1fr_8rem_6rem_2.5rem] lg:grid-cols-[3rem_1fr_8.5rem_10.5rem_6rem_2.5rem]"
               >
                 <Link href={`/practice/${p.id}${qs ? `?${qs}` : ""}`} className="absolute inset-0" aria-label={p.title} />
-                <span className="pointer-events-none font-mono text-muted">{(page - 1) * pageSize + i + 1}</span>
+                <span className="num-cell pointer-events-none font-mono text-muted">{(page - 1) * pageSize + i + 1}</span>
                 <span className="pointer-events-none min-w-0">
                   <span className="flex items-center gap-1.5 truncate font-medium">
                     {p.locked && <Lock className="h-3.5 w-3.5 shrink-0 text-muted" aria-label="Pro" />}
