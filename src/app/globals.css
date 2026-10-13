@@ -4,40 +4,61 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 /* ------------------------------------------------------------------ */
-/*  Design tokens                                                      */
-/*  Light mode = clean slate. Dark mode = "Obsidian": deep near-black  */
-/*  canvas with ambient light and a deep-violet accent.                */
+/*  Design tokens: "Pit". The open-outcry trading floor, worn: each    */
+/*  section is a firm's jacket colour, labels are trader badges.       */
+/*  Light only: practice happens between lectures, in daylight.        */
 /* ------------------------------------------------------------------ */
 :root {
-  --background: #f7f7f8;
+  --jacket: #0b6b46;          /* the current section's jacket; set per section below */
+  --jacket-ink: #ffffff;      /* text on the jacket */
+  --background: #eceef1;      /* floor grey */
   --surface: #ffffff;
-  --surface-2: #f1f1f3;
-  --border: #e4e4e7;
-  --foreground: #18181b;
-  --muted: #71717a;
-  --accent: #7c3aed;        /* deep purple */
-  --accent-foreground: #ffffff;
-  --positive: #16a34a;
-  --negative: #dc2626;
-  --ring: #a78bfa;
+  --surface-2: #e2e5ea;
+  --border: #cdd2da;
+  --foreground: #0f131a;
+  --muted: #535c6a;
+  --accent: var(--jacket);
+  --accent-foreground: var(--jacket-ink);
+  --positive: #0f7a3f;
+  --negative: #c8102e;
+  --ring: #1d3fbf;
+  --gold: #e8a400;
+  --hint-bg: #fff6dc;         /* hint panels */
+  --hint-ink: #7a5600;        /* amber text that must pass 4.5:1 */
+  --gold-wash: #fff8e6;       /* hover on the games board */
+  --row-hover: rgba(15, 19, 26, 0.03);
+  --jacket-text: var(--jacket); /* the jacket as text on a plain surface */
+  --shadow-card: 0 1px 2px rgba(15, 19, 26, 0.06), 0 10px 24px -14px rgba(15, 19, 26, 0.22);
+  --shadow-raised: 0 2px 6px -2px rgba(15, 19, 26, 0.35);
+  color-scheme: light;
 }
 
+/* Dark Pit: the floor after the closing bell. Jackets keep their colours; the floor and sheets go charcoal. */
 .dark {
-  /* Not pure black: a near-black with a faint cool cast. True #000 gives the
-     card surface nothing to sit on (they measured 1.1:1 apart, so only the
-     border separated them) and smears on OLED during scroll. */
-  --background: #09090c;    /* canvas */
-  --surface: #15151b;       /* card surface */
-  --surface-2: #1f1f27;     /* elevated / inputs */
-  --border: #2a2a33;
-  --foreground: #fafafa;
-  --muted: #8f8f99;
-  --accent: #8b5cf6;        /* electric violet */
-  --accent-foreground: #ffffff;
-  --positive: #34d399;
-  --negative: #fb5b6e;
-  --ring: #8b5cf6;
+  --background: #111419;
+  --surface: #1a1e26;
+  --surface-2: #262b35;
+  --border: #353b47;
+  --foreground: #eef0f3;
+  --muted: #a0a8b6;
+  --positive: #3fbf75;
+  --negative: #ff5c6e;
+  --ring: #7b93ff;
+  --hint-bg: #3a2f12;
+  --hint-ink: #f5c75a;
+  --gold-wash: #2b2617;
+  --row-hover: rgba(255, 255, 255, 0.04);
+  --jacket-text: color-mix(in srgb, var(--jacket) 45%, #ffffff);
+  --shadow-card: 0 1px 0 rgba(255, 255, 255, 0.04) inset, 0 12px 28px -16px rgba(0, 0, 0, 0.8);
+  --shadow-raised: 0 2px 6px -2px rgba(0, 0, 0, 0.6);
+  color-scheme: dark;
 }
+
+/* Section jackets: Dashboard floor green, Practice red, Paths blue, Games gold, account navy. */
+:root[data-section="practice"] { --jacket: #c8102e; }
+:root[data-section="paths"] { --jacket: #1d3fbf; }
+:root[data-section="games"] { --jacket: #e8a400; --jacket-ink: #1a1300; }
+:root[data-section="account"] { --jacket: #1b2a4a; }
 
 /* Expose tokens to Tailwind's utility engine */
 @theme inline {
@@ -52,7 +73,11 @@
   --color-positive: var(--positive);
   --color-negative: var(--negative);
   --color-ring: var(--ring);
-  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --color-jacket: var(--jacket);
+  --color-jacket-ink: var(--jacket-ink);
+  --color-jacket-text: var(--jacket-text);
+  --color-gold: var(--gold);
+  --font-sans: var(--font-archivo), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-geist-mono), ui-monospace, monospace;
 
   /* Type scale. The app had grown 17 distinct sizes, 6 of them one-off pixel
@@ -64,8 +89,9 @@
   /* Elevation. Cards previously relied on a 1px border alone; these give the
      surface a little lift without the heavy drop shadows the dark UI can't
      carry. */
-  --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.28), 0 1px 0 rgba(255, 255, 255, 0.02) inset;
-  --shadow-raised: 0 4px 16px -6px rgba(0, 0, 0, 0.45);
+  --radius-xl: 0.4rem;
+  --radius-2xl: 0.75rem;
+  --radius-lg: 0.35rem;
 }
 
 * {
@@ -78,72 +104,33 @@ html {
 }
 
 body {
+  overflow-x: clip; /* full-bleed bands are 100vw, which includes a classic scrollbar */
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
 }
 
-/* ------------------------------------------------------------------ */
-/*  Ambient canvas — soft light sources plus a faint engineering grid, */
-/*  fixed behind everything so it doesn't scroll or catch pointers.    */
-/* ------------------------------------------------------------------ */
-body::before {
-  content: "";
-  position: fixed;
-  inset: 0;
-  z-index: -1;
-  pointer-events: none;
-  background:
-    radial-gradient(48% 42% at 6% 8%, rgba(139, 92, 246, 0.16), transparent 70%),
-    radial-gradient(38% 34% at 78% 42%, rgba(129, 140, 248, 0.09), transparent 72%),
-    radial-gradient(60% 50% at 50% 108%, rgba(139, 92, 246, 0.07), transparent 70%);
-}
+/* Archivo's width axis is the type system: expanded for display and badges, normal for reading. */
+.font-x { font-variation-settings: "wdth" 115; }
+.font-xx { font-variation-settings: "wdth" 125; }
 
-/* The grid only reads on the dark canvas; on light it turns to mud. */
-.dark body::after {
-  content: "";
-  position: fixed;
-  inset: 0;
-  z-index: -1;
-  pointer-events: none;
-  background-image:
-    linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
-  background-size: 46px 46px;
-  /* Fade the grid out toward the edges so it reads as texture, not a table. */
-  mask-image: radial-gradient(70% 60% at 30% 20%, #000 0%, transparent 75%);
-  -webkit-mask-image: radial-gradient(70% 60% at 30% 20%, #000 0%, transparent 75%);
-}
+::selection { background: var(--jacket); color: var(--jacket-ink); }
 
-/* Accent wash used on hero / feature surfaces */
-.dark .obsidian-glow {
-  background-image:
-    radial-gradient(60% 120% at 50% 0%, rgba(139, 92, 246, 0.10), transparent 60%);
-}
+/* A band that runs edge to edge whatever container it sits in. */
+.full-bleed { width: 100vw; margin-left: calc(50% - 50vw); }
 
 /* Thin custom scrollbar */
 ::-webkit-scrollbar { width: 10px; height: 10px; }
 ::-webkit-scrollbar-thumb {
-  background: var(--border);
-  border-radius: 9999px;
+  background: #b9bfc9;
+  border-radius: 2px;
 }
 
-/* ------------------------------------------------------------------ */
-/*  Liquid glass — translucent frosted material with a specular edge   */
-/* ------------------------------------------------------------------ */
+/* Raised panel (formerly frosted glass): solid white with a soft lift. */
 .glass {
-  /* translucent frosted: a faint top sheen over a semi-opaque base */
-  background:
-    linear-gradient(color-mix(in srgb, var(--foreground) 7%, transparent), transparent),
-    color-mix(in srgb, var(--surface) 94%, transparent);
-  backdrop-filter: blur(20px) saturate(180%);
-  -webkit-backdrop-filter: blur(20px) saturate(180%);
-  border: 1px solid color-mix(in srgb, var(--foreground) 12%, transparent);
-  box-shadow:
-    0 10px 30px -10px rgba(0, 0, 0, 0.5),
-    inset 0 1px 0 color-mix(in srgb, var(--foreground) 18%, transparent),
-    inset 0 -1px 0 color-mix(in srgb, var(--foreground) 4%, transparent);
+  background: var(--surface);
+  box-shadow: var(--shadow-card);
 }
 
 /* ------------------------------------------------------------------ */
@@ -181,8 +168,8 @@ body::before {
 }
 
 @keyframes pulse-badge {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(139, 92, 246, 0.5); }
-  50% { box-shadow: 0 0 0 6px rgba(139, 92, 246, 0); }
+  0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--jacket) 50%, transparent); }
+  50% { box-shadow: 0 0 0 6px transparent; }
 }
 .animate-pulse-badge {
   animation: pulse-badge 1.8s ease-out infinite;

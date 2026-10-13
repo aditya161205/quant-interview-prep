@@ -2,11 +2,10 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { Activity, LogIn } from "lucide-react";
+import { LogIn } from "lucide-react";
 import { getBrowserClient } from "@/lib/supabase/client";
-import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 
+/** Sign-in on the trading floor: the whole page is the green jacket. */
 export default function LoginPage() {
   const supabase = React.useMemo(() => getBrowserClient(), []);
 
@@ -17,34 +16,34 @@ export default function LoginPage() {
     });
 
   return (
-    <div className="mx-auto flex min-h-[60vh] max-w-md items-center">
-      <Card className="obsidian-glow w-full">
-        <CardContent className="flex flex-col items-center gap-5 py-10 text-center">
-          <span className="grid h-12 w-12 place-items-center rounded-xl bg-accent text-accent-foreground">
-            <Activity className="h-6 w-6" />
-          </span>
-          <div>
-            <h1 className="text-xl font-semibold">
-              Quant<span className="text-accent">Prep</span>
-            </h1>
-            <p className="mt-1 text-sm text-muted">
-              Sign in to practice problems, play the market-making games, and save
-              your progress across devices.
-            </p>
-          </div>
-
-          {supabase ? (
-            <Button size="lg" className="w-full" onClick={signIn}>
-              <LogIn className="h-4 w-4" /> Sign in with Google
-            </Button>
-          ) : (
-            <p className="text-sm text-muted">
-              Sign-in isn&apos;t configured here, so the app runs without login.{" "}
-              <Link href="/" className="text-accent">Go to the app →</Link>
-            </p>
-          )}
-        </CardContent>
-      </Card>
-    </div>
+    <section className="full-bleed -mb-16 grid min-h-[calc(100vh-4rem)] place-items-center bg-jacket px-4 py-16 text-jacket-ink">
+      <div className="w-full max-w-3xl">
+        <span className="font-xx inline-grid h-14 min-w-20 place-items-center rounded-[4px] bg-jacket-ink px-3 text-2xl font-black text-jacket">
+          QP
+        </span>
+        <h1 className="font-xx mt-8 text-[2.6rem] font-black uppercase leading-[0.9] tracking-[-0.03em] sm:text-[4.6rem]">
+          Get on the floor
+        </h1>
+        <p className="mt-6 max-w-xl text-[1.0625rem] leading-relaxed opacity-90">
+          Sign in to practise interview problems, work through the trader and researcher paths, play the market-making
+          games and keep your progress on every device.
+        </p>
+        {supabase ? (
+          <button
+            onClick={signIn}
+            className="font-x mt-9 inline-flex h-13 items-center gap-2.5 rounded-[6px] bg-jacket-ink px-8 text-lg font-bold text-jacket transition hover:brightness-95"
+          >
+            <LogIn className="h-5 w-5" /> Sign in with Google
+          </button>
+        ) : (
+          <p className="mt-9 text-sm opacity-90">
+            Sign-in isn&apos;t configured here, so the app runs without an account.{" "}
+            <Link href="/" className="font-bold underline underline-offset-4">
+              Go to the app →
+            </Link>
+          </p>
+        )}
+      </div>
+    </section>
   );
 }

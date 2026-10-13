@@ -26,12 +26,13 @@ export function AuthButton() {
 
   // Supabase not configured → no auth UI (app still works on local storage).
   if (!supabase) return null;
-  if (!ready) return <Loader2 className="h-4 w-4 animate-spin text-muted" />;
+  if (!ready) return <Loader2 className="h-4 w-4 animate-spin opacity-70" />;
 
   if (!user) {
     return (
       <Button
         size="sm"
+        className="bg-jacket-ink text-jacket shadow-none"
         onClick={() =>
           supabase.auth.signInWithOAuth({
             provider: "google",
@@ -55,17 +56,21 @@ export function AuthButton() {
     <div className="flex items-center gap-2">
       {avatar ? (
         // eslint-disable-next-line @next/next/no-img-element
-        <img src={avatar} alt="" className="h-7 w-7 rounded-full border border-border" />
+        <img src={avatar} alt="" className="h-8 w-8 rounded-[4px] ring-2 ring-jacket-ink/40" />
       ) : (
-        <span className="grid h-7 w-7 place-items-center rounded-full bg-accent/15 text-xs font-semibold text-accent">
+        <span className="font-x grid h-8 w-8 place-items-center rounded-[4px] bg-jacket-ink text-sm font-black text-jacket">
           {name.charAt(0).toUpperCase()}
         </span>
       )}
-      <span className="hidden max-w-[7.5rem] truncate text-sm text-muted sm:inline">{name}</span>
-      <Button variant="outline" size="sm" onClick={() => supabase.auth.signOut()}>
+      <span className="hidden max-w-[7.5rem] truncate text-sm font-semibold opacity-85 lg:inline">{name}</span>
+      <button
+        onClick={() => supabase.auth.signOut()}
+        aria-label="Sign out"
+        className="inline-flex h-9 items-center gap-1.5 rounded-[6px] px-2.5 text-sm font-bold opacity-85 transition hover:bg-jacket-ink/15 hover:opacity-100"
+      >
         <LogOut className="h-4 w-4" />
         <span className="hidden sm:inline">Sign out</span>
-      </Button>
+      </button>
     </div>
   );
 }

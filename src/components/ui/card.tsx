@@ -1,16 +1,9 @@
 import * as React from "react";
 import { cn } from "@/lib/utils";
 
+/** A white sheet on the floor: one elevation, no border. */
 export function Card({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
-  return (
-    <div
-      className={cn(
-        "ui-card rounded-2xl border border-border bg-surface shadow-(--shadow-card)",
-        className,
-      )}
-      {...props}
-    />
-  );
+  return <div className={cn("rounded-2xl bg-surface shadow-(--shadow-card)", className)} {...props} />;
 }
 
 export function CardHeader({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
@@ -18,9 +11,7 @@ export function CardHeader({ className, ...props }: React.HTMLAttributes<HTMLDiv
 }
 
 export function CardTitle({ className, ...props }: React.HTMLAttributes<HTMLHeadingElement>) {
-  return (
-    <h3 className={cn("text-base font-semibold tracking-[-0.01em]", className)} {...props} />
-  );
+  return <h3 className={cn("font-x text-base font-extrabold uppercase tracking-[0.02em]", className)} {...props} />;
 }
 
 export function CardDescription({ className, ...props }: React.HTMLAttributes<HTMLParagraphElement>) {
@@ -28,8 +19,7 @@ export function CardDescription({ className, ...props }: React.HTMLAttributes<HT
 }
 
 export function CardContent({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
-  // Only drop the top padding when a CardHeader precedes it; a standalone
-  // CardContent keeps full padding so icon-topped panels aren't flush.
+  // Only drop the top padding when a CardHeader precedes it.
   return <div className={cn("p-5 [&:not(:first-child)]:pt-0", className)} {...props} />;
 }
 

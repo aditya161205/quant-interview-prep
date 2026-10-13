@@ -8,11 +8,8 @@ export const metadata = {
 
 export default function PracticePage() {
   return (
-    <div className="space-y-6">
-      <PageHeader
-        kicker="Practice"
-        title="Quant Interview Problems"
-      />
+    <div>
+      <PageHeader title="Practice" description="Interview problems from the desks that ask them. Filter by level, topic or firm." />
       <Suspense fallback={<div className="py-16 text-center text-sm text-muted">Loading…</div>}>
         <ProblemBrowser />
       </Suspense>

@@ -3,30 +3,24 @@
 import * as React from "react";
 import { Moon, Sun } from "lucide-react";
 import { useTheme } from "next-themes";
-import { Button } from "@/components/ui/button";
 
+/** Light / dark switch for the jacket bar. */
 export function ThemeToggle() {
   const { resolvedTheme, setTheme } = useTheme();
   const [mounted, setMounted] = React.useState(false);
-
-  // Avoid hydration mismatch — theme is only known on the client.
+  // The theme is only known on the client; render a stable placeholder until then.
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   React.useEffect(() => setMounted(true), []);
-
-  const isDark = resolvedTheme === "dark";
+  const dark = resolvedTheme === "dark";
 
   return (
-    <Button
-      variant="outline"
-      size="sm"
-      aria-label="Toggle theme"
-      onClick={() => setTheme(isDark ? "light" : "dark")}
-      className="theme-toggle w-9 px-0"
+    <button
+      type="button"
+      onClick={() => setTheme(dark ? "light" : "dark")}
+      aria-label={mounted ? (dark ? "Switch to light mode" : "Switch to dark mode") : "Toggle theme"}
+      className="grid h-9 w-9 place-items-center rounded-[6px] transition hover:bg-jacket-ink/15"
     >
-      {mounted ? (
-        isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />
-      ) : (
-        <span className="h-4 w-4" />
-      )}
-    </Button>
+      {mounted ? dark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" /> : <span className="h-4 w-4" />}
+    </button>
   );
 }

@@ -2,11 +2,11 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { CircleCheck, Bookmark, Gamepad2, Flame, ArrowRight, ChevronLeft, ChevronRight } from "lucide-react";
+import { CircleCheck, ArrowRight, ChevronLeft, ChevronRight } from "lucide-react";
 import type { Difficulty, ProblemMeta } from "@/lib/problems";
 import { usePracticeStore, useMounted, dayKey } from "@/store/practice-store";
 import { DifficultyBadge } from "@/components/difficulty-badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { PageHeader } from "@/components/page-header";
 import { cn } from "@/lib/utils";
 
 /** The subset of /api/problems/facets this view reads. */
@@ -106,51 +106,102 @@ export function ProfileView() {
 
   const { current, best } = streaks(acts);
 
+  const book = [
+    { n: `${solvedList.length}`, of: total ? `/${total}` : "", label: "Problems solved" },
+    { n: `${bookmarkedList.length}`, of: "", label: "Bookmarked" },
+    { n: `${gamesPlayed}`, of: "", label: "Games played" },
+    { n: `${current}`, of: "d", label: `Streak · best ${best}d` },
+  ];
+
   return (
-    <div className="space-y-6">
-      {/* Stats */}
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-        <StatCard icon={CircleCheck} label="Problems solved" value={`${solvedList.length}/${total}`} />
-        <StatCard icon={Bookmark} label="Bookmarked" value={String(bookmarkedList.length)} />
-        <StatCard icon={Gamepad2} label="Games played" value={String(gamesPlayed)} />
-        <StatCard icon={Flame} label="Current streak" value={`${current}d`} sub={`best ${best}d`} />
-      </div>
+    <div>
+      <PageHeader title="Your book">
+        <dl className="mt-8 grid grid-cols-2 overflow-hidden rounded-[6px] bg-black/20 lg:grid-cols-4">
+          {book.map((b, i) => (
+            <div key={b.label} className={cn("p-5", i % 2 === 1 && "border-l border-white/15", i > 1 && "border-t border-white/15 lg:border-t-0", i === 2 && "lg:border-l")}>
+              <dd className="font-xx text-[2.4rem] font-black leading-none tabular-nums">
+                {b.n}
+                <span className="text-lg opacity-70">{b.of}</span>
+              </dd>
+              <dt className="mt-2 text-xs font-bold uppercase tracking-[0.08em] opacity-80">{b.label}</dt>
+            </div>
+          ))}
+        </dl>
+      </PageHeader>
 
-      {/* Heatmap */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Activity</CardTitle>
-          <p className="text-sm text-muted">Problems solved and games played over the last 6 months.</p>
-        </CardHeader>
-        <CardContent>
-          <Heatmap activity={acts} />
-        </CardContent>
-      </Card>
+      <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1.7fr)_minmax(0,1fr)]">
+        <div className="min-w-0 space-y-6">
+          <Sheet title="Activity" note="Problems solved and games played, last 6 months">
+            <Heatmap activity={acts} />
+          </Sheet>
+          <Sheet title="By topic">
+            <table className="w-full text-sm">
+              <tbody>
+                {Object.entries(byTopic).map(([topic, v]) => (
+                  <tr key={topic} className="border-b border-border last:border-b-0">
+                    <td className="font-x py-3 pr-4 font-bold">{topic}</td>
+                    <td className="w-1/2 py-3">
+                      <Bar done={v.done} total={v.total} />
+                    </td>
+                    <td className="font-x w-20 py-3 text-right font-black tabular-nums">
+                      {v.done}
+                      <span className="text-muted">/{v.total}</span>
+                    </td>
+                  </tr>
+                ))}
+                {Object.keys(byTopic).length === 0 && (
+                  <tr>
+                    <td className="py-3 text-muted">Topic totals appear once the problem bank is reachable.</td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </Sheet>
+        </div>
 
-      {/* Breakdowns */}
-      <div className="grid gap-4 lg:grid-cols-2">
-        <Card>
-          <CardHeader><CardTitle className="text-base">By difficulty</CardTitle></CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-3 gap-2 py-2">
+        <div className="min-w-0 space-y-6">
+          <Sheet title="By level">
+            <div className="space-y-4">
               {(["Easy", "Medium", "Hard"] as Difficulty[]).map((d) => (
-                <Dial key={d} difficulty={d} done={byDifficulty[d].done} total={byDifficulty[d].total} />
+                <div key={d} className="grid grid-cols-[4.75rem_minmax(0,1fr)_4.5rem] items-center gap-3">
+                  <DifficultyBadge difficulty={d} />
+                  <Bar done={byDifficulty[d].done} total={byDifficulty[d].total} />
+                  <span className="font-x text-right text-sm font-black tabular-nums">
+                    {byDifficulty[d].done}
+                    <span className="text-muted">/{byDifficulty[d].total}</span>
+                  </span>
+                </div>
               ))}
             </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader><CardTitle className="text-base">By category</CardTitle></CardHeader>
-          <CardContent className="space-y-3">
-            {Object.entries(byTopic).map(([topic, v]) => (
-              <ProgressRow key={topic} label={<span className="text-sm">{topic}</span>} done={v.done} total={v.total} />
-            ))}
-          </CardContent>
-        </Card>
+          </Sheet>
+          <BookmarkedCard problems={bookmarkedList} isSolved={isSolved} />
+        </div>
       </div>
+    </div>
+  );
+}
 
-      {/* Bookmarked */}
-      <BookmarkedCard problems={bookmarkedList} isSolved={isSolved} />
+/** A white sheet with a jacket rule under its title. */
+function Sheet({ title, note, action, children }: { title: string; note?: string; action?: React.ReactNode; children: React.ReactNode }) {
+  return (
+    <section className="overflow-hidden rounded-2xl bg-surface shadow-(--shadow-card)">
+      <div className="flex items-end justify-between gap-3 border-b-[3px] border-jacket px-5 py-4">
+        <div>
+          <h2 className="font-x text-lg font-black uppercase">{title}</h2>
+          {note && <p className="text-xs text-muted">{note}</p>}
+        </div>
+        {action}
+      </div>
+      <div className="p-5">{children}</div>
+    </section>
+  );
+}
+
+function Bar({ done, total }: { done: number; total: number }) {
+  const pct = total === 0 ? 0 : (done / total) * 100;
+  return (
+    <div className="h-2.5 overflow-hidden rounded-[2px] bg-surface-2">
+      <div className="h-full bg-jacket transition-[width]" style={{ width: `${pct}%` }} />
     </div>
   );
 }
@@ -158,140 +209,61 @@ export function ProfileView() {
 const BOOKMARKS_PER_PAGE = 8;
 
 function BookmarkedCard({ problems, isSolved }: { problems: ProblemMeta[]; isSolved: (id: number) => boolean }) {
-  const [page, setPage] = React.useState(0);
+  const [wanted, setPage] = React.useState(0);
   const pageCount = Math.max(1, Math.ceil(problems.length / BOOKMARKS_PER_PAGE));
-
-  // Keep the page in range if bookmarks change underneath us.
-  React.useEffect(() => {
-    if (page > pageCount - 1) setPage(pageCount - 1);
-  }, [page, pageCount]);
+  // Kept in range if bookmarks are removed underneath the current page.
+  const page = Math.min(wanted, pageCount - 1);
 
   const start = page * BOOKMARKS_PER_PAGE;
   const rows = problems.slice(start, start + BOOKMARKS_PER_PAGE);
 
   return (
-    <Card>
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <CardTitle className="text-base">
-            Bookmarked problems
-            {problems.length > 0 && <span className="ml-2 text-sm font-normal text-muted">({problems.length})</span>}
-          </CardTitle>
-          <Link href="/practice" className="inline-flex items-center gap-1 text-sm font-medium text-accent">
-            All problems <ArrowRight className="h-4 w-4" />
-          </Link>
-        </div>
-      </CardHeader>
-      <CardContent>
-        {problems.length === 0 ? (
-          <p className="py-2 text-sm text-muted">No bookmarks yet — tap the bookmark icon on any problem to save it here.</p>
-        ) : (
-          <div className="space-y-2">
-            {rows.map((p) => (
-              <Link key={p.id} href={`/practice/${p.id}`} className="group flex items-center gap-3 rounded-lg border border-border bg-surface-2/40 px-3 py-2.5 transition-colors hover:border-accent/50">
-                <span className="min-w-0 flex-1 truncate text-sm font-medium group-hover:text-accent">{p.title}</span>
-                {isSolved(p.id) && <CircleCheck className="h-4 w-4 shrink-0 text-emerald-500" />}
-                <DifficultyBadge difficulty={p.difficulty} className="hidden sm:inline-flex" />
+    <Sheet
+      title={`Bookmarks${problems.length ? ` (${problems.length})` : ""}`}
+      action={
+        <Link href="/practice" className="inline-flex items-center gap-1 text-sm font-bold text-jacket-text">
+          All problems <ArrowRight className="h-4 w-4" />
+        </Link>
+      }
+    >
+      {problems.length === 0 ? (
+        <p className="text-sm text-muted">No bookmarks yet. Bookmark any problem from its ticket to keep it here.</p>
+      ) : (
+        <ol className="-my-2">
+          {rows.map((p) => (
+            <li key={p.id} className="border-b border-border last:border-b-0">
+              <Link href={`/practice/${p.id}`} className="group flex items-center gap-3 py-3">
+                <span className="font-x min-w-0 flex-1 truncate text-sm font-bold group-hover:text-jacket-text">{p.title}</span>
+                {isSolved(p.id) && <CircleCheck className="h-4 w-4 shrink-0 text-positive" aria-label="Solved" />}
+                <DifficultyBadge difficulty={p.difficulty} />
               </Link>
-            ))}
-          </div>
-        )}
+            </li>
+          ))}
+        </ol>
+      )}
 
-        {pageCount > 1 && (
-          <div className="mt-4 flex items-center justify-between">
-            <button
-              onClick={() => setPage((p) => Math.max(0, p - 1))}
-              disabled={page === 0}
-              className="inline-flex h-8 items-center gap-1 rounded-full border border-border px-3 text-sm transition-colors hover:border-accent/50 hover:text-accent disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:border-border disabled:hover:text-foreground"
-            >
-              <ChevronLeft className="h-4 w-4" /> Prev
-            </button>
-            <span className="font-mono text-xs text-muted">Page {page + 1} / {pageCount}</span>
-            <button
-              onClick={() => setPage((p) => Math.min(pageCount - 1, p + 1))}
-              disabled={page >= pageCount - 1}
-              className="inline-flex h-8 items-center gap-1 rounded-full border border-border px-3 text-sm transition-colors hover:border-accent/50 hover:text-accent disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:border-border disabled:hover:text-foreground"
-            >
-              Next <ChevronRight className="h-4 w-4" />
-            </button>
-          </div>
-        )}
-      </CardContent>
-    </Card>
-  );
-}
-
-function StatCard({ icon: Icon, label, value, sub }: { icon: typeof Flame; label: string; value: string; sub?: string }) {
-  return (
-    <Card>
-      <CardContent className="flex items-center gap-4 p-5">
-        <span className="grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-accent/15 text-accent">
-          <Icon className="h-5 w-5" />
-        </span>
-        <div className="min-w-0">
-          <div className="font-mono text-xl font-semibold">{value}</div>
-          <div className="truncate text-xs text-muted">{label}{sub && ` · ${sub}`}</div>
+      {pageCount > 1 && (
+        <div className="mt-4 flex items-center justify-between">
+          <button
+            onClick={() => setPage(Math.max(0, page - 1))}
+            disabled={page === 0}
+            className="font-x inline-flex h-9 items-center gap-1 rounded-[6px] border-[1.5px] border-foreground px-3 text-sm font-bold disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            <ChevronLeft className="h-4 w-4" /> Prev
+          </button>
+          <span className="font-x text-xs font-bold text-muted">
+            {page + 1} / {pageCount}
+          </span>
+          <button
+            onClick={() => setPage(Math.min(pageCount - 1, page + 1))}
+            disabled={page >= pageCount - 1}
+            className="font-x inline-flex h-9 items-center gap-1 rounded-[6px] border-[1.5px] border-foreground px-3 text-sm font-bold disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            Next <ChevronRight className="h-4 w-4" />
+          </button>
         </div>
-      </CardContent>
-    </Card>
-  );
-}
-
-const DIFF_COLOR: Record<Difficulty, string> = {
-  Easy: "#10b981", // emerald-500
-  Medium: "#f59e0b", // amber-500
-  Hard: "#f43f5e", // rose-500
-};
-
-/** A radial gauge showing solved / total for one difficulty. */
-function Dial({ difficulty, done, total }: { difficulty: Difficulty; done: number; total: number }) {
-  const pct = total === 0 ? 0 : done / total;
-  const size = 116;
-  const stroke = 11;
-  const r = (size - stroke) / 2;
-  const c = 2 * Math.PI * r;
-  const color = DIFF_COLOR[difficulty];
-
-  return (
-    <div className="flex flex-col items-center gap-3">
-      <div className="relative" style={{ width: size, height: size }}>
-        <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="-rotate-90">
-          <circle cx={size / 2} cy={size / 2} r={r} fill="none" strokeWidth={stroke} stroke="var(--surface-2)" />
-          <circle
-            cx={size / 2}
-            cy={size / 2}
-            r={r}
-            fill="none"
-            strokeWidth={stroke}
-            stroke={color}
-            strokeLinecap="round"
-            strokeDasharray={c}
-            strokeDashoffset={c * (1 - pct)}
-            style={{ transition: "stroke-dashoffset 0.6s ease" }}
-          />
-        </svg>
-        <div className="absolute inset-0 flex flex-col items-center justify-center">
-          <span className="font-mono text-2xl font-bold tabular-nums">{Math.round(pct * 100)}%</span>
-          <span className="font-mono text-xs text-muted">{done}/{total}</span>
-        </div>
-      </div>
-      <DifficultyBadge difficulty={difficulty} />
-    </div>
-  );
-}
-
-function ProgressRow({ label, done, total }: { label: React.ReactNode; done: number; total: number }) {
-  const pct = total === 0 ? 0 : (done / total) * 100;
-  return (
-    <div className="space-y-1.5">
-      <div className="flex items-center justify-between">
-        {label}
-        <span className="font-mono text-xs text-muted">{done}/{total}</span>
-      </div>
-      <div className="h-1.5 w-full overflow-hidden rounded-full bg-surface-2">
-        <div className="h-full rounded-full bg-accent transition-[width]" style={{ width: `${pct}%` }} />
-      </div>
-    </div>
+      )}
+    </Sheet>
   );
 }
 
@@ -303,7 +275,7 @@ function level(count: number): string {
   // The empty step is a neutral gray, not bg-surface-2 — that measured 1.12:1
   // against the card, so "no activity" was invisible. The accent steps move up
   // to 50/75/100% to keep every neighbouring pair at least 1.3:1 apart.
-  if (count <= 0) return "bg-foreground/20 dark:bg-foreground/15";
+  if (count <= 0) return "bg-foreground/15";
   if (count <= 2) return "bg-accent/50";
   if (count <= 5) return "bg-accent/75";
   return "bg-accent";

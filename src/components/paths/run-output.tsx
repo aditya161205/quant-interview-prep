@@ -40,7 +40,7 @@ export function RunOutput({ result, mode }: { result: RunResult; mode: "run" | "
     );
     for (const c of result.cases ?? []) {
       blocks.push(
-        <details key={`case-${c.name}`} open={!c.ok || c.got != null} className="rounded-xl border border-border">
+        <details key={`case-${c.name}`} open={!c.ok || c.got != null} className="rounded-[6px] border border-border">
           <summary className="flex cursor-pointer items-center gap-2 px-3 py-2 text-sm">
             {c.ok ? <Check className="h-4 w-4 text-positive" /> : <X className="h-4 w-4 text-negative" />}
             <span className="min-w-0 flex-1 truncate">{c.name}</span>

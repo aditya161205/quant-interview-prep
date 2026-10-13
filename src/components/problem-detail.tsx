@@ -9,8 +9,8 @@ import { ProblemActions } from "@/components/problem-actions";
 import { Paywall } from "@/components/paywall";
 import { MathText } from "@/components/math-text";
 import { DifficultyBadge } from "@/components/difficulty-badge";
-import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { companyCode } from "@/lib/pit";
 import { cn } from "@/lib/utils";
 import { parseNumeric } from "@/lib/problems";
 import type { Difficulty, ProblemDetail as Detail, ProblemMeta } from "@/lib/problems";
@@ -169,151 +169,102 @@ export function ProblemDetail({ id }: { id: string }) {
   }
 
   return (
-    <div className="flex flex-col gap-5 lg:flex-row lg:items-start">
-      {/* Navigation rail — the list lives here instead of forcing a trip back
-          to the table for every problem. */}
-      <aside className="w-full shrink-0 lg:sticky lg:top-24 lg:w-60">
-        <Card className="p-4">
-          <Link
-            href={`/practice${qs ? `?${qs}` : ""}`}
-            className="inline-flex items-center gap-1.5 text-sm text-muted transition-colors hover:text-foreground"
-          >
+    <div>
+      <header className="full-bleed mb-8 bg-jacket text-jacket-ink">
+        <div className="mx-auto max-w-[96rem] px-4 py-8 sm:px-6 sm:py-10">
+          <Link href={`/practice${qs ? `?${qs}` : ""}`} className="inline-flex items-center gap-1.5 text-sm font-bold opacity-80 hover:opacity-100">
             <ArrowLeft className="h-4 w-4" /> All problems
           </Link>
-
-          <RailGroup label="Problem">
-            <span className="font-mono text-2xl font-bold tabular-nums">#{detail.id}</span>
-          </RailGroup>
-
-          <RailGroup label="Level">
-            <DifficultyBadge difficulty={detail.difficulty as Difficulty} />
-          </RailGroup>
-
-          <RailGroup label="Move">
-            <div className="flex gap-2">
-              <NavButton id={nav.prev} qs={qs} direction="prev" />
-              <NavButton id={nav.next} qs={qs} direction="next" />
+          <div className="mt-5 flex flex-col gap-5 sm:flex-row sm:items-center">
+            <span className="font-xx grid h-16 min-w-[6rem] shrink-0 place-items-center rounded-[4px] bg-jacket-ink px-3 text-2xl font-black tabular-nums text-jacket">
+              #{detail.id}
+            </span>
+            <div className="min-w-0">
+              <h1 className="font-xx text-[2.2rem] font-black leading-[0.95] tracking-[-0.02em] text-balance sm:text-[3rem]">{detail.title}</h1>
+              <div className="mt-3 flex flex-wrap items-center gap-2">
+                <DifficultyBadge difficulty={detail.difficulty as Difficulty} className="bg-jacket-ink text-jacket" />
+                {detail.category && <span className="text-sm font-bold opacity-85">{detail.category}</span>}
+                {detail.companies.map((c) => (
+                  <span key={c} title={c} className="font-xx rounded-[3px] bg-black/25 px-2 py-1 text-xs font-black tracking-[0.06em]">
+                    {companyCode(c)}
+                  </span>
+                ))}
+              </div>
             </div>
-          </RailGroup>
-        </Card>
-      </aside>
+          </div>
+        </div>
+      </header>
 
-      {/* Question panel — full height, content at the top, actions pinned to
-          the foot so they sit in the same place on every problem. */}
-      <Card className="obsidian-glow flex min-h-[34rem] w-full flex-col overflow-hidden lg:min-h-[38rem]">
-        <CardContent className="flex flex-1 flex-col p-6 sm:p-9">
-          <span className="text-2xs font-semibold uppercase tracking-[0.18em] text-muted">
-            Question / {detail.category || "Practice"}
-          </span>
-
-          <h1 className="mt-4 max-w-3xl text-[2.25rem] font-bold leading-[1.05] tracking-[-0.03em] sm:text-[3rem]">
-            {detail.title}
-          </h1>
-
-          <span className="mt-7 block text-2xs font-semibold uppercase tracking-[0.18em] text-muted">
-            Question
-          </span>
-          <MathText
-            text={detail.statement}
-            className="mt-3 max-w-3xl text-[1.0625rem] leading-[1.65] text-foreground/90"
-          />
-
-          {(detail.companies.length > 0 || detail.category) && (
-            <div className="mt-6 flex flex-wrap gap-2">
-              {detail.category && <MetaPill>{detail.category}</MetaPill>}
-              {detail.companies.map((c) => (
-                <MetaPill key={c}>{c}</MetaPill>
-              ))}
-            </div>
-          )}
-
-          {detail.hasAnswer && (
-            <div className="mt-8 max-w-2xl">
-              <AnswerCheck id={detail.id} onAttempt={() => setAttempted(true)} />
-            </div>
-          )}
+      <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_24rem]">
+        <article className="min-w-0 space-y-5">
+          <section className="rounded-2xl bg-surface p-6 shadow-(--shadow-card) sm:p-9">
+            <MathText text={detail.statement} className="max-w-3xl text-[1.125rem] leading-[1.7] text-foreground" />
+          </section>
 
           {/* Live region so each newly revealed hint is announced, not just shown. */}
-          <div role="status" aria-live="polite" className="max-w-3xl space-y-2 empty:hidden [&:not(:empty)]:mt-6">
+          <div role="status" aria-live="polite" className="space-y-3 empty:hidden">
             {hints?.slice(0, hintsShown).map((h, i) => (
-              <div key={i} className="animate-pop rounded-xl border border-amber-500/30 bg-amber-500/5 p-4">
-                <div className="text-2xs font-semibold uppercase tracking-wider text-amber-600 dark:text-amber-400">
-                  Hint {i + 1}
-                </div>
-                <MathText text={h} className="mt-1 text-sm leading-relaxed text-muted" />
+              <div key={i} className="animate-pop grid grid-cols-[auto_minmax(0,1fr)] gap-4 rounded-2xl bg-(--hint-bg) p-5">
+                <span className="font-xx grid h-9 w-14 place-items-center rounded-[3px] bg-gold text-sm font-black text-[#1a1300]">H{i + 1}</span>
+                <MathText text={h} className="text-[0.95rem] leading-relaxed text-foreground/90" />
               </div>
             ))}
           </div>
 
           {solutionOpen && solution && (
-            <div className="animate-pop mt-6 max-w-3xl space-y-4 rounded-xl border border-accent/30 bg-accent/5 p-5">
+            <section className="animate-pop overflow-hidden rounded-2xl bg-surface shadow-(--shadow-card)">
               {solution.answer && (
-                <div>
-                  <div className="text-2xs font-semibold uppercase tracking-wider text-accent">Answer</div>
-                  <div className="font-mono text-xl font-semibold">{solution.answer}</div>
+                <div className="flex flex-wrap items-baseline gap-4 bg-positive px-6 py-5 text-white">
+                  <span className="font-x text-xs font-extrabold uppercase tracking-[0.1em] opacity-85">Answer</span>
+                  <span className="font-xx text-2xl font-black">{solution.answer}</span>
                 </div>
               )}
               {solution.solution && (
-                <div className="border-t border-accent/20 pt-4">
-                  <div className="mb-1 text-2xs font-semibold uppercase tracking-wider text-muted">Solution</div>
-                  <MathText text={solution.solution} className="text-sm leading-relaxed text-foreground/90" />
+                <div className="p-6 sm:p-8">
+                  <MathText text={solution.solution} className="max-w-3xl text-[0.98rem] leading-relaxed text-foreground/90" />
                 </div>
               )}
-            </div>
+            </section>
           )}
+        </article>
 
-          {/* Action bar: the commitment on the left, the escape hatches on the
-              right, pushed to the foot of the panel. */}
-          <div className="mt-auto flex flex-wrap items-center justify-between gap-3 border-t border-border/70 pt-6 sm:pt-8">
-            <ProblemActions id={String(detail.id)} />
-            <div className="flex flex-wrap items-center gap-2">
+        {/* The ticket: everything you do with the problem, in one fixed place. */}
+        <aside className="overflow-hidden rounded-2xl bg-surface shadow-(--shadow-card) lg:sticky lg:top-24">
+          <div className="border-b-[3px] border-jacket px-5 py-4">
+            <span className="font-x text-lg font-black uppercase">Ticket</span>
+          </div>
+          <div className="space-y-5 p-5">
+            {detail.hasAnswer ? (
+              <AnswerCheck id={detail.id} onAttempt={() => setAttempted(true)} />
+            ) : (
+              <p className="text-sm text-muted">This one has no single numeric answer. Work it, then compare with the solution.</p>
+            )}
+            <div className="grid gap-2">
               {detail.hasHint && moreHints && (
-                <Button variant="outline" onClick={revealNextHint} disabled={hintLoading}>
-                  {hintLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Lightbulb className="h-4 w-4 text-amber-500" />}
-                  {hints === null ? "Reveal hint" : `Next hint (${hintsShown + 1}/${hintTotal})`}
+                <Button variant="outline" onClick={revealNextHint} disabled={hintLoading} className="w-full">
+                  {hintLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Lightbulb className="h-4 w-4" />}
+                  {hints === null ? "Reveal a hint" : `Next hint (${hintsShown + 1}/${hintTotal})`}
                 </Button>
               )}
-              {/* Stays quiet until you've actually attempted — giving up
-                  shouldn't out-rank checking an answer — but is never gated. */}
-              <Button
-                variant={attempted || solutionOpen ? "outline" : "ghost"}
-                onClick={toggleSolution}
-                disabled={solutionLoading}
-              >
+              <Button variant={attempted || solutionOpen ? "secondary" : "ghost"} onClick={toggleSolution} disabled={solutionLoading} className="w-full">
                 {solutionLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <BookOpen className="h-4 w-4" />}
                 {solutionOpen ? "Hide solution" : "Reveal solution"}
               </Button>
             </div>
+            <div className="space-y-3 border-t border-border pt-5">
+              <ProblemActions id={String(detail.id)} />
+              <Stopwatch />
+            </div>
+            <div className="grid grid-cols-2 gap-2 border-t border-border pt-5">
+              <NavButton id={nav.prev} qs={qs} direction="prev" />
+              <NavButton id={nav.next} qs={qs} direction="next" />
+            </div>
           </div>
-        </CardContent>
-      </Card>
-
-      <Stopwatch />
+        </aside>
+      </div>
     </div>
   );
 }
-
-/** A labelled block in the navigation rail. */
-function RailGroup({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <div className="mt-5">
-      <span className="mb-2 block text-2xs font-semibold uppercase tracking-[0.18em] text-muted">
-        {label}
-      </span>
-      {children}
-    </div>
-  );
-}
-
-/** Metadata chip — category and the companies a problem has been asked at. */
-function MetaPill({ children }: { children: React.ReactNode }) {
-  return (
-    <span className="inline-flex items-center rounded-full border border-border bg-surface-2/70 px-3.5 py-1.5 text-sm text-muted">
-      {children}
-    </span>
-  );
-}
-
 
 function fmt(ms: number): string {
   const total = Math.max(0, Math.floor(ms / 1000));
@@ -379,9 +330,9 @@ function Stopwatch() {
   };
 
   return (
-    <div className="glass fixed bottom-5 right-5 z-40 flex items-center gap-1.5 rounded-full py-1.5 pl-1.5 pr-2">
+    <div className="flex items-center gap-1.5 rounded-[6px] bg-surface-2 p-1">
       {/* mode toggle */}
-      <div className="flex items-center gap-0.5 rounded-full bg-surface-2/60 p-0.5">
+      <div className="flex items-center gap-0.5">
         {(["stopwatch", "timer"] as const).map((m) => (
           <button
             key={m}
@@ -389,7 +340,7 @@ function Stopwatch() {
             aria-label={m === "stopwatch" ? "Stopwatch" : "Countdown timer"}
             aria-pressed={mode === m}
             className={cn(
-              "grid h-6 w-6 place-items-center rounded-full transition-colors",
+              "grid h-7 w-7 place-items-center rounded-[4px] transition-colors",
               mode === m ? "bg-foreground text-background" : "text-muted hover:text-foreground",
             )}
           >
@@ -398,7 +349,7 @@ function Stopwatch() {
         ))}
       </div>
 
-      <span className={cn("min-w-[3.5rem] text-center font-mono text-sm font-semibold tabular-nums", done && "text-negative")}>
+      <span className={cn("font-x min-w-[3.5rem] text-center text-sm font-extrabold tabular-nums", done && "text-negative")}>
         {mode === "stopwatch" ? fmt(elapsed) : fmt(remaining)}
       </span>
 
@@ -417,14 +368,14 @@ function Stopwatch() {
       <button
         onClick={() => (done ? reset() : setRunning((r) => !r))}
         aria-label={running ? "Pause" : "Start"}
-        className="grid h-7 w-7 place-items-center rounded-full bg-accent text-white transition-colors hover:opacity-90"
+        className="grid h-7 w-7 place-items-center rounded-[4px] bg-jacket text-jacket-ink transition hover:brightness-110"
       >
         {running ? <Pause className="h-3.5 w-3.5" /> : <Play className="h-3.5 w-3.5" />}
       </button>
       <button
         onClick={reset}
         aria-label="Reset"
-        className="grid h-7 w-7 place-items-center rounded-full text-muted transition-colors hover:text-foreground"
+        className="grid h-7 w-7 place-items-center rounded-[4px] text-muted transition-colors hover:text-foreground"
       >
         <RotateCcw className="h-3.5 w-3.5" />
       </button>
@@ -475,11 +426,11 @@ function AnswerCheck({ id, onAttempt }: { id: number; onAttempt: () => void }) {
   };
 
   return (
-    <form onSubmit={submit} className="space-y-2 border-t border-border pt-5">
-      <label htmlFor={inputId} className="block text-xs font-semibold uppercase tracking-wider text-muted">
+    <form onSubmit={submit} className="space-y-2">
+      <label htmlFor={inputId} className="font-x block text-xs font-extrabold uppercase tracking-[0.1em] text-muted">
         Your answer
       </label>
-      <div className="flex flex-wrap gap-2">
+      <div className="grid gap-2">
         <input
           id={inputId}
           value={value}
@@ -491,9 +442,9 @@ function AnswerCheck({ id, onAttempt }: { id: number; onAttempt: () => void }) {
           placeholder="0.5 or 1/2"
           aria-describedby={`${helpId} ${msgId}`}
           aria-invalid={state === "invalid"}
-          className="h-11 min-w-0 flex-1 rounded-lg border border-border bg-surface-2 px-3 font-mono outline-none focus:ring-2 focus:ring-ring"
+          className="font-x h-12 min-w-0 rounded-[6px] border-[1.5px] border-foreground bg-surface px-3 text-lg font-bold outline-none focus:ring-2 focus:ring-ring"
         />
-        <Button type="submit" size="lg" disabled={state === "checking"}>
+        <Button type="submit" size="lg" disabled={state === "checking"} className="w-full">
           {state === "checking" ? <Loader2 className="h-4 w-4 animate-spin" /> : "Check answer"}
         </Button>
       </div>
@@ -532,10 +483,10 @@ function AnswerCheck({ id, onAttempt }: { id: number; onAttempt: () => void }) {
 
 function NavButton({ id, qs, direction }: { id: number | null; qs: string; direction: "prev" | "next" }) {
   const isNext = direction === "next";
-  const cls = "inline-flex h-9 items-center gap-1.5 rounded-full border border-border px-3.5 text-sm";
+  const cls = "font-x inline-flex h-10 items-center justify-center gap-1.5 rounded-[6px] border-[1.5px] px-3 text-sm font-bold";
   if (id === null) {
     return (
-      <span className={cn(cls, "cursor-not-allowed text-muted/40")}>
+      <span className={cn(cls, "cursor-not-allowed border-border text-muted/50")}>
         {!isNext && <ArrowLeft className="h-4 w-4" />}
         {isNext ? "Next" : "Prev"}
         {isNext && <ArrowRight className="h-4 w-4" />}
@@ -543,7 +494,7 @@ function NavButton({ id, qs, direction }: { id: number | null; qs: string; direc
     );
   }
   return (
-    <Link href={`/practice/${id}${qs ? `?${qs}` : ""}`} className={cn(cls, "transition-colors hover:border-accent/50 hover:text-accent")}>
+    <Link href={`/practice/${id}${qs ? `?${qs}` : ""}`} className={cn(cls, "border-foreground transition-colors hover:bg-foreground hover:text-background")}>
       {!isNext && <ArrowLeft className="h-4 w-4" />}
       {isNext ? "Next" : "Prev"}
       {isNext && <ArrowRight className="h-4 w-4" />}

@@ -143,7 +143,7 @@ export function QuestionCard({
                 <label
                   key={j}
                   className={cn(
-                    "flex cursor-pointer items-start gap-3 rounded-xl border px-4 py-3 text-sm transition-colors",
+                    "flex cursor-pointer items-start gap-3 rounded-[6px] border-[1.5px] px-4 py-3 text-sm transition-colors",
                     choice === j ? "border-accent bg-accent/10" : "border-border hover:border-foreground/25",
                   )}
                 >
@@ -182,7 +182,7 @@ export function QuestionCard({
             <p
               className={cn(
                 "flex items-center gap-1.5 text-sm font-medium",
-                feedback.tone === "ok" ? "text-positive" : feedback.tone === "close" ? "text-amber-500" : "text-negative",
+                feedback.tone === "ok" ? "text-positive" : feedback.tone === "close" ? "text-(--hint-ink)" : "text-negative",
               )}
             >
               {feedback.tone === "ok" ? <Check className="h-4 w-4" /> : <X className="h-4 w-4" />} {feedback.text}
@@ -192,7 +192,7 @@ export function QuestionCard({
       </div>
 
       {reveal && (
-        <div className="animate-pop mt-4 space-y-3 rounded-xl border border-accent/30 bg-accent/5 p-4">
+        <div className="animate-pop mt-4 space-y-3 rounded-[8px] bg-surface-2 p-4">
           {q.type !== "open" && reveal.answer != null && (
             <div>
               <div className="text-2xs font-semibold uppercase tracking-wider text-accent">Answer</div>

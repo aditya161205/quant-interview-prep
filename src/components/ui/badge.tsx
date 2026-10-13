@@ -3,12 +3,13 @@ import { cn } from "@/lib/utils";
 
 type Tone = "default" | "accent" | "positive" | "negative" | "outline";
 
+// Trader badges: rectangular plastic plates with expanded caps.
 const tones: Record<Tone, string> = {
-  default: "bg-surface-2 text-muted",
-  accent: "bg-accent/15 text-accent border border-accent/30",
-  positive: "bg-positive/15 text-positive border border-positive/30",
-  negative: "bg-negative/15 text-negative border border-negative/30",
-  outline: "border border-border text-muted",
+  default: "bg-surface-2 text-foreground",
+  accent: "bg-jacket text-jacket-ink",
+  positive: "bg-positive text-white",
+  negative: "bg-negative text-white",
+  outline: "border-[1.5px] border-current text-muted",
 };
 
 export function Badge({
@@ -19,11 +20,27 @@ export function Badge({
   return (
     <span
       className={cn(
-        "ui-badge inline-flex items-center rounded-full px-2.5 py-0.5 text-2xs font-semibold uppercase tracking-wider",
+        "font-x inline-flex items-center rounded-[3px] px-2 py-0.5 text-2xs font-extrabold uppercase tracking-[0.06em]",
         tones[tone],
         className,
       )}
       {...props}
     />
+  );
+}
+
+/** A big three-letter trader badge: the Pit's stand-in for an icon. */
+export function CodePlate({ code, className, style }: { code: string; className?: string; style?: React.CSSProperties }) {
+  return (
+    <span
+      aria-hidden
+      style={style}
+      className={cn(
+        "font-xx inline-grid h-12 min-w-[4.25rem] shrink-0 place-items-center rounded-[4px] bg-white px-2 text-lg font-black tracking-[0.04em] text-[#0f131a] shadow-(--shadow-raised)",
+        className,
+      )}
+    >
+      {code}
+    </span>
   );
 }

@@ -7,8 +7,11 @@ export const metadata = {
 
 export default function PathsPage() {
   return (
-    <div className="space-y-8">
-      <PageHeader kicker="Paths" title="Choose your path" />
+    <div>
+      <PageHeader
+        title="Paths"
+        description="Two routes to a graduate quant seat. Each step is a lesson, interview questions and code that is graded as you run it."
+      />
       <PathsHub />
     </div>
   );

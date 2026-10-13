@@ -89,32 +89,13 @@ function Workspace({ task }: { task: Task }) {
 
   const description = (
     <Card className="min-w-0 p-6 sm:p-8">
-      <div className="flex items-center justify-between gap-2 text-sm">
-        <Link href={`/paths/${track}/${task.step}`} className="inline-flex items-center gap-1.5 text-muted transition-colors hover:text-foreground">
-          <ArrowLeft className="h-4 w-4" /> {task.step_title}
-        </Link>
-        <span className="font-mono text-xs tabular-nums text-muted">
-          {k + 1}/{task.siblings.length}
-        </span>
-      </div>
-      <h1 className="mt-5 text-[1.75rem] font-bold leading-tight tracking-[-0.02em]">{task.title}</h1>
-      <div className="mt-4 flex flex-wrap items-center gap-2">
-        <DifficultyBadge difficulty={task.difficulty} />
-        {task.libs.map((l) => (
-          <span key={l} className="inline-flex items-center rounded-full border border-border bg-surface-2/70 px-3 py-1 text-xs text-muted">
-            {l}
-          </span>
-        ))}
-        <Badge tone={statusTone}>{statusLabel}</Badge>
-      </div>
-
-      <Markdown text={task.description} className="mt-6 text-[0.9375rem] text-foreground/90" />
+      <Markdown text={task.description} className="text-[0.9375rem] text-foreground/90" />
 
       {task.hints.length > 0 && (
         <div className="mt-8 space-y-2">
           {task.hints.map((h, j) => (
-            <details key={j} className="rounded-xl border border-amber-500/30 bg-amber-500/5 px-4 py-3">
-              <summary className="cursor-pointer text-sm font-medium text-amber-700 dark:text-amber-400">Hint {j + 1}</summary>
+            <details key={j} className="rounded-[8px] bg-(--hint-bg) px-4 py-3">
+              <summary className="font-x cursor-pointer text-sm font-extrabold uppercase tracking-[0.06em] text-(--hint-ink)">Hint {j + 1}</summary>
               <Markdown text={h} className="mt-2 text-sm text-muted" />
             </details>
           ))}
@@ -124,11 +105,11 @@ function Workspace({ task }: { task: Task }) {
       <div className="mt-8 border-t border-border/70 pt-6">
         {solution ? (
           <>
-            <h2 className="mb-2 text-2xs font-semibold uppercase tracking-[0.18em] text-muted">Reference solution</h2>
-            <pre className="overflow-x-auto rounded-xl border border-accent/30 bg-accent/5 p-4 font-mono text-xs leading-relaxed">{solution}</pre>
+            <h2 className="font-x mb-2 text-xs font-extrabold uppercase tracking-[0.1em] text-muted">Reference solution</h2>
+            <pre className="overflow-x-auto rounded-[8px] bg-foreground p-4 font-mono text-xs leading-relaxed text-background">{solution}</pre>
           </>
         ) : (
-          <button onClick={reveal} className="inline-flex items-center gap-2 text-sm text-muted transition-colors hover:text-foreground">
+          <button onClick={reveal} className="font-x inline-flex items-center gap-2 text-sm font-bold text-muted transition-colors hover:text-foreground">
             <Lock className="h-4 w-4" /> Reveal reference solution
           </button>
         )}
@@ -178,5 +159,33 @@ function Workspace({ task }: { task: Task }) {
     </Card>
   );
 
-  return <SplitPane storageKey="qp-split-task" initial={48} left={description} right={workspace} />;
+  return (
+    <div>
+      <header className="full-bleed mb-6 bg-jacket text-jacket-ink">
+        <div className="mx-auto flex max-w-[96rem] flex-col gap-4 px-4 py-6 sm:px-6 lg:flex-row lg:items-center lg:justify-between">
+          <div className="min-w-0">
+            <Link href={`/paths/${track}/${task.step}`} className="inline-flex items-center gap-1.5 text-sm font-bold opacity-80 hover:opacity-100">
+              <ArrowLeft className="h-4 w-4" /> {task.step_title}
+            </Link>
+            <h1 className="font-xx mt-2 text-[2rem] font-black leading-[0.95] tracking-[-0.02em] sm:text-[2.5rem]">{task.title}</h1>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="font-xx grid h-9 place-items-center rounded-[3px] bg-jacket-ink px-2.5 text-sm font-black tabular-nums text-jacket">
+              {k + 1}/{task.siblings.length}
+            </span>
+            <DifficultyBadge difficulty={task.difficulty} className="bg-jacket-ink text-jacket" />
+            {task.libs.map((l) => (
+              <span key={l} className="font-x rounded-[3px] bg-black/20 px-2 py-1 text-xs font-bold">
+                {l}
+              </span>
+            ))}
+            <Badge tone={statusTone} className="bg-jacket-ink text-jacket">
+              {statusLabel}
+            </Badge>
+          </div>
+        </div>
+      </header>
+      <SplitPane storageKey="qp-split-task" initial={48} left={description} right={workspace} />
+    </div>
+  );
 }
