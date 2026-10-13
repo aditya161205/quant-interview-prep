@@ -5,6 +5,8 @@ import Link from "next/link";
 import { Check, Lock } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { PageHeader } from "@/components/page-header";
+import { useDesign } from "@/components/design-switcher";
+import { MetroTrack } from "@/components/homes/metro-map";
 import { Gate, usePaths } from "@/components/paths/load";
 import { ProgressBar } from "@/components/paths/progress-bar";
 import { KIND_LABEL, stepPct, trackPct, type Kind, type PathsState } from "@/lib/paths";
@@ -27,6 +29,7 @@ export function rememberTrack(id: string) {
 
 export function TrackView({ trackId }: { trackId: string }) {
   const load = usePaths<PathsState>("state");
+  const design = useDesign();
   React.useEffect(() => rememberTrack(trackId), [trackId]);
 
   return (
@@ -40,6 +43,7 @@ export function TrackView({ trackId }: { trackId: string }) {
             </div>
           );
         }
+        if (design === "metro") return <MetroTrack track={t} state={s} />;
         const p = trackPct(t);
         return (
           <div className="space-y-8">

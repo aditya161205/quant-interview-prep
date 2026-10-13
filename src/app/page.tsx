@@ -2,8 +2,16 @@ import Link from "next/link";
 import { BrainCircuit, LineChart, ArrowRight, Route } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { IconCard } from "@/components/icon-card";
+import { DeskHome } from "@/components/homes/desk-home";
+import { MetroHome } from "@/components/homes/metro-home";
+import { SlateHome } from "@/components/homes/slate-home";
+import { getDesign } from "@/lib/design";
 
-export default function DashboardPage() {
+export default async function DashboardPage() {
+  const design = await getDesign();
+  if (design === "metro") return <MetroHome />;
+  if (design === "slate") return <SlateHome />;
+  if (design === "desk") return <DeskHome />;
   return (
     <div className="dash space-y-10">
       {/* Hero */}

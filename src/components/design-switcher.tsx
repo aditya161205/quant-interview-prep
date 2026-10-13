@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useTheme } from "next-themes";
 
 /** Local-only comparison of the redesign candidates. Each version fixes its own light or dark scheme. */
@@ -10,6 +10,9 @@ const VERSIONS = [
   { id: "pit", label: "Pit", scheme: "light" },
   { id: "board", label: "Board", scheme: "dark" },
   { id: "pad", label: "Pad", scheme: "light" },
+  { id: "metro", label: "Metro", scheme: "light" },
+  { id: "slate", label: "Slate", scheme: "dark" },
+  { id: "desk", label: "Desk", scheme: "dark" },
 ] as const;
 
 const KEY = "qp-design";
@@ -23,8 +26,14 @@ function sectionOf(path: string): string {
   return "account";
 }
 
-/** Runs before first paint so a reload never flashes the original look. */
-export const DESIGN_BOOT = `try{var q=new URLSearchParams(location.search).get("design");var d=q||localStorage.getItem("${KEY}")||"original";if(q)localStorage.setItem("${KEY}",q);document.documentElement.dataset.design=d}catch(e){}`;
+/** A ?design= link sets the cookie the server renders from, then reloads once so the layout matches. */
+export const DESIGN_BOOT = `try{var q=new URLSearchParams(location.search).get("design");if(q&&document.documentElement.dataset.design!==q){document.cookie="${KEY}="+q+";path=/;max-age=31536000";location.reload()}}catch(e){}`;
+
+/** The server renders from this cookie; the attribute restyles the page before the refresh lands. */
+function remember(id: string) {
+  document.cookie = `${KEY}=${id};path=/;max-age=31536000`;
+  document.documentElement.setAttribute("data-design", id);
+}
 
 /** Re-renders when the boot script or a click changes <html data-design>. */
 function subscribe(onChange: () => void) {
@@ -33,25 +42,29 @@ function subscribe(onChange: () => void) {
   return () => observer.disconnect();
 }
 
-export function DesignSwitcher() {
-  const pathname = usePathname();
-  const { setTheme } = useTheme();
-  const design = React.useSyncExternalStore(
+/** The design candidate in use, for client components that render a different structure per version. */
+export function useDesign(): string | null {
+  return React.useSyncExternalStore(
     subscribe,
     () => document.documentElement.getAttribute("data-design") ?? "original",
     () => null,
   );
+}
+
+export function DesignSwitcher() {
+  const pathname = usePathname();
+  const router = useRouter();
+  const { setTheme } = useTheme();
+  const design = useDesign();
 
   React.useEffect(() => {
     document.documentElement.setAttribute("data-section", sectionOf(pathname));
   }, [pathname]);
 
   const choose = (id: string, scheme: string) => {
-    document.documentElement.setAttribute("data-design", id);
-    try {
-      localStorage.setItem(KEY, id);
-    } catch {}
+    remember(id);
     setTheme(scheme);
+    router.refresh(); // the server renders the version's own layout
   };
 
   return (
