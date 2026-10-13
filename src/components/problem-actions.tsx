@@ -18,7 +18,7 @@ export function ProblemActions({ id }: { id: string }) {
         variant={solved ? "primary" : "outline"}
         size="sm"
         onClick={() => toggleSolved(id)}
-        className={cn("flex-1", solved && "bg-positive text-white")}
+        className={cn("flex-1", solved && "bg-positive! text-white!")}
       >
         <Check className="h-4 w-4" />
         {solved ? "Solved" : "Mark solved"}
@@ -28,7 +28,7 @@ export function ProblemActions({ id }: { id: string }) {
         size="sm"
         onClick={() => toggleBookmark(id)}
         aria-label={bookmarked ? "Remove bookmark" : "Bookmark"}
-        className={cn("w-9 px-0", bookmarked && "border-jacket bg-jacket text-jacket-ink hover:bg-jacket hover:text-jacket-ink")}
+        className={cn("w-9 px-0", bookmarked && "border-jacket! bg-jacket! text-jacket-ink!")}
       >
         <Bookmark className={cn("h-4 w-4", bookmarked && "fill-current")} />
       </Button>

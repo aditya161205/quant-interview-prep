@@ -173,13 +173,13 @@ function Workspace({ task }: { task: Task }) {
             <span className="font-xx grid h-9 place-items-center rounded-[3px] bg-jacket-ink px-2.5 text-sm font-black tabular-nums text-jacket">
               {k + 1}/{task.siblings.length}
             </span>
-            <DifficultyBadge difficulty={task.difficulty} className="bg-jacket-ink text-jacket" />
+            <DifficultyBadge difficulty={task.difficulty} className="bg-jacket-ink! text-jacket!" />
             {task.libs.map((l) => (
               <span key={l} className="font-x rounded-[3px] bg-black/20 px-2 py-1 text-xs font-bold">
                 {l}
               </span>
             ))}
-            <Badge tone={statusTone} className="bg-jacket-ink text-jacket">
+            <Badge tone={statusTone} className="bg-jacket-ink! text-jacket!">
               {statusLabel}
             </Badge>
           </div>

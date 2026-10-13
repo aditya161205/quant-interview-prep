@@ -70,7 +70,7 @@ export function SubscribeButton() {
 
   return (
     <div className="space-y-3">
-      <Button size="lg" className="w-full bg-white text-[#1b2a4a]" onClick={start} disabled={busy}>
+      <Button size="lg" className="w-full bg-white! text-[#1b2a4a]!" onClick={start} disabled={busy}>
         {busy && <Loader2 className="h-4 w-4 animate-spin" />} Subscribe
       </Button>
       {error && <p className="text-sm text-[#ffb3bd]">{error}</p>}
@@ -92,7 +92,7 @@ export function CancelButton() {
   };
   return (
     <div className="space-y-2">
-      <Button variant="outline" size="sm" className="border-white text-white hover:bg-white hover:text-[#1b2a4a]" onClick={cancel} disabled={state === "busy"}>
+      <Button variant="outline" size="sm" className="border-white! text-white! hover:bg-white! hover:text-[#1b2a4a]!" onClick={cancel} disabled={state === "busy"}>
         Cancel subscription
       </Button>
       {state !== "idle" && state !== "busy" && <p className="text-sm text-[#ffb3bd]">{state}</p>}

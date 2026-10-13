@@ -322,7 +322,7 @@ function RoundCard({
             <div className="flex-1">
               <PriceField label="Fair value (0–100)" value={estimate} onChange={(v) => setEstimate(v.replace(/[^0-9]/g, "").slice(0, 3))} placeholder="e.g. 42" />
             </div>
-            <ActionPlate tone="jacket" label="Lock in" onClick={submitEstimate} disabled={estimate === ""} className="h-14 min-h-0" />
+            <ActionPlate tone="jacket" label="Lock in" onClick={submitEstimate} disabled={estimate === ""} className="h-14 min-h-0!" />
           </div>
         </div>
       )}

@@ -182,7 +182,7 @@ export function ProblemDetail({ id }: { id: string }) {
             <div className="min-w-0">
               <h1 className="font-xx text-[2.2rem] font-black leading-[0.95] tracking-[-0.02em] text-balance sm:text-[3rem]">{detail.title}</h1>
               <div className="mt-3 flex flex-wrap items-center gap-2">
-                <DifficultyBadge difficulty={detail.difficulty as Difficulty} className="bg-jacket-ink text-jacket" />
+                <DifficultyBadge difficulty={detail.difficulty as Difficulty} className="bg-jacket-ink! text-jacket!" />
                 {detail.category && <span className="text-sm font-bold opacity-85">{detail.category}</span>}
                 {detail.companies.map((c) => (
                   <span key={c} title={c} className="font-xx rounded-[3px] bg-black/25 px-2 py-1 text-xs font-black tracking-[0.06em]">

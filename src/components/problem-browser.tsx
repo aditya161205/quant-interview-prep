@@ -419,7 +419,7 @@ export function ProblemBrowser() {
                     <span className="block truncate text-xs text-muted">{p.category}</span>
                   </span>
                   <span className="pointer-events-none">
-                    <DifficultyBadge difficulty={p.difficulty as Difficulty} className="w-full" />
+                    <DifficultyBadge difficulty={p.difficulty as Difficulty} className="w-full!" />
                   </span>
                   <span className="flex justify-end">
                     <button
