@@ -59,6 +59,7 @@
 :root[data-section="paths"] { --jacket: #1d3fbf; }
 :root[data-section="games"] { --jacket: #e8a400; --jacket-ink: #1a1300; }
 :root[data-section="account"] { --jacket: #1b2a4a; }
+:root[data-section="poker"] { --jacket: #0e6f7a; }
 
 /* Expose tokens to Tailwind's utility engine */
 @theme inline {

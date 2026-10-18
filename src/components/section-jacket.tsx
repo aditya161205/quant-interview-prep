@@ -8,6 +8,7 @@ export function sectionOf(path: string): string {
   if (path.startsWith("/practice")) return "practice";
   if (path.startsWith("/paths")) return "paths";
   if (path.startsWith("/market-making")) return "games";
+  if (path.startsWith("/poker")) return "poker";
   if (path === "/" || path === "/login") return "home";
   return "account";
 }

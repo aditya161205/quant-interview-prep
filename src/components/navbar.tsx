@@ -11,6 +11,7 @@ const links = [
   { href: "/practice", label: "Practice" },
   { href: "/paths", label: "Paths" },
   { href: "/market-making", label: "Market Making" },
+  { href: "/poker", label: "Poker" },
   { href: "/profile", label: "Profile" },
   { href: "/pricing", label: "Pricing" },
 ];

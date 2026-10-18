@@ -10,7 +10,8 @@
     "paths:setup": "python3.12 -m venv quantpath/.venv && quantpath/.venv/bin/pip install -r quantpath/requirements.txt",
     "paths:build": "quantpath/.venv/bin/python quantpath/export_web.py",
     "paths:check": "quantpath/.venv/bin/python quantpath/runner.py --check",
-    "paths:check-web": "node scripts/check-paths-web.mjs"
+    "paths:check-web": "node scripts/check-paths-web.mjs",
+    "poker:check": "rm -rf node_modules/.cache/poker-check && tsc scripts/check-poker.ts --outDir node_modules/.cache/poker-check --module commonjs --target es2020 --skipLibCheck && node node_modules/.cache/poker-check/scripts/check-poker.js"
   },
   "dependencies": {
     "@codemirror/commands": "^6.11.1",
