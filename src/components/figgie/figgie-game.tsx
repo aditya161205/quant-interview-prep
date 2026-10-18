@@ -29,8 +29,8 @@ import { cn } from "@/lib/utils";
 
 const BOT_NAMES = ["Clara", "Kaito", "Lena", "Omar", "Zane", "Ivy", "Rafa", "Theo", "Viktor", "Ayla", "Jules", "Kofi", "Hugo", "Nora", "Felix", "Marco"];
 
-type Settings = { opponents: number; minutes: number; rounds: number; hints: boolean };
-const DEFAULT_SETTINGS: Settings = { opponents: 3, minutes: 4, rounds: 3, hints: false };
+type Settings = { opponents: number; minutes: number; rounds: number; hints: boolean; learning: boolean };
+const DEFAULT_SETTINGS: Settings = { opponents: 3, minutes: 4, rounds: 3, hints: false, learning: false };
 
 type Session = {
   settings: Settings;
@@ -61,8 +61,13 @@ export function FiggieGame() {
     return (
       <Ticket onStart={() => setSession(start(settings))} startLabel="Deal the cards">
         <Segmented label="Opponents" options={[3, 4]} value={settings.opponents} onChange={(v) => setSettings({ ...settings, opponents: v })} />
-        <Segmented label="Round length" options={[2, 3, 4]} value={settings.minutes} onChange={(v) => setSettings({ ...settings, minutes: v })} suffix=" min" />
+        <Segmented label="Round length" options={[2, 3, 4, 5]} value={settings.minutes} onChange={(v) => setSettings({ ...settings, minutes: v })} suffix=" min" />
         <Segmented label="Rounds" options={[1, 3, 5]} value={settings.rounds} onChange={(v) => setSettings({ ...settings, rounds: v })} />
+        <ToggleRow
+          label="Learning mode (slower bots)"
+          checked={settings.learning}
+          onChange={(v) => setSettings({ ...settings, learning: v, hints: v || settings.hints })}
+        />
         <ToggleRow label="Fair-value hints" checked={settings.hints} onChange={(v) => setSettings({ ...settings, hints: v })} />
       </Ticket>
     );
@@ -117,7 +122,8 @@ function Table({
         for (let seat = 1; seat < next.players.length; seat++) {
           if ((nextAt.current[seat] ?? 0) > now) continue;
           next = botTick(next, seat, s.personas[seat], urgency);
-          nextAt.current[seat] = now + 700 + Math.random() * 1600;
+          // Learning mode: bots think about three times longer, so you can follow the flow.
+          nextAt.current[seat] = now + (700 + Math.random() * 1600) * (s.settings.learning ? 3 : 1);
         }
         return next === s.g ? s : { ...s, g: next };
       });
