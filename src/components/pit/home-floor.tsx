@@ -43,7 +43,7 @@ export function HomeFloor({ pro }: { pro: boolean }) {
               interview
             </h1>
             <p className="mt-6 max-w-xl text-[1.0625rem] leading-relaxed opacity-90">
-              Interview problems from the firms that ask them, two step-by-step paths, and six market-making games.
+              Interview problems from the firms that ask them, two step-by-step paths, {GAMES.length} market-making games and poker.
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
               <Link
@@ -152,7 +152,7 @@ export function HomeFloor({ pro }: { pro: boolean }) {
               The pits →
             </Link>
           </div>
-          <ul className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-6">
+          <ul className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4 2xl:grid-cols-7">
             {GAMES.map((g, i) => (
               <li key={g.href}>
                 <Link

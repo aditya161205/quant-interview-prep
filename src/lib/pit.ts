@@ -27,6 +27,7 @@ export const GAMES = [
   { href: "/market-making/market-of-cards", code: "MOC", title: "Market of Cards", kind: "Group making", blurb: "Quote two-way markets on the total of 11 cards and trade three AI agents as the table reveals." },
   { href: "/market-making/arrow-game", code: "ARW", title: "Arrow Game", kind: "Focus · Reaction", blurb: "React to the middle arrow, ignore the flankers, hold back on no-go rounds: focus, speed and impulse control." },
   { href: "/market-making/tournament", code: "TRN", title: "Tournament Market", kind: "Probability · Estimation", blurb: "Price outcomes of a four-team tournament from a win-probability matrix, then re-price as results drop." },
+  { href: "/market-making/figgie", code: "FIG", title: "Figgie", kind: "Jane Street's card game", blurb: "Trade suits in real time against bots, work out which suit is the goal from the flow, and hold the most of it." },
 ] as const;
 
 /** The first two games are free; the rest need Pro (enforced on each game page). */

@@ -12,7 +12,7 @@ export function Paywall({ what = "This" }: { what?: string }) {
       </div>
       <div className="p-8">
         <h2 className="font-x text-2xl font-black">{what} is part of Pro</h2>
-        <p className="mt-2 text-muted">All 1,082 problems, both paths and all six games for {PRICE} a month.</p>
+        <p className="mt-2 text-muted">All 1,082 problems, both paths and every game for {PRICE} a month.</p>
         <Link
           href="/pricing"
           className="font-x mt-6 inline-flex h-11 items-center gap-2 rounded-[6px] bg-[#1b2a4a] px-6 font-bold text-white transition hover:brightness-125"

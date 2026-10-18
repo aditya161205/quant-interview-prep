@@ -15,10 +15,10 @@ export default async function MarketMakingHub() {
     <div>
       <PageHeader
         title="Market making"
-        description="Six games that drill quoting, pricing and sizing under a clock. Pick a pit."
+        description="Games that drill quoting, pricing and sizing under a clock. Pick a pit."
         aside={
           <p className="font-xx text-[3.4rem] font-black leading-none tabular-nums">
-            6<span className="ml-2 align-middle text-sm font-bold uppercase tracking-[0.08em] opacity-80">games</span>
+            {GAMES.length}<span className="ml-2 align-middle text-sm font-bold uppercase tracking-[0.08em] opacity-80">games</span>
           </p>
         }
       />

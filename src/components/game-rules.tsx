@@ -210,3 +210,26 @@ export function MarketOfCardsRules() {
     </>
   );
 }
+
+/* --------------------------------- Figgie --------------------------------- */
+export function FiggieRules() {
+  return (
+    <>
+      <Step n={1} title="The deck">
+        40 cards in four suits. One suit has 12 cards, one has 8 and two have 10, but nobody knows which. The{" "}
+        <strong className="text-foreground">goal suit</strong> is the same colour as the 12-card suit, so it has 8 or 10 cards.
+      </Step>
+      <Step n={2} title="The pot">
+        Everyone antes into a $200 pot and gets an equal share of the deck. You start with $350.
+      </Step>
+      <Step n={3} title="Trade">
+        Post a bid or offer on any suit, or hit one already on the board. Each trade is one card, and every trade wipes
+        the whole board. Watch what others buy: it tells you what they hold.
+      </Step>
+      <Step n={4} title="Settle">
+        When time runs out, each goal-suit card pays $10. The rest of the pot goes to whoever holds the most goal cards,
+        split on a tie.
+      </Step>
+    </>
+  );
+}

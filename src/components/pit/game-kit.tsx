@@ -6,7 +6,7 @@ import { Countdown as StartCountdown } from "@/components/countdown";
 import { cn } from "@/lib/utils";
 
 /**
- * The Pit's game parts, shared by all six games: an order ticket for setup, plates for options, a heavy
+ * The Pit's game parts, shared by the market-making games: an order ticket for setup, plates for options, a heavy
  * countdown bar, a dark scoreboard strip, bid/ask plates and buy/sell/skip action plates.
  */
 

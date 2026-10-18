@@ -3,6 +3,7 @@ import { PageHeader } from "@/components/page-header";
 import { PRICE } from "@/components/paywall";
 import { CancelButton, SubscribeButton } from "@/components/subscribe-button";
 import { billingEnabled, getAccess } from "@/lib/billing";
+import { FREE_GAMES, GAMES } from "@/lib/pit";
 
 export const metadata = { title: "Pricing — QuantPrep" };
 export const dynamic = "force-dynamic";
@@ -12,7 +13,7 @@ const ROWS = [
   ["Hints and worked solutions", "On free problems", "Everywhere"],
   ["Quant Trader path", "Step 1", "All 20 steps"],
   ["Quant Researcher path", "Step 1", "All 28 steps"],
-  ["Market-making games", "2 of 6", "All 6"],
+  ["Market-making games", `${FREE_GAMES} of ${GAMES.length}`, `All ${GAMES.length}`],
 ];
 
 const date = (iso: string) => new Date(iso).toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" });
@@ -24,7 +25,7 @@ export default async function PricingPage() {
 
   return (
     <div>
-      <PageHeader title="QuantPrep Pro" code="PRO" description="Every problem, both paths and all six games." />
+      <PageHeader title="QuantPrep Pro" code="PRO" description="Every problem, both paths and every game." />
       <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
         <div className="min-w-0 overflow-x-auto rounded-2xl bg-surface shadow-(--shadow-card)">
         <table className="w-full min-w-[26rem] text-left">
