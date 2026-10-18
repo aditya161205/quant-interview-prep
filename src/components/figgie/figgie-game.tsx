@@ -211,7 +211,7 @@ function Book({ g, values, run }: { g: Figgie; values: Record<Suit, number> | nu
     <section aria-label="Order book" className="overflow-hidden rounded-2xl bg-surface shadow-(--shadow-card)">
       <div className="font-x hidden grid-cols-[3.5rem_4.5rem_minmax(0,1fr)_minmax(0,1fr)_4rem_minmax(0,15rem)] gap-4 border-b-[3px] border-jacket px-5 py-3 text-xs font-extrabold uppercase tracking-[0.08em] text-muted lg:grid">
         <span>Suit</span>
-        <span>You hold</span>
+        <span>Held</span>
         <span>Best bid</span>
         <span>Best offer</span>
         <span>Last</span>
@@ -226,7 +226,7 @@ function Book({ g, values, run }: { g: Figgie; values: Record<Suit, number> | nu
               key={s}
               className={cn(
                 "grid grid-cols-2 items-center gap-3 px-5 py-4 transition-colors lg:grid-cols-[3.5rem_4.5rem_minmax(0,1fr)_minmax(0,1fr)_4rem_minmax(0,15rem)] lg:gap-4",
-                traded && "animate-pop bg-(--gold-wash)",
+                traded && "bg-(--gold-wash)",
               )}
             >
               <div className="col-span-2 flex items-center gap-3 lg:contents">
@@ -288,19 +288,22 @@ function QuoteCell({
   onAction: () => void;
   onCancel: () => void;
 }) {
+  // Every state is the same fixed box, so the board never jumps as quotes come and go.
+  const box = "flex h-16 w-full min-w-0 rounded-[6px] px-3";
+  const fill = tone === "bid" ? "bg-positive" : "bg-negative";
   if (!order) {
-    return <div className="rounded-[6px] border-[1.5px] border-dashed border-border px-3 py-2.5 text-center text-xs font-bold uppercase text-muted">{actionLabel}</div>;
+    return <div className={cn(box, "items-center justify-center border-[1.5px] border-dashed border-border text-xs font-bold uppercase text-muted")}>{actionLabel}</div>;
   }
   if (mine) {
     return (
-      <div className={cn("flex items-center justify-between rounded-[6px] px-3 py-2 text-white", tone === "bid" ? "bg-positive" : "bg-negative")}>
-        <span className="font-xx text-lg font-black tabular-nums">${order.price}</span>
-        <span className="flex items-center gap-1 text-xs font-bold">
-          Yours
-          <button onClick={onCancel} aria-label={`Cancel your ${tone === "bid" ? "bid" : "offer"}`} className="rounded-[3px] p-0.5 hover:bg-white/20">
-            <X className="h-3.5 w-3.5" />
-          </button>
+      <div className={cn(box, fill, "items-center justify-between text-white")}>
+        <span className="flex flex-col">
+          <span className="text-[0.65rem] font-bold uppercase tracking-[0.06em] opacity-85">Yours</span>
+          <span className="font-xx text-xl font-black leading-none tabular-nums">${order.price}</span>
         </span>
+        <button onClick={onCancel} aria-label={`Cancel your ${tone === "bid" ? "bid" : "offer"}`} className="rounded-[3px] p-1 hover:bg-white/20">
+          <X className="h-4 w-4" />
+        </button>
       </div>
     );
   }
@@ -308,13 +311,13 @@ function QuoteCell({
     <button
       onClick={onAction}
       disabled={disabled}
-      className={cn(
-        "flex flex-col items-start rounded-[6px] px-3 py-2 text-left text-white transition hover:brightness-110 active:scale-[0.98] disabled:opacity-40",
-        tone === "bid" ? "bg-positive" : "bg-negative",
-      )}
+      aria-label={`${actionLabel}, ${tone === "bid" ? "bid" : "offer"} by ${who}`}
+      className={cn(box, fill, "flex-col items-start justify-center text-left text-white transition hover:brightness-110 active:scale-[0.98] disabled:opacity-40")}
     >
-      <span className="font-xx text-lg font-black leading-tight">{actionLabel}</span>
-      <span className="text-[0.65rem] font-semibold opacity-85">{tone === "bid" ? "bid" : "offer"} by {who}</span>
+      <span className="w-full truncate text-[0.65rem] font-bold uppercase tracking-[0.06em] opacity-85">
+        {tone === "bid" ? "Sell" : "Buy"} · {who}
+      </span>
+      <span className="font-xx text-xl font-black leading-none tabular-nums">${order.price}</span>
     </button>
   );
 }
