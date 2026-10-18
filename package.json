@@ -12,7 +12,8 @@
     "paths:check": "quantpath/.venv/bin/python quantpath/runner.py --check",
     "paths:check-web": "node scripts/check-paths-web.mjs",
     "poker:check": "rm -rf node_modules/.cache/poker-check && tsc scripts/check-poker.ts --outDir node_modules/.cache/poker-check --module commonjs --target es2020 --skipLibCheck && node node_modules/.cache/poker-check/scripts/check-poker.js",
-    "figgie:check": "rm -rf node_modules/.cache/figgie-check && tsc scripts/check-figgie.ts --outDir node_modules/.cache/figgie-check --module commonjs --target es2020 --skipLibCheck && node node_modules/.cache/figgie-check/scripts/check-figgie.js"
+    "figgie:check": "rm -rf node_modules/.cache/figgie-check && tsc scripts/check-figgie.ts --outDir node_modules/.cache/figgie-check --module commonjs --target es2020 --skipLibCheck && node node_modules/.cache/figgie-check/scripts/check-figgie.js",
+    "drills:check": "rm -rf node_modules/.cache/drills-check && tsc scripts/check-drills.ts --outDir node_modules/.cache/drills-check --module commonjs --target es2020 --skipLibCheck && node node_modules/.cache/drills-check/scripts/check-drills.js"
   },
   "dependencies": {
     "@codemirror/commands": "^6.11.1",

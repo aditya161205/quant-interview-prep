@@ -28,6 +28,8 @@ export const GAMES = [
   { href: "/market-making/arrow-game", code: "ARW", title: "Arrow Game", kind: "Focus · Reaction", blurb: "React to the middle arrow, ignore the flankers, hold back on no-go rounds: focus, speed and impulse control." },
   { href: "/market-making/tournament", code: "TRN", title: "Tournament Market", kind: "Probability · Estimation", blurb: "Price outcomes of a four-team tournament from a win-probability matrix, then re-price as results drop." },
   { href: "/market-making/figgie", code: "FIG", title: "Figgie", kind: "Jane Street's card game", blurb: "Trade suits in real time against bots, work out which suit is the goal from the flow, and hold the most of it." },
+  { href: "/market-making/options-drill", code: "OPT", title: "Options Speed Drill", kind: "Options · Mental math", blurb: "Parity, ATM straddles, delta hedges, payoffs and Greeks P&L against the clock, the way first rounds test them." },
+  { href: "/market-making/auction", code: "AUC", title: "Sealed-Bid Auction", kind: "Winner's curse", blurb: "Bid on items worth the same to everyone from a noisy estimate. Win too often and you overpay." },
 ] as const;
 
 /** The first two games are free; the rest need Pro (enforced on each game page). */

@@ -233,3 +233,43 @@ export function FiggieRules() {
     </>
   );
 }
+
+/* -------------------------------- Options drill -------------------------------- */
+export function OptionsDrillRules() {
+  return (
+    <>
+      <Step n={1} title="Answer fast">
+        One question at a time on parity, ATM approximations, delta hedges, payoffs at expiry, boxes and Greeks P&amp;L.
+        Type a number and press Enter, or Esc to skip.
+      </Step>
+      <Step n={2} title="Scoring">
+        +1 for a right answer. With the penalty on, a wrong answer costs 1, so skip when unsure.
+      </Step>
+      <Step n={3} title="Shortcuts worth knowing">
+        <span className="font-mono text-foreground">C − P = S − K·e^(−rT)</span>. ATM call ≈{" "}
+        <span className="font-mono text-foreground">0.4·σ·S·√T</span>, straddle ≈ twice that. Delta-hedged gamma P&amp;L ≈{" "}
+        <span className="font-mono text-foreground">½·Γ·ΔS²</span>. Rates are zero unless given.
+      </Step>
+    </>
+  );
+}
+
+/* --------------------------------- Auction --------------------------------- */
+export function AuctionRules() {
+  return (
+    <>
+      <Step n={1} title="The lot">
+        Each item is worth the same to every bidder, somewhere between $100 and $500. You see a private estimate that
+        can be off by the noise either way.
+      </Step>
+      <Step n={2} title="Sealed bids">
+        Everyone bids once, unseen. Highest bid wins and pays its bid. Profit is true value minus your bid. Pass if
+        you like.
+      </Step>
+      <Step n={3} title="The curse">
+        If you win, your estimate was probably the highest at the table, so probably too high. Shade your bid below
+        your estimate, more with more bidders and more noise.
+      </Step>
+    </>
+  );
+}
