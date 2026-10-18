@@ -26,8 +26,26 @@ const BOT_NAMES = ["Clara", "Kaito", "Lena", "Omar", "Zane", "Ivy", "Rafa", "The
 const SMALL_BLIND = 5;
 const BIG_BLIND = 10;
 
-type Settings = { opponents: number; stackBb: number; risingBlinds: boolean; blindsEvery: number; fast: boolean };
-const DEFAULT_SETTINGS: Settings = { opponents: 5, stackBb: 100, risingBlinds: true, blindsEvery: 15, fast: false };
+type Settings = {
+  opponents: number;
+  stackBb: number;
+  risingBlinds: boolean;
+  blindsEvery: number;
+  fast: boolean;
+  shotClock: boolean;
+  clockSeconds: number;
+};
+const DEFAULT_SETTINGS: Settings = {
+  opponents: 5,
+  stackBb: 100,
+  risingBlinds: true,
+  blindsEvery: 15,
+  fast: false,
+  shotClock: false,
+  clockSeconds: 30,
+};
+/** Extra seconds for the whole game, spent automatically once a shot clock runs out (as online). */
+const TIME_BANK = 60;
 
 type Stats = { handsPlayed: number; handsWon: number; biggestPot: number; bestHand: number };
 
@@ -37,6 +55,8 @@ type Session = {
   model: HumanModel;
   stats: Stats;
   settings: Settings;
+  /** Seconds left in the human's time bank. */
+  timeBank: number;
 };
 
 function shuffle<T>(xs: T[]): T[] {
@@ -65,6 +85,7 @@ function newSession(settings: Settings): Session {
     model: emptyModel(),
     stats: { handsPlayed: 1, handsWon: 0, biggestPot: 0, bestHand: -1 },
     settings,
+    timeBank: TIME_BANK,
   };
 }
 
@@ -116,6 +137,7 @@ function Setup({ settings, onChange, onStart }: { settings: Settings; onChange: 
           <span>
             No-limit Texas Hold&apos;em, blinds {SMALL_BLIND}/{BIG_BLIND}. Each bot gets a new playing style every game, and they
             adapt to how you play.
+            {settings.shotClock && ` With the shot clock on you also get a ${TIME_BANK}s time bank; run out of both and you check, or fold.`}
           </span>
         }
       >
@@ -126,6 +148,10 @@ function Setup({ settings, onChange, onStart }: { settings: Settings; onChange: 
           <Segmented label="Blinds double every" options={[10, 15, 25]} value={settings.blindsEvery} onChange={(v) => set("blindsEvery", v)} suffix=" hands" />
         )}
         <ToggleRow label="Fast bots" checked={settings.fast} onChange={(v) => set("fast", v)} />
+        <ToggleRow label="Shot clock" checked={settings.shotClock} onChange={(v) => set("shotClock", v)} />
+        {settings.shotClock && (
+          <Segmented label="Seconds per decision" options={[15, 30, 45]} value={settings.clockSeconds} onChange={(v) => set("clockSeconds", v)} suffix="s" />
+        )}
       </Ticket>
       <Panel title="Hand rankings">
         <ol className="-my-2 divide-y divide-border">
@@ -193,11 +219,36 @@ function Table({ session, setSession }: { session: Session; setSession: React.Di
     );
   }, [g, me.hole, setSession]);
 
-  const humanAct = (a: Action) =>
-    setSession((s) => {
-      if (!s || s.game.phase !== "betting" || s.game.toAct !== 0) return s;
-      return { ...s, model: learn(s.model, s.game, a), game: act(s.game, a) };
-    });
+  // Time-bank seconds spent on the current decision, reported by the shot clock as it runs.
+  const bankUsed = React.useRef(0);
+  const onBankUse = React.useCallback((seconds: number) => {
+    bankUsed.current = seconds;
+  }, []);
+
+  const humanAct = React.useCallback(
+    (a: Action, timedOut = false) => {
+      const spent = bankUsed.current;
+      bankUsed.current = 0;
+      setSession((s) => {
+        if (!s || s.game.phase !== "betting" || s.game.toAct !== 0) return s;
+        const before = timedOut
+          ? { ...s.game, log: [...s.game.log, { hand: s.game.handNo, street: s.game.street, text: "You ran out of time" }] }
+          : s.game;
+        return {
+          ...s,
+          timeBank: Math.max(0, s.timeBank - spent),
+          model: learn(s.model, s.game, a),
+          game: act(before, a),
+        };
+      });
+    },
+    [setSession],
+  );
+  // Out of time: check when free, otherwise fold (act() turns a free fold into a check).
+  const onTimeout = React.useCallback(() => humanAct({ type: "fold" }, true), [humanAct]);
+  const clock = settings.shotClock
+    ? { seconds: settings.clockSeconds, bank: session.timeBank, turn: `${g.handNo}-${g.log.length}`, onBankUse, onTimeout }
+    : undefined;
 
   const nextHand = () =>
     setSession((s) => {
@@ -224,6 +275,7 @@ function Table({ session, setSession }: { session: Session; setSession: React.Di
           { label: "Players", value: alive },
           { label: "Your stack", value: me.stack, tone: "hot" },
           { label: "Pot", value: potTotal(g) },
+          ...(settings.shotClock ? [{ label: "Time bank", value: `${Math.round(session.timeBank)}s` }] : []),
         ]}
         aside={
           <QuietButton onClick={quit} className="text-white/70 hover:bg-white/10 hover:text-white">
@@ -235,7 +287,7 @@ function Table({ session, setSession }: { session: Session; setSession: React.Di
       <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_20rem]">
         <div className="min-w-0 space-y-4">
           <Felt game={g} personas={personas} winningCards={winningCards} />
-          <ActionBar game={g} myTurn={myTurn} onAct={humanAct} onNext={nextHand} />
+          <ActionBar game={g} myTurn={myTurn} onAct={humanAct} onNext={nextHand} clock={clock} />
         </div>
         <HandLog game={g} />
       </div>
@@ -449,7 +501,60 @@ function ThinkingDots() {
 
 /* ------------------------------------------------------------- action bar */
 
-function ActionBar({ game: g, myTurn, onAct, onNext }: { game: Game; myTurn: boolean; onAct: (a: Action) => void; onNext: () => void }) {
+type ClockProps = { seconds: number; bank: number; turn: string; onBankUse: (s: number) => void; onTimeout: () => void };
+
+/** The shot clock for one decision; when it runs out the time bank drains, then onTimeout fires. */
+function ShotClock({ seconds, bank, onBankUse, onTimeout }: Omit<ClockProps, "turn">) {
+  const [elapsed, setElapsed] = React.useState(0);
+  const fired = React.useRef(false);
+  React.useEffect(() => {
+    const start = Date.now();
+    const id = window.setInterval(() => {
+      const e = (Date.now() - start) / 1000;
+      setElapsed(e);
+      onBankUse(Math.max(0, Math.min(bank, e - seconds)));
+      if (e >= seconds + bank && !fired.current) {
+        fired.current = true;
+        window.clearInterval(id);
+        onTimeout();
+      }
+    }, 100);
+    return () => window.clearInterval(id);
+  }, [seconds, bank, onBankUse, onTimeout]);
+
+  const inBank = elapsed > seconds;
+  const left = inBank ? Math.max(0, seconds + bank - elapsed) : seconds - elapsed;
+  const total = inBank ? Math.max(1, bank) : seconds;
+  const danger = inBank || left <= seconds * 0.3;
+  return (
+    <div>
+      <div className="mb-1.5 flex items-baseline justify-between text-xs font-bold uppercase tracking-[0.08em]">
+        <span className={cn(inBank ? "text-[#ff7c8a]" : "text-white/60")}>{inBank ? "Time bank" : "Shot clock"}</span>
+        <span className="flex items-baseline gap-3">
+          {!inBank && <span className="text-white/50 normal-case tracking-normal">+{Math.round(bank)}s bank</span>}
+          <span className={cn("font-xx text-xl font-black tabular-nums", danger ? "text-[#ff7c8a]" : "text-white")}>{Math.ceil(left)}s</span>
+        </span>
+      </div>
+      <div className="h-2.5 overflow-hidden rounded-[2px] bg-white/10">
+        <div className={cn("h-full transition-[width] duration-100 ease-linear", danger ? "bg-[#ff5c6e]" : "bg-gold")} style={{ width: `${(left / total) * 100}%` }} />
+      </div>
+    </div>
+  );
+}
+
+function ActionBar({
+  game: g,
+  myTurn,
+  onAct,
+  onNext,
+  clock,
+}: {
+  game: Game;
+  myTurn: boolean;
+  onAct: (a: Action) => void;
+  onNext: () => void;
+  clock?: ClockProps;
+}) {
   const me = g.players[0];
   const L = myTurn ? legal(g, 0) : null;
   const pot = potTotal(g);
@@ -536,6 +641,7 @@ function ActionBar({ game: g, myTurn, onAct, onNext }: { game: Game; myTurn: boo
         <span className="font-xx text-lg font-black uppercase">Your turn</span>
         <span className="text-sm text-white/70">{L.toCall > 0 ? `${L.callAmount} to call · pot ${pot}` : `Pot ${pot}`}</span>
       </div>
+      {clock && <ShotClock key={clock.turn} seconds={clock.seconds} bank={clock.bank} onBankUse={clock.onBankUse} onTimeout={clock.onTimeout} />}
       <div className="grid gap-2 sm:grid-cols-3">
         {L.canCheck ? (
           <ActionPlate tone="neutral" label="Check" sub="C" onClick={() => onAct({ type: "check" })} className="border-white text-white hover:bg-white hover:text-[#0f131a]" />
