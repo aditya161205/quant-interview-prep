@@ -5,6 +5,7 @@
 import { evaluate, describe, categoryOf, bestFive } from "../src/lib/poker/evaluate";
 import { act, isGameOver, legal, newGame, nextStreet, potTotal, startHand, canAct, type Game } from "../src/lib/poker/engine";
 import { decide, emptyModel, randomPersonality } from "../src/lib/poker/bot";
+import { classify, coach, drawsOf, grade, judge } from "../src/lib/poker/coach";
 
 let failures = 0;
 const check = (ok: boolean, msg: string) => {
@@ -214,6 +215,49 @@ const cfg = { startingStack: 0, smallBlind: 5, bigBlind: 10, blindsEvery: 0 };
   console.log(`bots: ${decisions} decisions, avg ${((Date.now() - t0) / decisions).toFixed(1)}ms, slowest ${slowest}ms`);
   for (const [style, st] of stats)
     console.log(`  ${style.padEnd(17)} plays ${((100 * st.vpip) / st.hands).toFixed(0).padStart(3)}% of hands, raises in ${((100 * st.pfr) / st.hands).toFixed(0).padStart(3)}%`);
+}
+
+/* ------------------------------------------------------------------ coach */
+{
+  const cs = (t: string) => t.split(" ").map(card);
+  check(classify(cs("As Kd"), cs("5c Jd 5s Ah")) === "strong", "AK on 5J5A is top pair (strong)");
+  check(classify(cs("Js 5h"), cs("5c Jd 5s")) === "monster", "J5 on 5J5 is a full house");
+  check(classify(cs("Ad Kd"), cs("2c 2s 7h")) === "nothing", "AK on a paired board with no help is nothing");
+  check(classify(cs("9h 8h"), cs("7c 6d 2h")) === "draw", "98 on 762 is an open-ended draw");
+  check(classify(cs("Qh Qd"), cs("Jc 7d 2h")) === "strong", "QQ on J72 is an overpair");
+  const fd = drawsOf(cs("Ah 4h"), cs("Kh 9h 2c"));
+  check(fd.flush && fd.straight === null, "A4 of hearts on Kh9h2c: flush draw only");
+  check(drawsOf(cs("9c 8d"), cs("Jh 7s 2c")).straight === "gutshot", "98 on J72 is a gutshot (10)");
+
+  // Coach on random postflop spots: every question's own answer must grade as fully right, and judging works.
+  let spots = 0;
+  let questions = 0;
+  const t0 = Date.now();
+  for (let k = 0; k < 400 && spots < 40; k++) {
+    const personas = [0, 1, 2, 3].map(() => randomPersonality());
+    let g = startHand(newGame({ startingStack: 1000, smallBlind: 5, bigBlind: 10, blindsEvery: 0 }, ["You", "A", "B", "C"]));
+    for (let steps = 0; steps < 60 && g.phase !== "hand-over"; steps++) {
+      if (g.phase === "street-end") {
+        g = nextStreet(g);
+        continue;
+      }
+      if (g.toAct === 0 && g.street !== "preflop") {
+        const c = coach(g, true);
+        spots++;
+        for (const q of c.questions) {
+          questions++;
+          check(grade(q, q.answer) === 1, `coach ${q.id}: its own answer grades ${grade(q, q.answer)}`);
+          check(q.why.every((w) => !/NaN|undefined/.test(w)), `coach ${q.id}: clean explanation`);
+        }
+        check(c.summary.equity >= 0 && c.summary.equity <= 1, "coach equity in [0, 1]");
+        const L = legal(g, 0);
+        judge(c.summary, { type: L.canCheck ? "check" : "call" }, L.callAmount);
+      }
+      g = act(g, g.toAct === 0 ? { type: legal(g, 0).canCheck ? "check" : "call" } : decide(g, g.toAct, personas[g.toAct], emptyModel()));
+    }
+  }
+  check(spots >= 20, `coach saw enough spots (${spots})`);
+  console.log(`coach: ${spots} spots, ${questions} questions, avg ${((Date.now() - t0) / Math.max(1, spots)).toFixed(0)}ms a spot`);
 }
 
 console.log(`${hands} hands played, ${showdowns} showdowns, ${sidePots} with side pots or returns`);

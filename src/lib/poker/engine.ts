@@ -57,6 +57,15 @@ export interface HandResult {
   showdown: boolean;
 }
 
+/** One betting action, for reading a player's line. `pot` is the pot before it; `paid` is what it put in. */
+export interface ActionRecord {
+  seat: number;
+  street: Street;
+  type: "fold" | "check" | "call" | "bet" | "raise";
+  paid: number;
+  pot: number;
+}
+
 export interface LogLine {
   hand: number;
   street: Street;
@@ -92,6 +101,8 @@ export interface Game {
   preflopAggressor: number | null;
   lastAggressor: number | null;
   log: LogLine[];
+  /** This hand's betting actions (blinds excluded). */
+  actions: ActionRecord[];
   result: HandResult | null;
   /** Stack of each player when the hand started, for net results. */
   startStacks: number[];
@@ -105,6 +116,7 @@ const clone = (g: Game): Game => ({
   deck: [...g.deck],
   board: [...g.board],
   log: [...g.log],
+  actions: [...g.actions],
   startStacks: [...g.startStacks],
 });
 
@@ -180,6 +192,7 @@ export function newGame(config: Config, names: string[], rand: () => number = se
     preflopAggressor: null,
     lastAggressor: null,
     log: [],
+    actions: [],
     result: null,
     startStacks: players.map((p) => p.stack),
   };
@@ -228,6 +241,7 @@ export function startHand(prev: Game, rand: () => number = secureRandom): Game {
   g.preflopAggressor = null;
   g.lastAggressor = null;
   g.startStacks = g.players.map((p) => p.stack);
+  g.actions = [];
   g.deck = shuffledDeck(rand);
 
   const active = g.players.filter((p) => !p.out).length;
@@ -292,6 +306,9 @@ export function act(prev: Game, action: Action): Game {
   if (type === "check" && !L.canCheck) type = "call";
   if (type === "fold" && L.canCheck) type = "check"; // never fold for free
   if (type === "raise" && !L.canRaise) type = L.canCheck ? "check" : "call";
+  const potBefore = potTotal(g);
+  const stackBefore = p.stack;
+  const opensBetting = g.currentBet === 0;
 
   if (type === "fold") {
     p.folded = true;
@@ -339,6 +356,7 @@ export function act(prev: Game, action: Action): Game {
   }
   p.acted = true;
   if (type !== "raise") p.raiseLocked = false;
+  g.actions.push({ seat, street: g.street, type: type === "raise" && opensBetting ? "bet" : type, paid: stackBefore - p.stack, pot: potBefore });
   return settle(g, seat);
 }
 

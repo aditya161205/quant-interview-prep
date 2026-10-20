@@ -20,6 +20,8 @@ import {
   type Game,
 } from "@/lib/poker/engine";
 import { decide, emptyModel, randomPersonality, thinkingMs, type HumanModel, type Personality } from "@/lib/poker/bot";
+import { coach, judge, reviewQuestion, type Summary, type Verdict } from "@/lib/poker/coach";
+import { CoachQuiz, HandReview } from "@/components/poker/coach";
 import { cn } from "@/lib/utils";
 
 const BOT_NAMES = ["Clara", "Kaito", "Lena", "Omar", "Zane", "Ivy", "Rafa", "Theo", "Viktor", "Ayla", "Jules", "Kofi", "Hugo", "Nora", "Felix", "Marco"];
@@ -34,6 +36,8 @@ type Settings = {
   fast: boolean;
   shotClock: boolean;
   clockSeconds: number;
+  /** The coach quizzes you before every decision from the flop on. */
+  learning: boolean;
 };
 const DEFAULT_SETTINGS: Settings = {
   opponents: 5,
@@ -43,6 +47,7 @@ const DEFAULT_SETTINGS: Settings = {
   fast: false,
   shotClock: false,
   clockSeconds: 30,
+  learning: false,
 };
 /** Extra seconds for the whole game, spent automatically once a shot clock runs out (as online). */
 const TIME_BANK = 60;
@@ -57,6 +62,9 @@ type Session = {
   settings: Settings;
   /** Seconds left in the human's time bank. */
   timeBank: number;
+  /** Learning mode: quiz points so far, and this hand's judged decisions. */
+  coach: { points: number; max: number };
+  verdicts: Verdict[];
 };
 
 function shuffle<T>(xs: T[]): T[] {
@@ -84,8 +92,11 @@ function newSession(settings: Settings): Session {
     personas: names.map(() => randomPersonality()),
     model: emptyModel(),
     stats: { handsPlayed: 1, handsWon: 0, biggestPot: 0, bestHand: -1 },
-    settings,
+    // The coach and a shot clock don't mix: the quiz takes as long as it takes.
+    settings: { ...settings, shotClock: settings.shotClock && !settings.learning },
     timeBank: TIME_BANK,
+    coach: { points: 0, max: 0 },
+    verdicts: [],
   };
 }
 
@@ -148,8 +159,9 @@ function Setup({ settings, onChange, onStart }: { settings: Settings; onChange: 
           <Segmented label="Blinds double every" options={[10, 15, 25]} value={settings.blindsEvery} onChange={(v) => set("blindsEvery", v)} suffix=" hands" />
         )}
         <ToggleRow label="Fast bots" checked={settings.fast} onChange={(v) => set("fast", v)} />
-        <ToggleRow label="Shot clock" checked={settings.shotClock} onChange={(v) => set("shotClock", v)} />
-        {settings.shotClock && (
+        <ToggleRow label="Learning mode (coach quizzes you)" checked={settings.learning} onChange={(v) => set("learning", v)} />
+        {!settings.learning && <ToggleRow label="Shot clock" checked={settings.shotClock} onChange={(v) => set("shotClock", v)} />}
+        {settings.shotClock && !settings.learning && (
           <Segmented label="Seconds per decision" options={[15, 30, 45]} value={settings.clockSeconds} onChange={(v) => set("clockSeconds", v)} suffix="s" />
         )}
       </Ticket>
@@ -225,12 +237,31 @@ function Table({ session, setSession }: { session: Session; setSession: React.Di
     bankUsed.current = seconds;
   }, []);
 
+  // Learning mode: quiz once per decision from the flop on. Hand questions only on the first decision of a street.
+  const decisionKey = `${g.handNo}-${g.actions.length}`;
+  const [quizzed, setQuizzed] = React.useState({ decision: "", street: "" });
+  const needQuiz = settings.learning && myTurn && g.street !== "preflop" && quizzed.decision !== decisionKey;
+  const withHand = quizzed.street !== `${g.handNo}-${g.street}`;
+  const coaching = React.useMemo(() => (needQuiz ? coach(g, withHand) : null), [needQuiz, g, withHand]);
+  // The numbers behind this decision, kept so the action you then take can be judged.
+  const summary = React.useRef<{ key: string; s: Summary } | null>(null);
+  React.useEffect(() => {
+    if (coaching) summary.current = { key: decisionKey, s: coaching.summary };
+  }, [coaching, decisionKey]);
+  const finishQuiz = (points: number, max: number) => {
+    setQuizzed({ decision: decisionKey, street: `${g.handNo}-${g.street}` });
+    setSession((s) => s && { ...s, coach: { points: s.coach.points + points, max: s.coach.max + max } });
+  };
+
   const humanAct = React.useCallback(
     (a: Action, timedOut = false) => {
       const spent = bankUsed.current;
       bankUsed.current = 0;
+      const judged = summary.current;
       setSession((s) => {
         if (!s || s.game.phase !== "betting" || s.game.toAct !== 0) return s;
+        const key = `${s.game.handNo}-${s.game.actions.length}`;
+        const verdict = judged?.key === key ? judge(judged.s, a, legal(s.game, 0).callAmount) : null;
         const before = timedOut
           ? { ...s.game, log: [...s.game.log, { hand: s.game.handNo, street: s.game.street, text: "You ran out of time" }] }
           : s.game;
@@ -239,6 +270,7 @@ function Table({ session, setSession }: { session: Session; setSession: React.Di
           timeBank: Math.max(0, s.timeBank - spent),
           model: learn(s.model, s.game, a),
           game: act(before, a),
+          verdicts: verdict ? [...s.verdicts, verdict] : s.verdicts,
         };
       });
     },
@@ -254,7 +286,7 @@ function Table({ session, setSession }: { session: Session; setSession: React.Di
     setSession((s) => {
       if (!s) return s;
       const game = startHand(s.game);
-      return { ...s, game, stats: { ...s.stats, handsPlayed: s.stats.handsPlayed + (game.phase === "game-over" ? 0 : 1) } };
+      return { ...s, game, verdicts: [], stats: { ...s.stats, handsPlayed: s.stats.handsPlayed + (game.phase === "game-over" ? 0 : 1) } };
     });
 
   const quit = () => setSession((s) => s && { ...s, game: { ...s.game, phase: "game-over" } });
@@ -276,6 +308,9 @@ function Table({ session, setSession }: { session: Session; setSession: React.Di
           { label: "Your stack", value: me.stack, tone: "hot" },
           { label: "Pot", value: potTotal(g) },
           ...(settings.shotClock ? [{ label: "Time bank", value: `${Math.round(session.timeBank)}s` }] : []),
+          ...(settings.learning
+            ? [{ label: "Coach", value: session.coach.max ? `${Math.round((session.coach.points / session.coach.max) * 100)}%` : "—", tone: "hot" as const }]
+            : []),
         ]}
         aside={
           <QuietButton onClick={quit} className="text-white/70 hover:bg-white/10 hover:text-white">
@@ -287,7 +322,18 @@ function Table({ session, setSession }: { session: Session; setSession: React.Di
       <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_20rem]">
         <div className="min-w-0 space-y-4">
           <Felt game={g} personas={personas} winningCards={winningCards} />
-          <ActionBar game={g} myTurn={myTurn} onAct={humanAct} onNext={nextHand} clock={clock} />
+          {coaching ? (
+            <CoachQuiz key={decisionKey} coaching={coaching} onDone={finishQuiz} />
+          ) : (
+            <ActionBar game={g} myTurn={myTurn} onAct={humanAct} onNext={nextHand} clock={clock} />
+          )}
+          {settings.learning && g.phase === "hand-over" && session.verdicts.length > 0 && (
+            <HandReview
+              key={g.handNo}
+              question={reviewQuestion(session.verdicts, g.result?.net[0] ?? 0)}
+              onScore={(p) => setSession((s) => s && { ...s, coach: { points: s.coach.points + p, max: s.coach.max + 1 } })}
+            />
+          )}
         </div>
         <HandLog game={g} />
       </div>
@@ -579,7 +625,8 @@ function ActionBar({
     const onKey = (e: KeyboardEvent) => {
       if (e.target instanceof HTMLInputElement) return;
       const k = e.key.toLowerCase();
-      if (g.phase === "hand-over" && (k === "enter" || k === " ")) {
+      // Enter/space on a focused button already clicks it; don't also deal the next hand.
+      if (g.phase === "hand-over" && (k === "enter" || k === " ") && !(e.target instanceof HTMLButtonElement)) {
         e.preventDefault();
         onNext();
       }
@@ -757,6 +804,7 @@ function GameOver({ session, onAgain }: { session: Session; onAgain: () => void 
           <Stat label="Hands won" value={stats.handsWon} />
           <Stat label="Biggest pot" value={stats.biggestPot || "—"} />
           <Stat label="Best hand shown" value={stats.bestHand >= 0 ? describe(stats.bestHand).split(",")[0] : "—"} />
+          {session.coach.max > 0 && <Stat label="Coach score" value={`${Math.round((session.coach.points / session.coach.max) * 100)}%`} />}
         </div>
         <Standings rows={ranked.map((p) => ({ name: p.human ? "You" : p.name, score: p.stack, you: p.human }))} />
       </FinalBand>
