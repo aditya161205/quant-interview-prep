@@ -127,42 +127,49 @@ function Playing({ config, onEnd }: { config: ArrowConfig; onEnd: (logs: RoundLo
 
   const [roundIdx, setRoundIdx] = React.useState(0);
   const [correctCount, setCorrectCount] = React.useState(0);
-  const [pressed, setPressed] = React.useState<Dir | null>(null); // subtle "you pressed" cue only
-  const [now, setNow] = React.useState(() => performance.now());
+  // Subtle "you pressed" cue, tied to its round so a new round starts clear.
+  const [press, setPress] = React.useState<{ round: number; dir: Dir } | null>(null);
+  const pressed = press?.round === roundIdx ? press.dir : null;
+  // Milliseconds into this round and into the session, from the ticker below.
+  const [clock, setClock] = React.useState({ round: 0, session: 0 });
 
   const logsRef = React.useRef<RoundLog[]>([]);
-  const roundStartRef = React.useRef(performance.now());
-  const sessionStartRef = React.useRef(performance.now()); // fixed wall-clock start
+  const roundStartRef = React.useRef(0); // set when each round starts
   const committedRef = React.useRef(false); // guards against double-committing a round
 
   const trial = trials[roundIdx];
 
   // Finalise the current round and move on. Called either by a keypress
   // (response = the direction) or by the timeout firing (response = null).
+  // Refreshed after every render so it always sees the current round.
   const commitRef = React.useRef<(response: Response, rt: number | null) => void>(() => {});
-  commitRef.current = (response, rt) => {
-    if (committedRef.current) return;
-    committedRef.current = true;
-    const ok = isCorrect(trial, response);
-    logsRef.current.push({ trial, response, correct: ok, rtMs: response != null ? rt : null });
-    if (ok) setCorrectCount((c) => c + 1);
-    if (roundIdx + 1 >= trials.length) onEnd(logsRef.current);
-    else setRoundIdx((i) => i + 1);
-  };
+  React.useEffect(() => {
+    commitRef.current = (response, rt) => {
+      if (committedRef.current) return;
+      committedRef.current = true;
+      const ok = isCorrect(trial, response);
+      logsRef.current.push({ trial, response, correct: ok, rtMs: response != null ? rt : null });
+      if (ok) setCorrectCount((c) => c + 1);
+      if (roundIdx + 1 >= trials.length) onEnd(logsRef.current);
+      else setRoundIdx((i) => i + 1);
+    };
+  });
 
   // A press ends the round immediately (only the first press counts).
-  const record = React.useCallback((dir: Dir) => {
-    if (committedRef.current) return;
-    setPressed(dir);
-    commitRef.current(dir, performance.now() - roundStartRef.current);
-  }, []);
+  const record = React.useCallback(
+    (dir: Dir) => {
+      if (committedRef.current) return;
+      setPress({ round: roundIdx, dir });
+      commitRef.current(dir, performance.now() - roundStartRef.current);
+    },
+    [roundIdx],
+  );
 
   // Each new round starts its clock; if nothing is pressed within roundSeconds
   // the round auto-advances with no response (no feedback, like the real test).
   React.useEffect(() => {
     roundStartRef.current = performance.now();
     committedRef.current = false;
-    setPressed(null);
     const id = window.setTimeout(() => commitRef.current(null, null), roundMs);
     return () => window.clearTimeout(id);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -183,16 +190,20 @@ function Playing({ config, onEnd }: { config: ArrowConfig; onEnd: (logs: RoundLo
 
   // Lightweight ticker for the countdown + round progress bar.
   React.useEffect(() => {
-    const id = window.setInterval(() => setNow(performance.now()), 90);
+    const sessionStart = performance.now(); // fixed wall-clock start
+    const id = window.setInterval(() => {
+      const t = performance.now();
+      setClock({ round: t - roundStartRef.current, session: t - sessionStart });
+    }, 90);
     return () => window.clearInterval(id);
   }, []);
 
-  const withinRound = Math.min(roundMs, now - roundStartRef.current);
+  const withinRound = Math.max(0, Math.min(roundMs, clock.round));
   const roundProgress = withinRound / roundMs;
   // A steady wall-clock countdown of the total session budget — unaffected by
   // how fast you answer (answering early just ends the game sooner).
   const totalSec = trials.length * config.roundSeconds;
-  const secondsLeft = Math.max(0, Math.round(totalSec - (now - sessionStartRef.current) / 1000));
+  const secondsLeft = Math.max(0, Math.round(totalSec - clock.session / 1000));
 
   return (
     <div className="space-y-5">

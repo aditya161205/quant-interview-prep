@@ -9,11 +9,13 @@ import * as React from "react";
 export function Countdown({ from = 3, onDone }: { from?: number; onDone: () => void }) {
   const [n, setN] = React.useState(from);
   const doneRef = React.useRef(onDone);
-  doneRef.current = onDone;
+  React.useEffect(() => {
+    doneRef.current = onDone;
+  });
 
+  // Mounted fresh for each countdown, so `n` already starts at `from`.
   React.useEffect(() => {
     let current = from;
-    setN(current);
     const id = window.setInterval(() => {
       current -= 1;
       if (current <= 0) {

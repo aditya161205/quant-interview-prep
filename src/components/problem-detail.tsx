@@ -42,7 +42,10 @@ export function ProblemDetail({ id }: { id: string }) {
   // paginated response that didn't hand back the whole set.
   const [idSet, setIdSet] = React.useState<{ qs: string; ids: number[]; partial: boolean } | null>(null);
 
-  React.useEffect(() => {
+  // Moving to another problem resets its state during render, before the fetch below.
+  const [shownId, setShownId] = React.useState(id);
+  if (shownId !== id) {
+    setShownId(id);
     setStatus("loading");
     setDetail(null);
     setAttempted(false);
@@ -50,13 +53,22 @@ export function ProblemDetail({ id }: { id: string }) {
     setHintsShown(0);
     setSolution(null);
     setSolutionOpen(false);
+  }
+
+  React.useEffect(() => {
+    // Ignore a slow response for a problem you've already moved past.
+    let live = true;
     fetch(`/api/problems/${id}`)
       .then((r) => (r.status === 402 ? Promise.reject("locked") : r.ok ? r.json() : Promise.reject()))
       .then((d: Detail) => {
+        if (!live) return;
         setDetail(d);
         setStatus("ok");
       })
-      .catch((e) => setStatus(e === "locked" ? "locked" : "error"));
+      .catch((e) => live && setStatus(e === "locked" ? "locked" : "error"));
+    return () => {
+      live = false;
+    };
   }, [id]);
 
   // Only the server-side filters narrow the list; status is applied on the client.
