@@ -152,7 +152,7 @@ export function HomeFloor({ pro }: { pro: boolean }) {
               The pits →
             </Link>
           </div>
-          <ul className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          <ul className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
             {GAMES.map((g, i) => (
               <li key={g.href}>
                 <Link

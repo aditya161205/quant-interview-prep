@@ -30,6 +30,7 @@ export const GAMES = [
   { href: "/market-making/figgie", code: "FIG", title: "Figgie", kind: "Jane Street's card game", blurb: "Trade suits in real time against bots, work out which suit is the goal from the flow, and hold the most of it." },
   { href: "/market-making/options-drill", code: "OPT", title: "Options Speed Drill", kind: "Options · Mental math", blurb: "Parity, ATM straddles, delta hedges, payoffs and Greeks P&L against the clock, the way first rounds test them." },
   { href: "/market-making/auction", code: "AUC", title: "Sealed-Bid Auction", kind: "Winner's curse", blurb: "Bid on items worth the same to everyone from a noisy estimate. Win too often and you overpay." },
+  { href: "/market-making/strategies", code: "STR", title: "Options Strategies", kind: "Options · Memory", blurb: "Iron condors to calendars: name the curve, sign the Greeks, pick the trade for the situation, build it from legs." },
 ] as const;
 
 /** The first two games are free; the rest need Pro (enforced on each game page). */

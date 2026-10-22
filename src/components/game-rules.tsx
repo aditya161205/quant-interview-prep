@@ -273,3 +273,26 @@ export function AuctionRules() {
     </>
   );
 }
+
+/* ------------------------------- Options strategies ------------------------------- */
+export function StrategiesRules() {
+  return (
+    <>
+      <Step n={1} title="Five kinds of question">
+        Name a strategy from its payoff curve, give the sign of each Greek, pick the strategy for a situation, choose
+        the legs that build it, or say whether its profit and loss are limited.
+      </Step>
+      <Step n={2} title="Every answer teaches">
+        After each question you see the full card: legs, the payoff at expiry and today, max profit and loss,
+        breakevens, the Greeks and how they move with the stock, and when to use it.
+      </Step>
+      <Step n={3} title="Misses come back">
+        Get one wrong and that strategy returns a few questions later, asked a different way.
+      </Step>
+      <Step n={4} title="Conventions">
+        Stock at 100, 30 days to expiry, 25% implied vol, zero rates. Greek signs are read with the stock at 100;
+        &ldquo;≈0&rdquo; means small next to one at-the-money option.
+      </Step>
+    </>
+  );
+}
