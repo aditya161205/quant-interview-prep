@@ -10,6 +10,7 @@ const links = [
   { href: "/", label: "Dashboard" },
   { href: "/practice", label: "Practice" },
   { href: "/paths", label: "Paths" },
+  { href: "/desk", label: "Desk" },
   { href: "/market-making", label: "Market Making" },
   { href: "/poker", label: "Poker" },
   { href: "/profile", label: "Profile" },
@@ -49,7 +50,7 @@ export function Navbar() {
                     href={l.href}
                     aria-current={active ? "page" : undefined}
                     className={cn(
-                      "font-x shrink-0 rounded-[4px] px-2.5 py-2 text-xs font-extrabold uppercase tracking-[0.08em] transition-colors lg:px-2 lg:text-[0.65rem] lg:tracking-[0.06em] xl:px-2.5 xl:text-xs xl:tracking-[0.08em]",
+                      "font-x shrink-0 rounded-[4px] px-2 py-2 text-xs font-extrabold uppercase tracking-[0.05em] transition-colors lg:px-1.5 lg:text-[0.6rem] lg:tracking-[0.02em] xl:px-2 xl:text-[0.65rem] xl:tracking-[0.05em] 2xl:px-2.5 2xl:text-xs 2xl:tracking-[0.08em]",
                       active ? "bg-jacket-ink text-jacket" : "opacity-80 hover:bg-jacket-ink/15 hover:opacity-100",
                     )}
                   >
