@@ -13,7 +13,7 @@ export default async function DeskPage() {
       <PageHeader
         code="DSK"
         title="The Desk"
-        description="Live the job, one day at a time. Work through a quant trader's or researcher's day, from the pre-market to the close, starting as a junior."
+        description="Live the job on an options desk, one day at a time: a quant trader's or researcher's day from the pre-market to the close, starting as a junior."
         compact
       />
       <DeskApp pro={pro} />

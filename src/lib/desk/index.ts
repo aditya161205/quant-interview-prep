@@ -7,14 +7,14 @@ export * from "./core";
 export const CAREERS: Record<Role, { title: string; desk: string; blurb: string; metric: string }> = {
   trader: {
     title: "Quant Trader",
-    desk: "Equity derivatives market-making",
-    blurb: "Open the book, flatten your risk, quote clients, price their requests, trade the earnings print and explain your P&L before you go home.",
+    desk: "Options market-making",
+    blurb: "Mark the vol surface, flatten your Greeks, quote options to clients, price their requests, trade the earnings straddle and explain your P&L before you go home.",
     metric: "Desk P&L",
   },
   researcher: {
     title: "Quant Researcher",
-    desk: "Systematic equities",
-    blurb: "Audit the data, test whether a signal is real, review backtests, combine strategies, convince the PM, and decide what to do when live returns disappoint.",
+    desk: "Options & volatility research",
+    blurb: "Clean option prices, measure realised vol, backtest short-vol strategies, size vol trades and variance swaps, pick what the PM funds, and decide when to switch a strategy off.",
     metric: "Credibility",
   },
 };

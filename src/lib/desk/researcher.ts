@@ -1,6 +1,6 @@
-import { normCdf, normInv, num, pct, round, type Answer, type Level, type Outcome, type Person, type Rng, type Task } from "./core";
+import { money, normCdf, num, pct, round, signedMoney, type Answer, type Level, type Outcome, type Person, type Rng, type Task } from "./core";
 
-/** A systematic equities research team: data, signals, backtests, and the PM who decides what goes live. */
+/** A volatility research team: option data, realised vol, short-vol backtests, vol trades, and the PM who funds them. */
 
 const IVY: Person = { name: "Ivy", role: "Portfolio manager" };
 const THEO: Person = { name: "Theo", role: "Senior researcher" };
@@ -19,66 +19,70 @@ const shuffle = <T,>(r: Rng, xs: T[]) => {
   }
   return a;
 };
+function bsCall(S: number, K: number, vol: number, days: number) {
+  const T = days / 365;
+  const sd = vol * Math.sqrt(T);
+  const d1 = (Math.log(S / K) + 0.5 * vol * vol * T) / sd;
+  return S * normCdf(d1) - K * normCdf(d1 - sd);
+}
 
-/* 08:00 — the data */
+/* 08:00 — the option data */
 const PIPELINE: { text: string; problem: boolean; why: string }[] = [
-  { text: "The universe is today's index members, applied back to 2010.", problem: true, why: "Survivorship bias: stocks that fell out of the index (often the losers) are missing from history." },
-  { text: "Delisted stocks are dropped from the price history.", problem: true, why: "Survivorship bias: bankruptcies and takeovers vanish, so returns look better than they were." },
-  { text: "Earnings are stamped with the quarter-end date, not the release date.", problem: true, why: "Look-ahead: the backtest knows earnings weeks before they were published." },
-  { text: "The signal is computed from today's close and traded at that same close.", problem: true, why: "Look-ahead: you can't trade at a price you needed to compute the signal." },
-  { text: "When a stock stops trading, its last price is carried forward indefinitely.", problem: true, why: "Stale prices hide delisting losses and fake low volatility." },
-  { text: "Prices are adjusted for splits and dividends before computing returns.", problem: false, why: "Correct: unadjusted prices create fake jumps." },
-  { text: "Index membership is taken as of each historical date.", problem: false, why: "Correct: a point-in-time universe avoids survivorship bias." },
-  { text: "Signals are lagged one day before they're traded.", problem: false, why: "Correct: a one-day lag avoids look-ahead." },
-  { text: "Transaction costs are charged on every trade in the backtest.", problem: false, why: "Correct: costs belong in every backtest." },
+  { text: "The backtest fills every option trade at the mid price.", problem: true, why: "Option spreads are wide: you buy at the ask and sell at the bid. Mid fills overstate returns." },
+  { text: "Option closes (16:15) are matched with stock closes (16:00).", problem: true, why: "Asynchronous closes: the stock moved in those 15 minutes, which creates fake mispricings." },
+  { text: "Implied vols are computed without the stocks' dividends.", problem: true, why: "The wrong forward biases every implied vol and breaks put-call parity." },
+  { text: "American puts are priced with a European model.", problem: true, why: "It ignores the early-exercise premium, so deep in-the-money put vols come out wrong." },
+  { text: "Quotes with a zero bid are kept and valued at mid.", problem: true, why: "Nobody will buy them: a zero bid means the mid is fiction." },
+  { text: "Trades fill at the bid when selling and at the ask when buying.", problem: false, why: "Correct: that's the price you'd actually get." },
+  { text: "Option and stock prices are snapshotted at the same moment.", problem: false, why: "Correct: synchronous prices avoid fake arbitrage." },
+  { text: "Implied vols use the market's forward, dividends included.", problem: false, why: "Correct: the right forward gives consistent vols." },
+  { text: "Quotes wider than half their mid price are dropped.", problem: false, why: "Correct: very wide quotes aren't real prices." },
 ];
 
 const LOOKAHEAD = [
   {
-    setup: "The news-sentiment score for each day is published at 18:00 ET. The backtest trades it at that day's 16:00 close.",
-    right: "Trade it the next day: lag the signal so it's used only after it's published",
+    setup: "To pick trades, the backtest compares today's implied vol with realised vol over the next 21 days.",
+    right: "Use trailing realised vol (up to today) for the signal; forward realised vol only to measure P&L",
   },
   {
-    setup: "Fundamentals come from today's database, which holds the latest restated numbers for every past quarter.",
-    right: "Use a point-in-time database: only numbers as first reported, on the day they were known",
+    setup: "Trades happen at 10:00, but missing strikes are filled from that day's 16:00 vol surface.",
+    right: "Build the surface only from data available at 10:00, when the trade happens",
   },
   {
-    setup: "Each stock's volatility is scaled using the full sample's standard deviation, 2010 to today.",
-    right: "Scale with a trailing window: only data up to each day, never the full sample",
+    setup: "Earnings dates come from today's calendar, including dates that were only announced later.",
+    right: "Use earnings dates as they were known at the time: a point-in-time calendar",
   },
 ];
-const LOOKAHEAD_WRONG = ["Winsorise the signal at 3 standard deviations", "Add more stocks to the universe", "Charge higher transaction costs", "Use a longer lookback window"];
+const LOOKAHEAD_WRONG = ["Use a wider range of strikes", "Smooth the surface with a spline", "Charge higher transaction costs", "Use longer-dated options"];
 
 function data(r: Rng, L: Level): Task {
   if (L === "easy") {
-    const ratio = r.pick([2, 3, 4]);
-    let p = r.range(80, 300, 0.01);
-    const splitDay = 3;
-    const rows: string[][] = [];
-    const dates = ["Mon 12", "Tue 13", "Wed 14", "Thu 15", "Fri 16", "Mon 19"];
-    for (let i = 0; i < 6; i++) {
-      if (i > 0) p = p * (1 + r.range(-1.5, 1.5, 0.1) / 100);
-      const shown = i >= splitDay ? p / ratio : p;
-      const vol = (i >= splitDay ? ratio : 1) * r.range(1.2, 2.4, 0.1);
-      rows.push([dates[i], num(shown), `${num(vol, 1)}m`]);
-    }
-    const right = `A ${ratio}-for-1 stock split the prices aren't adjusted for`;
-    const drop = 1 - 1 / ratio;
+    const S = r.range(80, 200, 1);
+    const vol = r.range(20, 40, 1) / 100;
+    const base = Math.round(S / 5) * 5 - 10;
+    const strikes = Array.from({ length: 6 }, (_, i) => base + 5 * (i - 1));
+    const mids = strikes.map((K) => bsCall(S, K, vol, 30));
+    const bad = r.range(1, 5, 1);
+    const crossed = r.next() < 0.5;
+    if (!crossed) mids[bad] = mids[bad - 1] + r.range(0.2, 0.6, 0.05);
+    const rows = strikes.map((K, i) => {
+      const half = Math.max(0.03, mids[i] * 0.02);
+      const [b, a] = crossed && i === bad ? [mids[i] + half, mids[i] - half] : [mids[i] - half, mids[i] + half];
+      return [`${K} call`, num(Math.max(0.01, b)), num(Math.max(0.01, a))];
+    });
+    const right = rows[bad][0];
     return {
       time: "08:00",
       where: "Data check",
       from: CLARA,
-      title: "Something's off in the price file",
-      message: `Your momentum backtest shows a ${pct(drop, 0)} loss on one stock on ${dates[splitDay]}. Nothing in the news. What happened?`,
-      blocks: [{ kind: "table", head: ["Date", "Close", "Volume"], rows, mark: splitDay }],
-      q: {
-        kind: "choice",
-        prompt: `What happened on ${dates[splitDay]}?`,
-        options: shuffle(r, [right, `A ${pct(drop, 0)} crash on bad news`, "The vendor switched the price to another currency", "A special dividend was paid"]),
-        answer: right,
-      },
-      why: [`The price fell by exactly 1/${ratio} and volume jumped about ${ratio}×: an unadjusted split.`, "Adjust all earlier prices (and volumes) by the split factor before computing returns."],
-      outcome: cred("Clara fixes the adjustment; the fake loss disappears from your backtest.", "You flag it as a crash; Theo spots the split in five seconds."),
+      title: "A bad option print",
+      message: "Your vol surface has a spike in it this morning. One of these quotes is bad. Which one do I drop?",
+      blocks: [{ kind: "table", head: ["Option", "Bid", "Ask"], rows }, { kind: "kv", items: [["HALC", money(S)], ["Expiry", "30 days"]] }],
+      q: { kind: "choice", prompt: "Which quote is bad?", options: rows.map((x) => x[0]), answer: right },
+      why: crossed
+        ? [`The ${right} bid is above its ask: a crossed quote can't be traded. It's stale or a bad print.`]
+        : [`The ${right} is priced above the ${rows[bad - 1][0]}. A higher-strike call pays less in every scenario, so it can never be worth more.`, "Bad prints like this become spikes in implied vol."],
+      outcome: cred("Clara drops it; the spike in your surface disappears.", "You keep the bad print; your surface fits a spike that isn't there."),
     };
   }
   if (L === "medium") {
@@ -89,12 +93,12 @@ function data(r: Rng, L: Level): Task {
       time: "08:00",
       where: "Data check",
       from: CLARA,
-      title: "Review the backtest pipeline",
-      message: "Before your backtest goes to Ivy, check how I built the data. Which of these are problems?",
-      blocks: [{ kind: "table", head: ["#", "How the data is built"], rows: shown.map((x, i) => [String(i + 1), x.text]) }],
+      title: "Review the options backtest",
+      message: "Before your short-vol backtest goes to Ivy, check how I built it. Which of these are problems?",
+      blocks: [{ kind: "table", head: ["#", "How the backtest is built"], rows: shown.map((x, i) => [String(i + 1), x.text]) }],
       q: { kind: "multi", prompt: "Pick every problem", options: shown.map((x) => x.text), answer: problems.map((x) => x.text) },
       why: shown.map((x) => `${x.problem ? "Problem" : "Fine"}: ${x.why}`),
-      outcome: cred("You catch the biases before they reach the PM.", "A bias slips through; Ivy finds it in the review."),
+      outcome: cred("You catch them before they reach the PM.", "A flaw slips through; Ivy finds it in the review."),
     };
   }
   const s = r.pick(LOOKAHEAD);
@@ -103,101 +107,115 @@ function data(r: Rng, L: Level): Task {
     where: "Data check",
     from: CLARA,
     title: "Is this backtest honest?",
-    message: "The Sharpe on this one looks too good. Here's how it's built. What's the fix?",
+    message: "This vol strategy's Sharpe looks too good. Here's how it's built. What's the fix?",
     blocks: [{ kind: "text", text: s.setup }],
     q: { kind: "choice", prompt: "The fix", options: shuffle(r, [s.right, ...shuffle(r, LOOKAHEAD_WRONG).slice(0, 3)]), answer: s.right },
     why: ["The backtest uses information it wouldn't have had at the time: look-ahead bias.", `${s.right}.`],
-    outcome: cred("With the fix the Sharpe drops to something believable, and nobody gets embarrassed in production.", "The look-ahead survives into the PM review. Awkward."),
+    outcome: cred("With the fix the Sharpe drops to something believable.", "The look-ahead survives into the PM review. Awkward."),
   };
 }
 
-/* 09:30 — is the signal real? */
-function stats(r: Rng, L: Level): Task {
+/* 09:30 — measure realised vol */
+function realised(r: Rng, L: Level): Task {
   if (L === "easy") {
-    const m = r.range(0.02, 0.08, 0.005);
-    const sd = r.range(0.5, 1.5, 0.05);
-    const sr = round((m / sd) * Math.sqrt(252), 2);
+    const sd = r.range(0.8, 3, 0.05);
+    const ann = round(sd * Math.sqrt(252), 1);
     return {
       time: "09:30",
       where: "Research",
       from: THEO,
-      title: "Annualise the Sharpe",
-      message: "Your strategy's daily returns are in. What's the annualised Sharpe ratio?",
-      blocks: [{ kind: "kv", items: [["Mean daily return", `${num(m, 3)}%`], ["Daily volatility", `${num(sd, 2)}%`], ["Trading days a year", "252"]] }],
-      q: { kind: "number", prompt: "Annualised Sharpe", answer: sr, tol: 0.05 },
-      why: [`Sharpe = mean ÷ vol × √252 = ${num(m, 3)} ÷ ${num(sd, 2)} × 15.87 = ${num(sr)}.`, "Returns scale with time, volatility with its square root."],
-      outcome: cred("Theo nods: the number is right.", "Theo redoes it on the whiteboard. You forgot to annualise properly."),
+      title: "Annualise the vol",
+      message: "HALC's daily returns over the last month have a standard deviation you can see below. What's that as annualised vol, to compare with implied?",
+      blocks: [{ kind: "kv", items: [["Std of daily returns", `${num(sd, 2)}%`], ["Trading days a year", "252"]] }],
+      q: { kind: "number", prompt: "Annualised realised vol", unit: "%", answer: ann, tol: 0.3 },
+      why: [`Vol scales with the square root of time: ${num(sd, 2)}% × √252 = ${num(sd, 2)} × 15.87 = ${num(ann, 1)}%.`],
+      outcome: cred("Theo uses your number in the morning note.", "Theo spots you scaled by 252, not √252."),
     };
   }
   if (L === "medium") {
-    const ic = r.range(0.01, 0.04, 0.002);
-    const sd = r.range(0.06, 0.15, 0.005);
-    const n = r.pick([250, 500, 750, 1000]);
-    const t = round((ic / sd) * Math.sqrt(n), 2);
+    const rets = Array.from({ length: 6 }, () => r.range(-3, 3, 0.1) || 0.4);
+    const mean = rets.reduce((a, b) => a + b, 0) / rets.length;
+    const variance = rets.reduce((a, b) => a + (b - mean) ** 2, 0) / (rets.length - 1);
+    const ann = round(Math.sqrt(variance) * Math.sqrt(252), 1);
     return {
       time: "09:30",
       where: "Research",
       from: THEO,
-      title: "Is the IC significant?",
-      message: "Your signal's daily information coefficient looks positive. Is it statistically significant? Give me the t-stat.",
-      blocks: [{ kind: "kv", items: [["Mean daily IC", num(ic, 3)], ["Std of daily IC", num(sd, 3)], ["Days", String(n)]] }],
-      q: { kind: "number", prompt: "t-statistic", answer: t, tol: Math.max(0.1, t * 0.03) },
-      why: [`t = mean ÷ std × √n = ${num(ic, 3)} ÷ ${num(sd, 3)} × √${n} = ${num(t)}.`, t > 2 ? "Above 2: significant at the usual 5% level." : "Below 2: not significant yet."],
-      outcome: cred("Theo agrees with the read.", "Theo points out the t-stat is off by a factor of √n."),
+      title: "Realised vol from scratch",
+      message: "The vendor feed is down. Here are HALC's last six daily returns. What's the annualised realised vol?",
+      blocks: [{ kind: "table", head: ["Day", "1", "2", "3", "4", "5", "6"], rows: [["Return", ...rets.map((x) => `${num(x, 1)}%`)]] }],
+      q: { kind: "number", prompt: "Annualised realised vol", unit: "%", answer: ann, tol: 0.6 },
+      why: [
+        `Mean = ${num(mean, 3)}%. Sample variance = Σ(r − mean)² ÷ 5 = ${num(variance, 3)}.`,
+        `Daily vol = √${num(variance, 3)} = ${num(Math.sqrt(variance), 3)}%; annualised × √252 = ${num(ann, 1)}%.`,
+      ],
+      outcome: cred("Theo checks it against the feed when it's back: spot on.", "Theo's number from the feed is different; you divided by the wrong count or forgot √252."),
     };
   }
-  const N = r.pick([20, 50, 100, 200]);
-  const z = normInv(1 - 0.05 / (2 * N));
-  const t = round(z + r.sign() * r.range(0.25, 0.9, 0.05), 2);
+  const prev = r.range(15, 40, 0.5);
+  const ret = r.sign() * r.range(0.5, 4, 0.1);
+  const lam = 0.94;
+  const dailyVar = (prev / 100) ** 2 / 252;
+  const next = round(Math.sqrt((lam * dailyVar + (1 - lam) * (ret / 100) ** 2) * 252) * 100, 2);
   return {
     time: "09:30",
     where: "Research",
     from: THEO,
-    title: "Multiple testing",
-    message: `You tried ${N} variations and the best one has a t-stat of ${num(t)}. Is it significant once you account for the search?`,
-    blocks: [{ kind: "kv", items: [["Variations tried", String(N)], ["Best t-stat", num(t)], ["Target false-positive rate", "5%"]] }],
-    q: { kind: "choice", prompt: "Significant after correcting for the search?", options: ["Yes", "No"], answer: t > z ? "Yes" : "No" },
+    title: "Update the EWMA vol",
+    message: "Our vol forecast is an EWMA with λ = 0.94. Update it for today's return.",
+    blocks: [{ kind: "kv", items: [["Yesterday's forecast", `${num(prev, 1)}% annualised`], ["Today's return", `${num(ret, 1)}%`], ["λ", "0.94"], ["Days a year", "252"]] }],
+    q: { kind: "number", prompt: "Today's forecast", unit: "%", answer: next, tol: 0.3 },
     why: [
-      `Bonferroni: each test must pass at 5% ÷ ${N} = ${num(5 / N, 3)}%, two-sided, which needs |t| > ${num(z)}.`,
-      t > z ? `${num(t)} clears it.` : `${num(t)} doesn't. With enough tries, a t-stat that high turns up by luck.`,
+      `Daily variance yesterday = (${num(prev / 100, 3)})² ÷ 252 = ${num(dailyVar, 6)}.`,
+      `σ²_today = 0.94 × ${num(dailyVar, 6)} + 0.06 × (${num(ret / 100, 3)})² = ${num(lam * dailyVar + (1 - lam) * (ret / 100) ** 2, 6)}.`,
+      `Annualised: √(that × 252) = ${num(next, 2)}%.`,
     ],
-    outcome: cred("Good discipline: Theo trusts your results more.", "You'd have shipped noise. Theo walks you through the search correction."),
+    outcome: cred("Your forecast goes into today's vol signals.", "The forecast feeding today's signals is wrong; Theo catches it before the trades go out."),
   };
 }
 
-/* 11:00 — the backtest review */
+/* 11:00 — short-vol backtest */
 function backtest(r: Rng, L: Level): Task {
   if (L === "easy") {
-    const g = r.range(8, 20, 1);
-    const x = r.range(5, 40, 5);
-    const c = r.range(5, 20, 1);
-    const net = round(g - (x * c) / 100, 2);
+    const K = r.range(80, 200, 5);
+    const prem = r.range(4, 12, 0.1);
+    const n = r.range(10, 50, 10);
+    const end = round(K + r.sign() * r.range(0, prem * 1.6, 0.5), 2);
+    const pnl = Math.round(n * 100 * (prem - Math.abs(end - K)));
     return {
       time: "11:00",
       where: "Backtest review",
       from: IVY,
-      title: "After costs",
-      message: "Your backtest is gross of costs. What does it make after trading costs?",
-      blocks: [{ kind: "kv", items: [["Gross return", `${g}% a year`], ["Turnover", `${x}× capital a year (buys and sells)`], ["Cost", `${c} bps per dollar traded`]] }],
-      q: { kind: "number", prompt: "Net return", unit: "% a year", answer: net, tol: 0.1 },
-      why: [`Cost drag = turnover × cost = ${x} × ${c} bps = ${num((x * c) / 100, 2)}% a year.`, `Net = ${g}% − ${num((x * c) / 100, 2)}% = ${num(net, 2)}%.`],
-      outcome: cred("Ivy likes that you led with net numbers.", "Ivy asks why your net return doesn't add up."),
+      title: "One month of a short straddle",
+      message: "Walk me through one month of the short-straddle backtest. What did it make or lose at expiry?",
+      blocks: [{ kind: "kv", items: [["Sold", `${n} straddles, ${K} strike`], ["Premium received", `${money(prem, 2)} per straddle`], ["HALC at expiry", money(end, 2)], ["Contract size", "100 shares"]] }],
+      q: { kind: "number", prompt: "P&L at expiry", prefix: "$", answer: pnl, tol: Math.max(50, Math.abs(pnl) * 0.01) },
+      why: [
+        `At expiry the straddle is worth |S − K| = |${num(end)} − ${K}| = ${num(Math.abs(end - K))}.`,
+        `P&L = ${n} × 100 × (${num(prem)} − ${num(Math.abs(end - K))}) = ${signedMoney(pnl)}.`,
+        "You keep the premium if the stock stays close; you lose once it moves more than the premium either way.",
+      ],
+      outcome: cred("Ivy follows the walk-through and trusts the rest of the backtest.", "Ivy loses confidence when the first month doesn't add up."),
     };
   }
   if (L === "medium") {
-    const g = r.range(4, 12, 0.5);
-    const x = r.range(20, 80, 5);
-    const be = round((g / x) * 100, 1);
+    const months = Array.from({ length: 12 }, () => round(r.range(0.6, 1.8, 0.1), 1));
+    const crash = r.range(0, 11, 1);
+    months[crash] = -r.range(9, 18, 1);
+    const right = "Crash risk: small steady gains, then rare large losses";
     return {
       time: "11:00",
       where: "Backtest review",
       from: IVY,
-      title: "Break-even cost",
-      message: "Execution says costs could be anywhere from 5 to 25 bps. At what cost does this strategy stop making money?",
-      blocks: [{ kind: "kv", items: [["Gross return", `${num(g, 1)}% a year`], ["Turnover", `${x}× capital a year`]] }],
-      q: { kind: "number", prompt: "Break-even cost", unit: " bps", answer: be, tol: Math.max(0.5, be * 0.02) },
-      why: [`Break even when turnover × cost = gross return: cost = ${num(g, 1)}% ÷ ${x} = ${num(be, 1)} bps per dollar traded.`, be < 15 ? "That's inside the range execution quoted: too fragile to trade as is." : "Comfortably above the expected costs."],
-      outcome: cred("Ivy uses your number to set the turnover budget.", "Your break-even is off; execution sends a correction."),
+      title: "What is the Sharpe hiding?",
+      message: "The short-put strategy shows a lovely Sharpe. Before I fund it: what's the risk the Sharpe hides?",
+      blocks: [{ kind: "table", head: ["Month", ...months.map((_, i) => String(i + 1))], rows: [["Return", ...months.map((x) => `${x > 0 ? "+" : ""}${num(x, 1)}%`)]] }],
+      q: { kind: "choice", prompt: "The main risk", options: shuffle(r, [right, "Trading costs are too high", "There isn't enough capacity", "It has look-ahead bias"]), answer: right },
+      why: [
+        `Eleven small gains and one ${num(months[crash], 0)}% month: selling puts is selling insurance.`,
+        "Sharpe assumes symmetric returns. For short vol, look at the worst month, skew and a crash stress test, and size for the tail.",
+      ],
+      outcome: cred("Ivy sizes it for the crash, not the Sharpe.", "Ivy sizes it on the Sharpe. The next crash month hurts."),
     };
   }
   const is = r.range(2, 3, 0.1);
@@ -209,110 +227,148 @@ function backtest(r: Rng, L: Level): Task {
     where: "Backtest review",
     from: IVY,
     title: "In-sample vs out-of-sample",
-    message: "The new model looked fantastic in research. Two years of out-of-sample later, it doesn't. What do you tell me?",
-    blocks: [{ kind: "table", head: ["", "Sharpe", "Period"], rows: [["In-sample", num(is, 1), "2012–2020"], ["Out-of-sample", num(oos, 1), "2021–2022"]] }, { kind: "kv", items: [["Parameters fitted", String(params)]] }],
+    message: "The delta-hedged strangle model looked fantastic in research. Two years out-of-sample, it doesn't. What do you tell me?",
+    blocks: [
+      { kind: "table", head: ["", "Sharpe", "Period"], rows: [["In-sample", num(is, 1), "2012–2020"], ["Out-of-sample", num(oos, 1), "2021–2022"]] },
+      { kind: "kv", items: [["Parameters tuned", `${params} (strikes, tenors, hedge bands, filters)`]] },
+    ],
     q: {
       kind: "choice",
       prompt: "Your read",
       options: shuffle(r, [right, "Regime change: scale it up, it will come back", "Two years is too short to judge: ship it", "Costs are too high: just trade less often"]),
       answer: right,
     },
-    why: [`A Sharpe of ${num(is, 1)} in-sample falling to ${num(oos, 1)} out-of-sample, with ${params} fitted parameters, is the classic overfitting signature.`, "Cut the parameters, then test on data the model has never seen."],
-    outcome: cred("Ivy shelves it until the simpler version is tested. Money saved.", "Ivy allocates to it; it bleeds for a quarter."),
+    why: [`A Sharpe of ${num(is, 1)} in-sample falling to ${num(oos, 1)} out-of-sample, with ${params} tuned parameters, is the classic overfitting signature.`, "Cut the parameters, then test on data the model has never seen."],
+    outcome: cred("Ivy shelves it until the simpler version is tested.", "Ivy allocates to it; it bleeds for a quarter."),
   };
 }
 
-/* 13:00 — combining signals */
-function combine(r: Rng, L: Level): Task {
-  if (L === "hard") {
-    const book = r.range(1, 1.8, 0.1);
-    const rho = r.range(0.2, 0.9, 0.1);
-    const threshold = rho * book;
-    const s = round(Math.max(0.1, threshold + r.sign() * r.range(0.1, 0.4, 0.05)), 2);
-    const add = s > threshold;
+/* 13:00 — the vol trade */
+function volTrade(r: Rng, L: Level): Task {
+  if (L === "easy") {
+    const implied = r.range(18, 45, 1);
+    const forecast = implied + r.sign() * r.range(3, 8, 1);
+    const sell = "Sell vol: implied is above where you expect it to realise";
+    const buy = "Buy vol: implied is below where you expect it to realise";
     return {
       time: "13:00",
       where: "Research",
       from: THEO,
-      title: "Does it add anything?",
-      message: "New signal, decent Sharpe on its own. But does it improve the book we already run?",
-      blocks: [{ kind: "kv", items: [["Current book Sharpe", num(book, 1)], ["New signal Sharpe", num(s)], ["Correlation with the book", num(rho, 1)]] }],
-      q: { kind: "choice", prompt: "Add it to the book?", options: ["Yes, it raises the book's Sharpe", "No, it won't help"], answer: add ? "Yes, it raises the book's Sharpe" : "No, it won't help" },
-      why: [`A new strategy improves the book when its Sharpe beats correlation × book Sharpe: ${num(rho, 1)} × ${num(book, 1)} = ${num(threshold)}.`, add ? `${num(s)} beats it: add it.` : `${num(s)} doesn't: it mostly repeats what you already own.`],
-      outcome: cred("Theo backs your call in the meeting.", "Theo shows the combined Sharpe going the other way."),
+      title: "Buy or sell vol?",
+      message: "Here's 1-month implied vol and your realised-vol forecast. Which side of vol do we want?",
+      blocks: [{ kind: "kv", items: [["1-month implied vol", `${implied}%`], ["Your realised-vol forecast", `${forecast}%`]] }],
+      q: { kind: "choice", prompt: "Your trade", options: [sell, buy], answer: implied > forecast ? sell : buy },
+      why: [
+        `You earn the gap between implied and realised: ${implied}% implied vs ${forecast}% expected.`,
+        implied > forecast ? "Sell options and delta-hedge: you collect more than the moves cost you." : "Buy options and delta-hedge: the moves should pay you more than the premium.",
+      ],
+      outcome: cred("Realised vol came in near your forecast: the trade worked.", "Realised came in near your forecast, against your trade."),
     };
   }
-  const s1 = r.range(0.6, 1.4, 0.1);
-  const s2 = L === "easy" ? s1 : r.range(0.5, 1.4, 0.1);
-  const rho = L === "easy" ? 0 : r.range(-0.2, 0.6, 0.1);
-  const c = round((s1 + s2) / Math.sqrt(2 + 2 * rho), 2);
+  if (L === "medium") {
+    const n = r.range(100, 1000, 100);
+    const vega = r.range(0.08, 0.3, 0.01);
+    const implied = r.range(20, 40, 1);
+    const realised = implied - r.sign() * r.range(2, 8, 1);
+    const pnl = Math.round(n * 100 * vega * (implied - realised));
+    return {
+      time: "13:00",
+      where: "Research",
+      from: THEO,
+      title: "Vega P&L of a short-vol trade",
+      message: "We sold options at one vol and delta-hedged. Realised came in somewhere else. Roughly what did we make?",
+      blocks: [{ kind: "kv", items: [["Position", `short ${n} options, delta-hedged`], ["Vega per option", `${num(vega, 2)} per share per vol pt`], ["Sold at", `${implied}% implied`], ["Realised vol", `${realised}%`]] }],
+      q: { kind: "number", prompt: "Approximate P&L", prefix: "$", answer: pnl, tol: Math.max(50, Math.abs(pnl) * 0.02) },
+      why: [
+        `A delta-hedged short option earns roughly vega × (implied − realised).`,
+        `${n} × 100 × ${num(vega, 2)} × (${implied} − ${realised}) = ${signedMoney(pnl)}.`,
+        "It's an approximation: the path of the stock matters too.",
+      ],
+      outcome: cred("Theo's attribution matches yours.", "Theo's attribution has a different sign: think about which side you're on."),
+    };
+  }
+  const notional = r.range(50, 200, 25) * 1000;
+  const strike = r.range(15, 30, 1);
+  const real = strike + r.sign() * r.range(2, 10, 1);
+  const nVar = notional / (2 * strike);
+  const pnl = Math.round(nVar * (real * real - strike * strike));
   return {
     time: "13:00",
     where: "Research",
     from: THEO,
-    title: "Combine two signals",
-    message: "Run both signals together at equal risk. What Sharpe should the combination have?",
-    blocks: [{ kind: "kv", items: [["Signal A Sharpe", num(s1, 1)], ["Signal B Sharpe", num(s2, 1)], ["Correlation", num(rho, 1)]] }],
-    q: { kind: "number", prompt: "Combined Sharpe", answer: c, tol: 0.03 },
-    why: [`At equal risk, combined Sharpe = (S_A + S_B) ÷ √(2 + 2ρ) = ${num(s1 + s2, 1)} ÷ √${num(2 + 2 * rho, 1)} = ${num(c)}.`, rho < 0.5 ? "Low correlation is what makes the combination better than either alone." : "High correlation limits the gain."],
-    outcome: cred("Theo uses your number in the allocation memo.", "Theo corrects the diversification maths."),
+    title: "Variance swap P&L",
+    message: "We bought a variance swap. It just expired. What did it pay?",
+    blocks: [{ kind: "kv", items: [["Vega notional", money(notional)], ["Strike", `${strike} vol`], ["Realised vol", `${real}`], ["Position", "long variance"]] }],
+    q: { kind: "number", prompt: "P&L", prefix: "$", answer: pnl, tol: Math.max(100, Math.abs(pnl) * 0.01) },
+    why: [
+      `Variance notional = vega notional ÷ (2 × strike) = ${money(notional)} ÷ ${2 * strike} = ${money(nVar, 2)} per variance point.`,
+      `P&L = ${money(nVar, 2)} × (${real}² − ${strike}²) = ${money(nVar, 2)} × ${real * real - strike * strike} = ${signedMoney(pnl)}.`,
+      "Paying on variance, not vol, makes it convex: big realised moves pay more than linearly.",
+    ],
+    outcome: cred("Your P&L ties out with the confirm from the bank.", "Your number doesn't match the bank's confirm."),
   };
 }
 
 /* 14:30 — the PM decides */
+const STRATS = ["Short index puts", "Dispersion", "Calendar carry", "Skew trades", "Short strangles", "Tail-hedged short vol"];
+
 function choose(r: Rng, L: Level): Task {
-  const names = ["A", "B", "C"];
-  const aum = L === "easy" ? 100 : 200;
+  const names = shuffle(r, STRATS).slice(0, 3);
+  const letters = ["A", "B", "C"];
   const book = 1.2;
-  let rows: { sr: number; dd: number; cap: number; rho: number }[];
-  let pickIdx: number;
+  let rows: { sr: number; worst: number; cap: number; rho: number }[];
+  let pick: number;
   let why: string[];
   if (L === "easy") {
     const best = r.range(1.4, 1.9, 0.1);
-    rows = [best, best - r.range(0.4, 0.6, 0.1), best - r.range(0.7, 0.9, 0.1)].map((sr) => ({ sr: round(sr, 1), dd: r.range(8, 14, 1), cap: r.range(150, 500, 50), rho: r.range(0.1, 0.4, 0.1) }));
-    rows = shuffle(r, rows);
-    pickIdx = rows.reduce((b, x, i) => (x.sr > rows[b].sr ? i : b), 0);
-    why = [`Strategy ${names[pickIdx]} has the best Sharpe, enough capacity for ${aum}m and a similar drawdown: it's the clear choice.`];
+    rows = shuffle(r, [best, best - r.range(0.4, 0.6, 0.1), best - r.range(0.7, 0.9, 0.1)].map((sr) => ({ sr: round(sr, 1), worst: -r.range(4, 8, 1), cap: r.range(150, 500, 50), rho: r.range(0.1, 0.4, 0.1) })));
+    pick = rows.reduce((b, x, i) => (x.sr > rows[b].sr ? i : b), 0);
+    why = [`${letters[pick]} has the best Sharpe with a similar worst month and plenty of capacity: the clear choice.`];
   } else if (L === "medium") {
     const top = r.range(1.7, 2.2, 0.1);
-    rows = [
-      { sr: round(top, 1), dd: r.range(6, 10, 1), cap: r.range(40, 120, 20), rho: r.range(0.1, 0.4, 0.1) },
-      { sr: round(top - r.range(0.3, 0.5, 0.1), 1), dd: r.range(8, 12, 1), cap: r.range(300, 600, 50), rho: r.range(0.1, 0.4, 0.1) },
-      { sr: round(top - r.range(0.7, 0.9, 0.1), 1), dd: r.range(8, 12, 1), cap: r.range(300, 600, 50), rho: r.range(0.1, 0.4, 0.1) },
-    ];
-    rows = shuffle(r, rows);
-    pickIdx = rows.reduce((b, x, i) => (x.cap >= aum && (rows[b].cap < aum || x.sr > rows[b].sr) ? i : b), rows.findIndex((x) => x.cap >= aum));
-    const tiny = rows.findIndex((x) => x.cap < aum);
-    why = [`Strategy ${names[tiny]} has the best Sharpe but only $${rows[tiny].cap}m of capacity: at $${aum}m its own trading would eat the edge.`, `Among those that can take $${aum}m, ${names[pickIdx]} has the best Sharpe.`];
+    rows = shuffle(r, [
+      { sr: round(top, 1), worst: -r.range(15, 25, 1), cap: r.range(300, 600, 50), rho: r.range(0.1, 0.4, 0.1) },
+      { sr: round(top - r.range(0.3, 0.5, 0.1), 1), worst: -r.range(5, 9, 1), cap: r.range(300, 600, 50), rho: r.range(0.1, 0.4, 0.1) },
+      { sr: round(top - r.range(0.7, 0.9, 0.1), 1), worst: -r.range(5, 9, 1), cap: r.range(300, 600, 50), rho: r.range(0.1, 0.4, 0.1) },
+    ]);
+    const ok = (x: (typeof rows)[number]) => x.worst >= -10;
+    pick = rows.reduce((b, x, i) => (ok(x) && (!ok(rows[b]) || x.sr > rows[b].sr) ? i : b), rows.findIndex(ok));
+    const tail = rows.findIndex((x) => !ok(x));
+    why = [`${letters[tail]} has the best Sharpe, but a ${rows[tail].worst}% worst month breaks the −10% tail limit: that's short-vol crash risk.`, `Of the ones inside the limit, ${letters[pick]} has the best Sharpe.`];
   } else {
-    const make = () => ({ sr: r.range(1, 1.8, 0.1), dd: r.range(8, 14, 1), cap: r.range(300, 600, 50), rho: r.range(0, 0.8, 0.1) });
+    const make = () => ({ sr: r.range(1, 1.8, 0.1), worst: -r.range(5, 9, 1), cap: r.range(300, 600, 50), rho: r.range(0, 0.8, 0.1) });
     let tries = 0;
     do {
       rows = [make(), make(), make()];
       const m = rows.map((x) => x.sr - x.rho * book).sort((a, b) => b - a);
       if (m[0] - m[1] >= 0.15) break;
     } while (++tries < 50);
-    pickIdx = rows.reduce((b, x, i) => (x.sr - x.rho * book > rows[b].sr - rows[b].rho * book ? i : b), 0);
+    pick = rows.reduce((b, x, i) => (x.sr - x.rho * book > rows[b].sr - rows[b].rho * book ? i : b), 0);
     why = [
       `What matters is what each adds to the book (Sharpe ${book}): roughly Sharpe − correlation × ${book}.`,
-      ...rows.map((x, i) => `${names[i]}: ${num(x.sr, 1)} − ${num(x.rho, 1)} × ${book} = ${num(x.sr - x.rho * book)}`),
-      `${names[pickIdx]} adds the most, even if it isn't the best on its own.`,
+      ...rows.map((x, i) => `${letters[i]}: ${num(x.sr, 1)} − ${num(x.rho, 1)} × ${book} = ${num(x.sr - x.rho * book)}`),
+      `${letters[pick]} adds the most, even if it isn't the best on its own.`,
     ];
   }
   return {
     time: "14:30",
     where: "PM meeting",
     from: IVY,
-    title: "Which one goes live?",
-    message: L === "hard" ? `We run a book with a Sharpe of ${book}. I can fund one of these. Which one?` : `I have $${aum}m to allocate to one new strategy. Which one?`,
+    title: "Which one gets funded?",
+    message:
+      L === "medium"
+        ? "I can fund one of these vol strategies. Risk's rule: no strategy with a worst month below −10%. Which one?"
+        : L === "hard"
+          ? `Our vol book runs at a Sharpe of ${book}. I can fund one of these. Which one?`
+          : "I can fund one of these vol strategies. Which one?",
     blocks: [
       {
         kind: "table",
-        head: ["Strategy", "Sharpe", "Max drawdown", "Capacity", "Corr. to book"],
-        rows: rows.map((x, i) => [names[i], num(x.sr, 1), `−${x.dd}%`, `$${x.cap}m`, num(x.rho, 1)]),
+        head: ["", "Strategy", "Sharpe", "Worst month", "Capacity", "Corr. to book"],
+        rows: rows.map((x, i) => [letters[i], names[i], num(x.sr, 1), `${x.worst}%`, `$${x.cap}m`, num(x.rho, 1)]),
       },
     ],
-    q: { kind: "choice", prompt: "Your recommendation", options: names.map((n) => `Strategy ${n}`), answer: `Strategy ${names[pickIdx]}` },
+    q: { kind: "choice", prompt: "Your recommendation", options: letters.map((l, i) => `${l}: ${names[i]}`), answer: `${letters[pick]}: ${names[pick]}` },
     why,
     outcome: cred("Ivy funds your pick.", "Ivy goes with someone else's recommendation."),
   };
@@ -325,6 +381,7 @@ function monitor(r: Rng, L: Level): Task {
   const sd = sigma * Math.sqrt(months / 12);
   const sr = L === "easy" ? 0 : r.range(0.8, 2, 0.1);
   const expected = sr * sigma * (months / 12);
+  const per = `${months} month${months > 1 ? "s" : ""}`;
   if (L !== "hard") {
     const R = -r.range(1, 6, 0.5) / 100;
     const z = round((R - expected) / sd, 2);
@@ -333,14 +390,14 @@ function monitor(r: Rng, L: Level): Task {
       where: "Risk review",
       from: MARCO,
       title: "Is this drawdown normal?",
-      message: `The strategy is ${pct(-R)} down over ${months} month${months > 1 ? "s" : ""}. How unusual is that? Give me a z-score.`,
-      blocks: [{ kind: "kv", items: [["Return so far", pct(R)], ["Period", `${months} month${months > 1 ? "s" : ""}`], ["Target volatility", `${pct(sigma, 0)} a year`], ...(sr ? ([["Backtest Sharpe", num(sr, 1)]] as [string, string][]) : [])] }],
+      message: `The short-vol strategy is ${pct(-R)} down over ${per}. How unusual is that? Give me a z-score.`,
+      blocks: [{ kind: "kv", items: [["Return so far", pct(R)], ["Period", per], ["Target volatility", `${pct(sigma, 0)} a year`], ...(sr ? ([["Backtest Sharpe", num(sr, 1)]] as [string, string][]) : [])] }],
       q: { kind: "number", prompt: "z-score", answer: z, tol: 0.1 },
       why: [
-        `Volatility over ${months} month${months > 1 ? "s" : ""} = ${pct(sigma, 0)} × √(${months}/12) = ${pct(sd)}.`,
+        `Volatility over ${per} = ${pct(sigma, 0)} × √(${months}/12) = ${pct(sd)}.`,
         ...(sr ? [`Expected return over the period = Sharpe × vol × time = ${num(sr, 1)} × ${pct(sigma, 0)} × ${months}/12 = ${pct(expected)}.`] : []),
         `z = (${pct(R)}${sr ? ` − ${pct(expected)}` : ""}) ÷ ${pct(sd)} = ${num(z)}.`,
-        Math.abs(z) < 1.5 ? "Well within normal noise." : "Unusual: worth a closer look.",
+        Math.abs(z) < 1.5 ? "Within normal noise, though for short vol, check it isn't the start of a tail event." : "Unusual: worth a closer look.",
       ],
       outcome: cred("Marco is satisfied with the analysis.", "Marco sends your numbers back."),
     };
@@ -359,25 +416,30 @@ function monitor(r: Rng, L: Level): Task {
     where: "Risk review",
     from: MARCO,
     title: "Keep it or kill it?",
-    message: `The strategy is ${R < 0 ? `${pct(-R)} down` : `only ${pct(R)} up`} over ${months} month${months > 1 ? "s" : ""}. If it works as backtested, how likely is a run this bad? What do we do?`,
-    blocks: [{ kind: "kv", items: [["Return so far", pct(R)], ["Period", `${months} month${months > 1 ? "s" : ""}`], ["Target volatility", `${pct(sigma, 0)} a year`], ["Backtest Sharpe", num(sr, 1)], ["Desk policy", "Keep above 10%, cut size 1–10%, switch off below 1%"]] }],
+    message: `The short-vol strategy is ${R < 0 ? `${pct(-R)} down` : `only ${pct(R)} up`} over ${per}. If it works as backtested, how likely is a run this bad? What do we do?`,
+    blocks: [
+      {
+        kind: "kv",
+        items: [["Return so far", pct(R)], ["Period", per], ["Target volatility", `${pct(sigma, 0)} a year`], ["Backtest Sharpe", num(sr, 1)], ["Desk policy", "Keep above 10%, cut size 1–10%, switch off below 1%"]],
+      },
+    ],
     q: { kind: "choice", prompt: "Decision", options: [keep, cut, off], answer },
     why: [
       `Expected ${pct(expected)}, vol over the period ${pct(sd)}: z = (${pct(R)} − ${pct(expected)}) ÷ ${pct(sd)} = ${num(z)}.`,
       `P(this bad or worse | it works) = N(${num(z)}) = ${pct(p, 1)}.`,
-      `${answer} under the desk policy.`,
+      `${answer} under the desk policy. Short-vol returns have fat left tails, so if anything the normal model understates the risk.`,
     ],
     outcome: cred("Marco minutes your recommendation as the decision.", "Marco overrules you; the numbers didn't support it."),
   };
 }
 
 const TITLES: Record<Level, string[]> = {
-  easy: ["First day in research", "A new data vendor", "Signal review", "Costs reality check", "Friday PM meeting"],
-  medium: ["Pipeline audit", "IC season", "The turnover budget", "Two signals, one book", "Month-end review"],
-  hard: ["Too good to be true", "The search problem", "Out-of-sample day", "Capacity crunch", "Kill or keep"],
+  easy: ["First day in vol research", "Bad option prints", "Realised vs implied", "Short straddle post-mortem", "Friday PM meeting"],
+  medium: ["Pipeline audit", "Measuring vol", "Hidden tail risk", "Vega P&L", "Tail-risk limits"],
+  hard: ["Too good to be true", "EWMA day", "Out-of-sample day", "Variance swaps", "Kill or keep"],
 };
 
 export function researcherTasks(r: Rng, L: Level): Task[] {
-  return [data, stats, backtest, combine, choose, monitor].map((f) => f(r, L));
+  return [data, realised, backtest, volTrade, choose, monitor].map((f) => f(r, L));
 }
 export const researcherTitle = (L: Level, i: number) => TITLES[L][i % 5];

@@ -16,6 +16,13 @@ for (const role of ["trader", "researcher"] as Role[])
       check(day.tasks.length >= 6, `${role} day ${n}: tasks`);
       const again = makeDay(role, n, seed * 7919 + n);
       check(JSON.stringify(again.tasks.map((t) => t.q)) === JSON.stringify(day.tasks.map((t) => t.q)), `${role} day ${n}: deterministic`);
+      if (role === "trader") {
+        // One stock price all day: every task after the open shows the same HALC price.
+        const prices = new Set(
+          day.tasks.slice(2).flatMap((t) => t.blocks.flatMap((b) => (b.kind === "kv" ? b.items.filter(([k]) => k === "HALC").map(([, v]) => v) : []))),
+        );
+        check(prices.size <= 1, `trader d${n} s${seed}: one HALC price after the open (${[...prices].join(", ")})`);
+      }
       for (const t of day.tasks) {
         tasks++;
         const id = `${role} d${n} s${seed} ${t.time} ${t.title}`;

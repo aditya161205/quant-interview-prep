@@ -1,13 +1,18 @@
 import { money, normCdf, num, pct, round, signedMoney, stake, type Answer, type Level, type Outcome, type Person, type Rng, type Task } from "./core";
 
-/** An equity-derivatives market-making desk, trading options on one stock: Halcyon Systems (HALC). */
+/** An options market-making desk, making markets in the options of one stock: Halcyon Systems (HALC). */
 
 const HUGO: Person = { name: "Hugo", role: "Head of desk" };
 const NORA: Person = { name: "Nora", role: "Risk manager" };
 const FELIX: Person = { name: "Felix", role: "Sales trader" };
 
 const toNum = (a: Answer) => (typeof a === "number" ? a : typeof a === "string" ? parseFloat(a.replace(/[,$%\s]/g, "").replace(/[−–]/g, "-")) : NaN);
-const cents = (x: number) => `${num(x * 100, 0)}¢`;
+/** Vega per share per vol point. */
+function vegaOf(S: number, K: number, vol: number, days: number) {
+  const T = days / 365;
+  const d1 = (Math.log(S / K) + 0.5 * vol * vol * T) / (vol * Math.sqrt(T));
+  return (S * Math.exp((-d1 * d1) / 2) * Math.sqrt(T)) / Math.sqrt(2 * Math.PI) / 100;
+}
 function bsCall(S: number, K: number, vol: number, days: number) {
   const T = days / 365;
   const sd = vol * Math.sqrt(T);
@@ -23,76 +28,86 @@ const shuffle = <T,>(r: Rng, xs: T[]) => {
   return a;
 };
 
-/* 07:30 — where will it open? */
-function preOpen(r: Rng, L: Level): Task {
-  const out = stake(r.range(1500, 3500, 100), r.range(1500, 4000, 100), "You leaned the right way in the opening auction.", "You leaned the wrong way in the opening auction and paid to get out.");
-  if (L === "hard") {
-    const l0 = r.range(70, 95, 0.05);
-    const l1 = round(l0 * (1 + (r.sign() * r.range(0.5, 3, 0.1)) / 100), 2);
-    const fx0 = r.range(1.22, 1.32, 0.001);
-    const fx1 = round(fx0 + r.sign() * r.range(0.002, 0.012, 0.001), 3);
-    const ratio = r.pick([0.5, 2]);
-    const prev = round(l0 * fx0 * ratio, 2);
-    const fair = round(l1 * fx1 * ratio, 2);
+/* 07:30 — mark the vol */
+function preOpen(r: Rng, L: Level, S: number, gap: number): Task {
+  const out = stake(r.range(1500, 3500, 100), r.range(1500, 4000, 100), "Your marks were in line: the first trades went through at your levels.", "Your marks were off: the first clients traded against you at the open.");
+  if (L === "easy") {
+    const days = r.pick([30, 61, 91]);
+    const vol = r.range(18, 45, 1) / 100;
+    const straddle = round(0.8 * vol * S * Math.sqrt(days / 365), 2);
+    const implied = round((straddle / (0.8 * S * Math.sqrt(days / 365))) * 100, 1);
     return {
       time: "07:30",
       where: "Pre-market",
       from: HUGO,
-      title: "Price the ADR",
-      message: "HALC's London line has been trading all morning and sterling has moved. Where should the New York ADR open?",
-      blocks: [
-        {
-          kind: "kv",
-          items: [
-            ["London close yesterday", `£${num(l0)}`],
-            ["London now", `£${num(l1)}`],
-            ["GBP/USD yesterday", num(fx0, 3)],
-            ["GBP/USD now", num(fx1, 3)],
-            ["1 ADR", `${ratio} London shares`],
-            ["ADR close yesterday", money(prev, 2)],
-          ],
-        },
-      ],
-      q: { kind: "number", prompt: "Fair ADR open", prefix: "$", answer: fair, tol: Math.max(0.05, fair * 0.002) },
+      title: "Mark the ATM vol",
+      message: `Before the open I want your ATM vol mark. The ${days}-day at-the-money straddle is trading at ${money(straddle, 2)}.`,
+      blocks: [{ kind: "kv", items: [["HALC", money(S, 2)], ["ATM straddle", money(straddle, 2)], ["Expiry", `${days} days`]] }],
+      q: { kind: "number", prompt: "ATM implied vol", unit: "%", answer: implied, tol: 0.5 },
       why: [
-        `Fair ADR = London price × GBP/USD × shares per ADR = £${num(l1)} × ${num(fx1, 3)} × ${ratio} = ${money(fair, 2)}.`,
-        `That's ${pct(fair / prev - 1, 2)} from yesterday's close: the stock move and the currency move together.`,
+        "An at-the-money straddle is worth about 0.8 × σ × S × √T.",
+        `So σ = straddle ÷ (0.8 × S × √T) = ${num(straddle)} ÷ (0.8 × ${num(S)} × √(${days}/365)) = ${num(implied, 1)}%.`,
       ],
       outcome: out,
     };
   }
-  const S = r.range(60, 240, 0.01);
-  const f = (r.sign() * r.range(0.3, 2, 0.1)) / 100;
-  const beta = L === "easy" ? 1 : r.range(0.6, 1.8, 0.1);
-  const fair = round(S * (1 + beta * f), 2);
+  const atm = r.range(18, 40, 0.5);
+  if (L === "medium") {
+    const put = round(atm + r.range(1.5, 6, 0.5), 1);
+    const call = round(atm + r.range(-2, 1, 0.5), 1);
+    const askRR = r.next() < 0.5;
+    const rr = round(call - put, 2);
+    const bf = round((call + put) / 2 - atm, 2);
+    return {
+      time: "07:30",
+      where: "Pre-market",
+      from: HUGO,
+      title: askRR ? "Read the skew" : "Read the wings",
+      message: askRR
+        ? "Here are this morning's 1-month marks. Give me the 25-delta risk reversal: that's how we quote skew."
+        : "Here are this morning's 1-month marks. Give me the 25-delta butterfly: that's how we quote the wings.",
+      blocks: [{ kind: "table", head: ["", "25Δ put", "ATM", "25Δ call"], rows: [["Implied vol", `${num(put, 1)}%`, `${num(atm, 1)}%`, `${num(call, 1)}%`]] }],
+      q: { kind: "number", prompt: askRR ? "25Δ risk reversal" : "25Δ butterfly", unit: " vol pts", answer: askRR ? rr : bf, tol: 0.05 },
+      why: askRR
+        ? [`Risk reversal = call vol − put vol = ${num(call, 1)} − ${num(put, 1)} = ${num(rr, 1)}.`, "Negative is normal for stocks: downside puts are bid for protection."]
+        : [`Butterfly = average of the wings − ATM = (${num(call, 1)} + ${num(put, 1)}) ÷ 2 − ${num(atm, 1)} = ${num(bf, 2)}.`, "It measures how much richer the wings are than the middle: the market's fear of big moves."],
+      outcome: out,
+    };
+  }
+  const S0 = Math.round(S);
+  const S1 = round(S * (1 + gap), 2);
+  const move = S1 / S0 - 1;
+  const k = r.range(0.3, 0.8, 0.05);
+  const sticky = round(atm - k * (S0 / S1 - 1) * 100, 2);
   return {
     time: "07:30",
     where: "Pre-market",
     from: HUGO,
-    title: "Where will HALC open?",
-    message:
-      L === "easy"
-        ? "Index futures moved overnight and there's no company news. HALC moves one-for-one with the index. Where should it open?"
-        : "Futures moved overnight, nothing on HALC itself. Use its beta to the index and give me a fair open.",
+    title: "Sticky strike or sticky delta?",
+    message: `HALC is indicated ${move > 0 ? "up" : "down"} ${pct(Math.abs(move))}. If the surface moves sticky-delta, where should yesterday's ATM strike (${S0}) be marked?`,
     blocks: [
       {
         kind: "kv",
         items: [
-          ["HALC close", money(S, 2)],
-          ["Index futures overnight", `${f > 0 ? "+" : ""}${pct(f)}`],
-          ["HALC beta to the index", num(beta, 1)],
+          ["Yesterday's spot = strike", money(S0)],
+          ["Spot indicated", money(S1, 2)],
+          ["Yesterday's ATM vol", `${num(atm, 1)}%`],
+          ["Skew", `vol falls ${num(k, 2)} pts per 1% the strike is above spot`],
         ],
       },
     ],
-    q: { kind: "number", prompt: "Fair open", prefix: "$", answer: fair, tol: Math.max(0.05, fair * 0.0015) },
-    why: [`Fair open = close × (1 + β × futures move) = ${num(S)} × (1 + ${num(beta, 1)} × ${pct(f)}) = ${money(fair, 2)}.`],
+    q: { kind: "number", prompt: `${S0} strike vol, sticky-delta`, unit: "%", answer: sticky, tol: 0.1 },
+    why: [
+      `Sticky-strike would leave the ${S0} strike at ${num(atm, 1)}%. Sticky-delta keeps vol fixed by moneyness instead.`,
+      `The ${S0} strike is now ${pct(S0 / S1 - 1, 2)} ${S0 > S1 ? "above" : "below"} spot, so its vol = ${num(atm, 1)} − ${num(k, 2)} × ${num((S0 / S1 - 1) * 100, 2)} = ${num(sticky, 2)}%.`,
+      "Real equity surfaces usually land somewhere between the two: knowing both brackets your marks.",
+    ],
     outcome: out,
   };
 }
 
 /* 08:15 — flatten the delta */
-function hedge(r: Rng, L: Level): Task {
-  const S = r.range(80, 220, 0.01);
+function hedge(r: Rng, L: Level, S: number, gap: number): Task {
   const rows: string[][] = [];
   let net = 0;
   const n1 = r.range(10, 60, 10);
@@ -108,7 +123,7 @@ function hedge(r: Rng, L: Level): Task {
     rows.push([`Short ${n2} puts`, `−${num(d2, 2)}`, num(n2 * 100 * d2, 0)], [`${shares > 0 ? "Long" : "Short"} ${num(Math.abs(shares), 0)} shares`, "1.00", num(shares, 0)]);
   }
   const gamma = L === "hard" ? r.range(300, 1500, 50) : 0;
-  const move = L === "hard" ? (r.sign() * r.range(1, 3, 0.5)) / 100 : 0;
+  const move = L === "hard" ? gap : 0;
   const atOpen = net + gamma * S * move;
   const answer = -Math.round(atOpen);
   const later = (r.sign() * r.range(0.4, 1.6, 0.1)) / 100;
@@ -152,59 +167,92 @@ function hedge(r: Rng, L: Level): Task {
   };
 }
 
-/* 09:30 — make a market */
-function quote(r: Rng, L: Level): Task {
-  const F = r.range(40, 180, 0.01);
-  const inv = r.sign() * r.range(20, 60, 10) * 1000;
-  const size = r.range(10, 50, 10) * 1000;
-  const h = r.range(2, 5, 1) / 100;
-  const skew = (inv / 10000) * 0.01;
-  const mid = round(F - skew, 2);
-  const half = L === "hard" ? round(h + (size / 10000) * 0.01, 2) : h;
-  const q2 = (m: number, hs: number) => `${num(m - hs)} × ${num(m + hs)}`;
-  const right = q2(mid, half);
-  const rules = L === "hard" ? "Desk rules: skew 1¢ per 10k shares of inventory; base half-spread " + cents(h) + ", plus 1¢ per 10k shares the client wants." : `Desk rules: skew 1¢ per 10k shares of inventory; half-spread ${cents(h)}.`;
-  const win = Math.round(size * h);
-  const lose = Math.round(size * r.range(0.03, 0.08, 0.01));
-  const out = stake(win, lose, `The client traded on your quote and you worked the position off at mid: about ${money(win)} of edge.`, `Your quote was off: the client took the cheap side and HALC kept going. You paid ${money(lose)} to get flat.`);
+/* 09:30 — make a market in an option */
+function quote(r: Rng, L: Level, S: number): Task {
+  const K = Math.round(S / 5) * 5;
+  const days = r.pick([30, 45, 61]);
+  const vol = r.range(20, 45, 1) / 100;
+  const theo = round(bsCall(S, K, vol, days), 2);
+  const vega = vegaOf(S, K, vol, days);
+  const hw = Math.max(0.05, round(theo * 0.02, 2));
+  const inv = r.range(2, 6, 1) * 1000 * r.sign();
+  const shadeVol = 0.3 * (inv / 1000);
+  const mid = round(theo - shadeVol * vega, 2);
+  const size = r.range(100, 500, 100);
+  const hwSize = round(hw + theo * 0.01 * (size / 100), 2);
+  const q2 = (m: number, h: number) => `${num(m - h)} × ${num(m + h)}`;
+  const win = Math.round(size * 100 * hw * 0.5);
+  const lose = Math.round(size * 100 * Math.max(0.05, theo * 0.03));
+  const out = stake(win, lose, `The client traded on your quote and you hedged the Greeks: about ${money(win)} of edge.`, `Your quote was off: the client hit the cheap side. It cost ${money(lose)} to hedge out.`);
   const blocks = [
-    { kind: "kv" as const, items: [["HALC fair value", money(F, 2)], ["Your inventory", `${inv > 0 ? "long" : "short"} ${num(Math.abs(inv), 0)} shares`], ["Client size", `${num(size, 0)} shares`]] as [string, string][] },
-    { kind: "text" as const, text: rules },
+    {
+      kind: "kv" as const,
+      items: [
+        ["Option", `HALC ${K} call, ${days} days`],
+        ["Theoretical value", money(theo, 2)],
+        ["Vega", `${num(vega, 3)} per vol pt`],
+        ...(L !== "easy" ? ([["Your vega inventory", `${inv > 0 ? "long" : "short"} ${num(Math.abs(inv), 0)} vega`]] as [string, string][]) : []),
+        ...(L === "hard" ? ([["Client size", `${size} contracts`]] as [string, string][]) : []),
+      ] as [string, string][],
+    },
+    {
+      kind: "text" as const,
+      text:
+        L === "easy"
+          ? "Desk rule: half-width = 2% of theo, at least 5¢, centred on theo."
+          : L === "medium"
+            ? "Desk rules: half-width 2% of theo (min 5¢); shade 0.3 vol pts per 1,000 vega of inventory."
+            : "Desk rules: half-width 2% of theo (min 5¢), plus 1% of theo per 100 contracts of size; shade 0.3 vol pts per 1,000 vega of inventory.",
+    },
   ];
-  const why = [
-    `You're ${inv > 0 ? "long" : "short"} ${num(Math.abs(inv), 0)}, so you want to ${inv > 0 ? "sell" : "buy"}: shade the quote ${inv > 0 ? "down" : "up"} by ${cents(Math.abs(skew))}. Mid = ${num(F)} ${inv > 0 ? "−" : "+"} ${num(Math.abs(skew))} = ${num(mid)}.`,
-    ...(L === "hard" ? [`${num(size, 0)} shares adds ${cents((size / 10000) * 0.01)} to the half-spread: ${cents(h)} + ${cents((size / 10000) * 0.01)} = ${cents(half)}.`] : []),
-    `Quote ${right}: the side you want filled is the attractive one.`,
-  ];
+  const shadeWhy = `You're ${inv > 0 ? "long" : "short"} ${num(Math.abs(inv), 0)} vega, so shade ${inv > 0 ? "down" : "up"} ${num(Math.abs(shadeVol), 1)} vol pts × ${num(vega, 3)} vega = ${num(Math.abs(shadeVol * vega), 3)}: mid = ${num(theo)} ${inv > 0 ? "−" : "+"} ${num(Math.abs(shadeVol * vega), 2)} = ${num(mid)}.`;
+  if (L === "easy") {
+    const right = q2(theo, hw);
+    return {
+      time: "09:30",
+      where: "The open",
+      from: FELIX,
+      title: "Quote an option",
+      message: `Client wants a two-way in the HALC ${K} calls. What do you show?`,
+      blocks,
+      q: { kind: "choice", prompt: "Your quote (bid × ask)", options: shuffle(r, [right, q2(theo + hw, hw), q2(theo, 0.01), q2(theo, round(4 * hw, 2))]), answer: right },
+      why: [`Half-width = max(5¢, 2% × ${num(theo)}) = ${num(hw)}.`, `Centred on theo: ${right}. Too tight and you're picked off; too wide and the client goes elsewhere.`],
+      outcome: out,
+    };
+  }
   if (L === "medium")
     return {
       time: "09:30",
       where: "The open",
       from: FELIX,
-      title: "Make a market",
-      message: "Client wants a two-way in HALC, right now. Where do you centre your quote?",
+      title: "Quote with inventory",
+      message: `Client wants a two-way in the HALC ${K} calls. You already carry vega. Where do you centre the quote?`,
       blocks,
-      q: { kind: "number", prompt: "Mid of your quote", prefix: "$", answer: mid, tol: 0.005 },
-      why,
+      q: { kind: "number", prompt: "Mid of your quote", prefix: "$", answer: mid, tol: 0.01 },
+      why: [shadeWhy, inv > 0 ? "Shading down makes your offer attractive: you'd rather sell vega you're long." : "Shading up makes your bid attractive: you'd rather buy back vega you're short."],
       outcome: out,
     };
-  const options = shuffle(r, [right, q2(F, half), q2(round(F + skew, 2), half), L === "hard" ? q2(mid, h) : q2(F, 3 * h)]);
+  const right = q2(mid, hwSize);
   return {
     time: "09:30",
     where: "The open",
     from: FELIX,
-    title: "Make a market",
-    message: "Client wants a two-way in HALC, right now. What do you show?",
+    title: "Quote size, with inventory",
+    message: `Client wants a two-way in ${size} HALC ${K} calls. You carry vega. What do you show?`,
     blocks,
-    q: { kind: "choice", prompt: "Your quote (bid × ask)", options, answer: right },
-    why,
+    q: {
+      kind: "choice",
+      prompt: "Your quote (bid × ask)",
+      options: shuffle(r, [right, q2(mid, hw), q2(round(theo + shadeVol * vega, 2), hwSize), q2(theo, hwSize)]),
+      answer: right,
+    },
+    why: [shadeWhy, `Size widens the half-width: ${num(hw)} + 1% × ${num(theo)} × ${size / 100} = ${num(hwSize)}.`, `Quote ${right}.`],
     outcome: out,
   };
 }
 
 /* 11:00 — price a client request */
-function rfq(r: Rng, L: Level): Task {
-  const S = r.range(50, 250, 0.5);
+function rfq(r: Rng, L: Level, S: number): Task {
   const days = r.pick([30, 61, 91]);
   const T = days / 365;
   if (L === "easy") {
@@ -292,8 +340,7 @@ function rfq(r: Rng, L: Level): Task {
 }
 
 /* 13:30 — an event */
-function event(r: Rng, L: Level): Task {
-  const S = r.range(60, 200, 0.5);
+function event(r: Rng, L: Level, S: number): Task {
   const out = stake(r.range(3000, 8000, 100), r.range(3000, 8000, 100), "The stock moved about as you expected after the print.", "The print went against your view of the move.");
   if (L === "easy") {
     const move = r.range(3, 10, 0.5) / 100;
@@ -350,7 +397,7 @@ function event(r: Rng, L: Level): Task {
 }
 
 /* 15:00 — risk limits */
-function limits(r: Rng, L: Level): Task {
+function limits(r: Rng, L: Level, S: number): Task {
   const out = stake(r.range(1500, 4000, 100), r.range(2000, 5000, 100), "Nora signs off. Clean afternoon.", "Nora escalates to Hugo; you spend the afternoon explaining.");
   if (L === "easy") {
     const V = r.range(30, 90, 5) * 1000;
@@ -386,7 +433,6 @@ function limits(r: Rng, L: Level): Task {
       outcome: out,
     };
   }
-  const S = r.range(80, 200, 1);
   const iv = r.range(20, 50, 1) / 100;
   const be = round(Math.sqrt((2 * -theta) / gamma), 2);
   const implied = (S * iv) / Math.sqrt(252);
@@ -396,7 +442,7 @@ function limits(r: Rng, L: Level): Task {
     from: NORA,
     title: "Your breakeven move",
     message: "You're long gamma and bleeding theta. How big a daily move do you need just to break even?",
-    blocks: [{ kind: "kv", items: [["Gamma", `${num(gamma, 0)} shares per $1`], ["Theta", `${money(theta)} per day`], ["HALC", money(S)], ["Implied vol", pct(iv, 0)]] }],
+    blocks: [{ kind: "kv", items: [["Gamma", `${num(gamma, 0)} shares per $1`], ["Theta", `${money(theta)} per day`], ["HALC", money(S, 2)], ["Implied vol", pct(iv, 0)]] }],
     q: { kind: "number", prompt: "Breakeven daily move", prefix: "$", answer: be, tol: be * 0.02 },
     why: [
       `Break even when ½ × Γ × ΔS² = |θ|, so ΔS = √(2 × ${num(-theta, 0)} ÷ ${num(gamma, 0)}) = ${money(be, 2)}.`,
@@ -451,12 +497,24 @@ function explain(r: Rng, L: Level): Task {
 }
 
 const TITLES: Record<Level, string[]> = {
-  easy: ["First day on the desk", "Futures gap", "Earnings week", "Busy client day", "Friday close"],
-  medium: ["CPI morning", "Index rebalance", "Vol crush", "Expiry week", "Month-end"],
-  hard: ["Risk-off open", "Earnings after the bell", "Limit breach", "Event week", "Year-end review"],
+  easy: ["First day on the options desk", "Marking the surface", "Earnings week", "Busy client day", "Friday expiry"],
+  medium: ["Skew Monday", "Vol crush", "Expiry week", "Vega heavy", "Month-end marks"],
+  hard: ["Sticky strike or sticky delta?", "Earnings after the bell", "Limit breach", "Event week", "Year-end vol review"],
 };
 
 export function traderTasks(r: Rng, L: Level): Task[] {
-  return [preOpen, hedge, quote, rfq, event, limits, explain].map((f) => f(r, L));
+  // One stock price for the whole day: yesterday's close, an indicated gap, and the price after the open.
+  const close = r.range(60, 240, 0.5);
+  const gap = (r.sign() * r.range(1, 4, 0.5)) / 100;
+  const spot = round(close * (1 + gap), 2);
+  return [
+    preOpen(r, L, close, gap),
+    hedge(r, L, close, gap),
+    quote(r, L, spot),
+    rfq(r, L, spot),
+    event(r, L, spot),
+    limits(r, L, spot),
+    explain(r, L),
+  ];
 }
 export const traderTitle = (L: Level, i: number) => TITLES[L][i % 5];
