@@ -303,6 +303,11 @@ export const horizon = (st: Strategy) => Math.min(...st.legs.filter((l) => l.kin
 const cost = (st: Strategy) => position(st, S0).value;
 /** Profit and loss at stock price S, either now (elapsed 0) or at the first expiry. */
 export const pnl = (st: Strategy, S: number, atExpiry: boolean) => position(st, S, atExpiry ? horizon(st) : 0).value - cost(st);
+/** One leg's P&L at the strategy's first expiry: the legs' curves add up to the expiry curve. */
+export function legPnl(st: Strategy, leg: Leg, S: number) {
+  const one = { ...st, legs: [leg] };
+  return position(one, S, horizon(st)).value - cost(one);
+}
 
 /* --------------------------------------------------------------- the facts */
 

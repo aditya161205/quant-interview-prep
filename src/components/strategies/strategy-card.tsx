@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { DAYS, GREEKS, GREEK_LABEL, S0, factsOf, horizon, legText, pnl, position, type GreekName, type Strategy } from "@/lib/strategies";
+import { DAYS, GREEKS, GREEK_LABEL, S0, factsOf, horizon, legPnl, legText, pnl, position, type GreekName, type Strategy } from "@/lib/strategies";
 import { cn } from "@/lib/utils";
 
 const LO = 70;
@@ -36,15 +36,22 @@ const sgn = (v: number) => (v > 0 ? `+${v.toFixed(2)}` : v < 0 ? `−${Math.abs(
 const strikes = (st: Strategy) => [...new Set(st.legs.filter((l) => l.kind !== "stock").map((l) => l.strike!))].sort((a, b) => a - b);
 const expiryLabel = (st: Strategy) => (st.legs.some((l) => l.days && l.days !== DAYS) ? `At first expiry (${horizon(st)}d)` : "At expiry");
 
-/** P&L against the stock price: at expiry (solid) and today (dashed), profit shaded green and loss red. */
-export function PayoffChart({ st, height = 260 }: { st: Strategy; height?: number }) {
+const legColor = (qty: number) => (qty > 0 ? "var(--positive)" : "var(--negative)");
+
+/**
+ * P&L against the stock price: at expiry (solid) and today (dashed), profit shaded green and loss red.
+ * With `legs`, each leg's own expiry P&L is drawn thin underneath (bought green, sold red); they sum to the solid curve.
+ */
+export function PayoffChart({ st, height = 260, legs = false }: { st: Strategy; height?: number; legs?: boolean }) {
   const [wrap, W] = useWidth(640);
   const id = React.useId().replace(/:/g, "");
   const [hover, setHover] = React.useState<number | null>(null);
   const exp = React.useMemo(() => xs.map((S) => pnl(st, S, true)), [st]);
   const now = React.useMemo(() => xs.map((S) => pnl(st, S, false)), [st]);
+  // A single leg's curve is the strategy's own curve, so legs are only drawn when there are several.
+  const parts = React.useMemo(() => (legs && st.legs.length > 1 ? st.legs.map((l) => xs.map((S) => legPnl(st, l, S))) : []), [st, legs]);
 
-  const all = [...exp, ...now, 0];
+  const all = [...exp, ...now, ...parts.flat(), 0];
   const pad = (Math.max(...all) - Math.min(...all)) * 0.1 || 1;
   const yMin = Math.min(...all) - pad;
   const yMax = Math.max(...all) + pad;
@@ -60,7 +67,7 @@ export function PayoffChart({ st, height = 260 }: { st: Strategy; height?: numbe
 
   const at = (S: number) => {
     const i = Math.round((S - LO) / STEP);
-    return { exp: exp[i], now: now[i] };
+    return { exp: exp[i], now: now[i], parts: parts.map((c) => c[i]) };
   };
   const toS = (clientX: number, rect: DOMRect) => {
     const S = LO + ((clientX - rect.left - m.l) / (W - m.l - m.r)) * (HI - LO);
@@ -83,6 +90,14 @@ export function PayoffChart({ st, height = 260 }: { st: Strategy; height?: numbe
           </svg>
           Today ({horizon(st)} days to {expiryLabel(st) === "At expiry" ? "expiry" : "first expiry"})
         </span>
+        {parts.map((_, i) => (
+          <span key={i} className="flex items-center gap-1.5">
+            <svg width="18" height="6" aria-hidden>
+              <line x1="1" y1="3" x2="17" y2="3" stroke={legColor(st.legs[i].qty)} strokeWidth="1.5" strokeLinecap="round" />
+            </svg>
+            {legText(st.legs[i])}
+          </span>
+        ))}
       </figcaption>
       <div ref={wrap} className="relative">
         <svg
@@ -121,6 +136,9 @@ export function PayoffChart({ st, height = 260 }: { st: Strategy; height?: numbe
           <path d={area} fill="var(--positive)" opacity={0.12} clipPath={`url(#up-${id})`} />
           <path d={area} fill="var(--negative)" opacity={0.12} clipPath={`url(#down-${id})`} />
           <line x1={sx(S0)} x2={sx(S0)} y1={m.t} y2={H - m.b} stroke="var(--border)" />
+          {parts.map((c, i) => (
+            <path key={i} d={line(c)} fill="none" stroke={legColor(st.legs[i].qty)} strokeWidth={1.5} opacity={0.8} strokeLinejoin="round" strokeLinecap="round" />
+          ))}
           <path d={line(now)} fill="none" stroke="var(--viz-2)" strokeWidth={2} strokeDasharray="5 4" strokeLinejoin="round" strokeLinecap="round" />
           <path d={line(exp)} fill="none" stroke="var(--viz-1)" strokeWidth={2} strokeLinejoin="round" strokeLinecap="round" />
           {ticksX.map((S) => (
@@ -145,8 +163,9 @@ export function PayoffChart({ st, height = 260 }: { st: Strategy; height?: numbe
             {[
               { v: h.exp, label: expiryLabel(st), color: "var(--viz-1)", dash: undefined },
               { v: h.now, label: "Today", color: "var(--viz-2)", dash: "4 3" },
-            ].map((r) => (
-              <div key={r.label} className="mt-1 flex items-center gap-2 whitespace-nowrap">
+              ...h.parts.map((v, i) => ({ v, label: legText(st.legs[i]), color: legColor(st.legs[i].qty), dash: undefined })),
+            ].map((r, i) => (
+              <div key={i} className="mt-1 flex items-center gap-2 whitespace-nowrap">
                 <svg width="14" height="6" aria-hidden>
                   <line x1="1" y1="3" x2="13" y2="3" stroke={r.color} strokeWidth="2" strokeDasharray={r.dash} />
                 </svg>
@@ -227,7 +246,7 @@ export function StrategyCard({ st, className }: { st: Strategy; className?: stri
         </ul>
       </header>
 
-      <PayoffChart st={st} />
+      <PayoffChart st={st} legs />
 
       <dl className="grid grid-cols-2 gap-2 sm:grid-cols-4">
         {facts.map((x) => (
