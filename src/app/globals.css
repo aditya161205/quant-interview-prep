@@ -25,7 +25,8 @@
   --gold: #e8a400;
   --hint-bg: #fff6dc;         /* hint panels */
   --hint-ink: #7a5600;        /* amber text that must pass 4.5:1 */
-  --gold-wash: #fff8e6;       /* hover on the games board */
+  --gold-wash: #fff8e6;       /* hover on gold surfaces */
+  --green-wash: #edf6f1;      /* hover on the games board */
   --row-hover: rgba(15, 19, 26, 0.03);
   --jacket-text: var(--jacket); /* the jacket as text on a plain surface */
   --viz-1: #2a78d6;           /* chart series 1 (validated pair with --viz-2, light + dark) */
@@ -49,6 +50,7 @@
   --hint-bg: #3a2f12;
   --hint-ink: #f5c75a;
   --gold-wash: #2b2617;
+  --green-wash: #16241d;
   --row-hover: rgba(255, 255, 255, 0.04);
   --jacket-text: color-mix(in srgb, var(--jacket) 45%, #ffffff);
   --viz-1: #3987e5;
@@ -61,7 +63,16 @@
 /* Section jackets: Dashboard floor green, Practice red, Paths blue, Games gold, account navy. */
 :root[data-section="practice"] { --jacket: #c8102e; }
 :root[data-section="paths"] { --jacket: #1d3fbf; }
-:root[data-section="games"] { --jacket: #e8a400; --jacket-ink: #1a1300; }
+/* Games wears floor green. Black-on-yellow made this the only jacket with dark
+   ink, and the ten code plates landed as black bricks. Green is dark enough for
+   white ink, so all three jackets now carry text the same way.
+   NOTE for Aditya: petrol #0e5f70 was the other strong option and is worth a
+   look — but it is near-identical to Poker's jacket (#0e6f7a), so the two
+   sections would read as one. Shift Poker first if you want to try it. */
+:root[data-section="games"] { --jacket: #0c6b45; }
+/* Home wears the house jacket, not a section colour: the dashboard exists to
+   show the sections, so green now appears once on it, on Market making. */
+:root[data-section="home"] { --jacket: #23262c; }
 :root[data-section="account"] { --jacket: #1b2a4a; }
 :root[data-section="poker"] { --jacket: #0e6f7a; }
 :root[data-section="desk"] { --jacket: #5b2bb8; }

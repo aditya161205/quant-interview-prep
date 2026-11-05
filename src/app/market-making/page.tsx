@@ -29,9 +29,9 @@ export default async function MarketMakingHub() {
             <li key={g.href} className="border-b border-border last:border-b-0">
               <Link
                 href={g.href}
-                className="group grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-x-4 sm:gap-x-6 gap-y-1 px-5 py-6 transition-colors hover:bg-(--gold-wash) sm:px-7"
+                className="group grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-x-4 sm:gap-x-6 gap-y-1 px-5 py-6 transition-colors hover:bg-(--green-wash) sm:px-7"
               >
-                <span className="font-xx row-span-2 grid h-12 w-16 place-items-center rounded-[4px] bg-gold text-lg font-black sm:h-16 sm:w-24 sm:text-2xl tracking-[0.04em] text-[#1a1300] transition-transform group-hover:-translate-y-0.5 sm:row-span-1">
+                <span className="font-xx row-span-2 grid h-12 w-16 place-items-center rounded-[4px] bg-[#0c6b45] text-lg font-black sm:h-16 sm:w-24 sm:text-2xl tracking-[0.04em] text-white transition-transform group-hover:-translate-y-0.5 sm:row-span-1">
                   {g.code}
                 </span>
                 <span className="min-w-0 sm:grid sm:grid-cols-[16rem_minmax(0,1fr)] sm:items-center sm:gap-6">

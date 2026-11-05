@@ -37,7 +37,7 @@ export function HomeFloor({ pro }: { pro: boolean }) {
           <div>
             <h1 className="font-xx text-[clamp(2.05rem,5.2vw,4.4rem)] font-black uppercase leading-[1.02] tracking-[-0.03em]">
               Crack the{" "}
-              <mark className="rounded-[6px] bg-jacket-ink px-[0.18em] text-jacket [box-decoration-break:clone] [-webkit-box-decoration-break:clone]">
+              <mark className="rounded-[6px] bg-gold px-[0.18em] text-[#1a1300] [box-decoration-break:clone] [-webkit-box-decoration-break:clone]">
                 trading desk
               </mark>{" "}
               interview
@@ -145,7 +145,7 @@ export function HomeFloor({ pro }: { pro: boolean }) {
           </div>
         </section>
 
-        <section className="min-w-0 rounded-2xl bg-[#e8a400] p-5 text-[#1a1300] sm:p-7 shadow-(--shadow-card) lg:col-span-12">
+        <section className="min-w-0 rounded-2xl bg-[#0c6b45] p-5 text-white sm:p-7 shadow-(--shadow-card) lg:col-span-12">
           <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1">
             <h2 className="font-xx text-2xl font-black uppercase tracking-[-0.01em] sm:text-3xl">Market making</h2>
             <Link href="/market-making" className="text-sm font-bold opacity-85 hover:opacity-100">
@@ -159,7 +159,7 @@ export function HomeFloor({ pro }: { pro: boolean }) {
                   href={g.href}
                   className="group flex h-full flex-col gap-3 rounded-[8px] bg-black/8 p-4 transition-colors hover:bg-black/15"
                 >
-                  <span className="font-xx grid h-11 w-16 place-items-center rounded-[4px] bg-[#1a1300] text-base font-black tracking-[0.04em] text-[#e8a400]">
+                  <span className="font-xx grid h-11 w-16 place-items-center rounded-[4px] bg-white text-base font-black tracking-[0.04em] text-[#0c6b45]">
                     {g.code}
                   </span>
                   <span className="font-x font-extrabold leading-tight">
