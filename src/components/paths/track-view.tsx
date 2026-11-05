@@ -52,7 +52,7 @@ export function TrackView({ trackId }: { trackId: string }) {
                 </Link>
                 <div className="mt-5 grid gap-8 lg:grid-cols-[minmax(0,1fr)_24rem] lg:items-end">
                   <div className="flex items-center gap-5">
-                    <span className="font-xx grid h-16 min-w-[5.5rem] place-items-center rounded-[4px] bg-white text-2xl font-black" style={{ color: look.color }}>
+                    <span className="font-code grid h-16 min-w-[5.5rem] place-items-center rounded-[4px] bg-white text-2xl font-black" style={{ color: look.color }}>
                       {look.code}
                     </span>
                     <div>
@@ -105,7 +105,7 @@ export function TrackView({ trackId }: { trackId: string }) {
                     >
                       <span
                         className={cn(
-                          "font-xx grid h-10 w-12 place-items-center rounded-[4px] text-base font-black tabular-nums",
+                          "font-code grid h-10 w-12 place-items-center rounded-[4px] text-base font-black tabular-nums",
                           k >= 1 ? "text-white" : "bg-surface-2 text-foreground",
                         )}
                         style={k >= 1 ? { background: look.color } : undefined}

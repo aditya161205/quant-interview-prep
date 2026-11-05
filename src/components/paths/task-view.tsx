@@ -170,7 +170,7 @@ function Workspace({ task }: { task: Task }) {
             <h1 className="font-xx mt-2 text-[2rem] font-black leading-[0.95] tracking-[-0.02em] sm:text-[2.5rem]">{task.title}</h1>
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            <span className="font-xx grid h-9 place-items-center rounded-[3px] bg-jacket-ink px-2.5 text-sm font-black tabular-nums text-jacket">
+            <span className="font-code grid h-9 place-items-center rounded-[3px] bg-jacket-ink px-2.5 text-sm font-black tabular-nums text-jacket">
               {k + 1}/{task.siblings.length}
             </span>
             <DifficultyBadge difficulty={task.difficulty} className="bg-jacket-ink! text-jacket!" />

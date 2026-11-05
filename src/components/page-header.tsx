@@ -39,7 +39,7 @@ export function PageHeader({
         )}
         <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
           <div className="flex min-w-0 items-center gap-5">
-            {code && <span className="font-xx grid h-16 min-w-[5.5rem] place-items-center rounded-[4px] bg-jacket-ink px-3 text-2xl font-black tracking-[0.04em] text-jacket">{code}</span>}
+            {code && <span className="font-code grid h-16 min-w-[5.5rem] place-items-center rounded-[4px] bg-jacket-ink px-3 text-2xl font-black tracking-[0.04em] text-jacket">{code}</span>}
             <div className="min-w-0">
               <h1
                 className={cn(

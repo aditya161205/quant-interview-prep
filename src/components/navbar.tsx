@@ -26,7 +26,7 @@ export function Navbar() {
     <header className="sticky top-0 z-50 bg-jacket text-jacket-ink transition-colors duration-300">
       <div className="mx-auto flex max-w-[96rem] flex-wrap items-center gap-x-5 px-4 sm:px-6 lg:flex-nowrap">
         <Link href="/" className="flex h-16 shrink-0 items-center gap-2.5">
-          <span className="font-xx grid h-9 min-w-11 place-items-center rounded-[4px] bg-jacket-ink px-1.5 text-sm font-black tracking-[0.04em] text-jacket">
+          <span className="font-code grid h-9 min-w-11 place-items-center rounded-[4px] bg-jacket-ink px-1.5 text-sm font-black tracking-[0.04em] text-jacket">
             QP
           </span>
           <span className="font-x text-lg font-extrabold tracking-[-0.01em] lg:hidden xl:inline">QuantPrep</span>

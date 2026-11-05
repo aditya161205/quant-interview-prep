@@ -77,7 +77,7 @@ function Step({ track: t, index: i, step }: { track: Track; index: number; step:
             <ArrowLeft className="h-4 w-4" /> {t.title}
           </Link>
           <div className="mt-5 flex flex-col gap-5 sm:flex-row sm:items-center">
-            <span className="font-xx grid h-16 min-w-[5.5rem] shrink-0 place-items-center rounded-[4px] bg-white text-2xl font-black tabular-nums" style={{ color: look.color }}>
+            <span className="font-code grid h-16 min-w-[5.5rem] shrink-0 place-items-center rounded-[4px] bg-white text-2xl font-black tabular-nums" style={{ color: look.color }}>
               {String(i + 1).padStart(2, "0")}
             </span>
             <div className="min-w-0">
@@ -144,7 +144,7 @@ function Step({ track: t, index: i, step }: { track: Track; index: number; step:
                 return (
                   <li key={p.id} className="border-b border-border last:border-b-0">
                     <Link href={`/paths/task/${p.id}?t=${t.id}`} className="grid grid-cols-[3rem_minmax(0,1fr)_auto] items-center gap-4 px-5 py-4 transition-colors hover:bg-(--row-hover)">
-                      <span className="font-xx grid h-10 w-11 place-items-center rounded-[4px] bg-surface-2 text-sm font-black">{`C${j + 1}`}</span>
+                      <span className="font-code grid h-10 w-11 place-items-center rounded-[4px] bg-surface-2 text-sm font-black">{`C${j + 1}`}</span>
                       <span className="min-w-0">
                         <span className="font-x block truncate font-extrabold">{p.title}</span>
                         <span className={cn("text-xs font-bold", tone)}>{label}</span>

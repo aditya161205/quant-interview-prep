@@ -18,7 +18,7 @@ export default function LoginPage() {
   return (
     <section className="full-bleed -mb-16 grid min-h-[calc(100vh-4rem)] place-items-center bg-jacket px-4 py-16 text-jacket-ink">
       <div className="w-full max-w-3xl">
-        <span className="font-xx inline-grid h-14 min-w-20 place-items-center rounded-[4px] bg-jacket-ink px-3 text-2xl font-black text-jacket">
+        <span className="font-code inline-grid h-14 min-w-20 place-items-center rounded-[4px] bg-jacket-ink px-3 text-2xl font-black text-jacket">
           QP
         </span>
         <h1 className="font-xx mt-8 text-[2.6rem] font-black uppercase leading-[0.9] tracking-[-0.03em] sm:text-[4.6rem]">

@@ -89,7 +89,7 @@ export function HomeFloor({ pro }: { pro: boolean }) {
                   className="group grid grid-cols-[auto_minmax(0,1fr)] items-center gap-x-4 gap-y-3 sm:gap-x-5 rounded-[8px] bg-white/10 p-4 transition-colors hover:bg-white/15"
                 >
                   <span
-                    className="font-xx row-span-2 grid h-12 min-w-14 place-items-center rounded-[4px] bg-white text-lg font-black sm:h-14 sm:min-w-[4.5rem] sm:text-xl"
+                    className="font-code row-span-2 grid h-12 min-w-14 place-items-center rounded-[4px] bg-white text-lg font-black sm:h-14 sm:min-w-[4.5rem] sm:text-xl"
                     style={{ color: TRACK_JACKET[t.id]?.color }}
                   >
                     {TRACK_JACKET[t.id]?.code}
@@ -137,7 +137,7 @@ export function HomeFloor({ pro }: { pro: boolean }) {
                 key={f}
                 href={`/practice?company=${encodeURIComponent(f)}`}
                 title={f}
-                className="font-xx rounded-[3px] bg-white px-2.5 py-1.5 text-xs font-black tracking-[0.06em] text-[#c8102e] transition hover:-translate-y-0.5"
+                className="font-code rounded-[3px] bg-white px-2.5 py-1.5 text-xs font-black tracking-[0.06em] text-[#c8102e] transition hover:-translate-y-0.5"
               >
                 {FIRM_CODES[i]}
               </Link>
@@ -159,7 +159,7 @@ export function HomeFloor({ pro }: { pro: boolean }) {
                   href={g.href}
                   className="group flex h-full flex-col gap-3 rounded-[8px] bg-black/8 p-4 transition-colors hover:bg-black/15"
                 >
-                  <span className="font-xx grid h-11 w-16 place-items-center rounded-[4px] bg-white text-base font-black tracking-[0.04em] text-[#0c6b45]">
+                  <span className="font-code grid h-11 w-16 place-items-center rounded-[4px] bg-white text-base font-black tracking-[0.04em] text-[#0c6b45]">
                     {g.code}
                   </span>
                   <span className="font-x font-extrabold leading-tight">

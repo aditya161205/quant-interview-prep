@@ -188,7 +188,7 @@ export function ProblemDetail({ id }: { id: string }) {
             <ArrowLeft className="h-4 w-4" /> All problems
           </Link>
           <div className="mt-5 flex flex-col gap-5 sm:flex-row sm:items-center">
-            <span className="font-xx grid h-16 min-w-[6rem] shrink-0 place-items-center rounded-[4px] bg-jacket-ink px-3 text-2xl font-black tabular-nums text-jacket">
+            <span className="font-code grid h-16 min-w-[6rem] shrink-0 place-items-center rounded-[4px] bg-jacket-ink px-3 text-2xl font-black tabular-nums text-jacket">
               #{detail.id}
             </span>
             <div className="min-w-0">
@@ -217,7 +217,7 @@ export function ProblemDetail({ id }: { id: string }) {
           <div role="status" aria-live="polite" className="space-y-3 empty:hidden">
             {hints?.slice(0, hintsShown).map((h, i) => (
               <div key={i} className="animate-pop grid grid-cols-[auto_minmax(0,1fr)] gap-4 rounded-2xl bg-(--hint-bg) p-5">
-                <span className="font-xx grid h-9 w-14 place-items-center rounded-[3px] bg-gold text-sm font-black text-[#1a1300]">H{i + 1}</span>
+                <span className="font-code grid h-9 w-14 place-items-center rounded-[3px] bg-gold text-sm font-black text-[#1a1300]">H{i + 1}</span>
                 <MathText text={h} className="text-[0.95rem] leading-relaxed text-foreground/90" />
               </div>
             ))}

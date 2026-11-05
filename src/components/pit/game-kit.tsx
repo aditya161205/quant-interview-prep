@@ -347,7 +347,7 @@ export function Standings({ rows }: { rows: { name: string; score: React.ReactNo
             r.you ? "bg-foreground text-background" : "bg-surface-2",
           )}
         >
-          <span className={cn("font-xx grid h-10 w-10 place-items-center rounded-[4px] text-lg font-black", i === 0 ? "bg-gold text-[#1a1300]" : r.you ? "bg-background/15" : "bg-surface")}>
+          <span className={cn("font-code grid h-10 w-10 place-items-center rounded-[4px] text-lg font-black", i === 0 ? "bg-gold text-[#1a1300]" : r.you ? "bg-background/15" : "bg-surface")}>
             {i + 1}
           </span>
           <span className="font-x flex-1 text-lg font-extrabold">

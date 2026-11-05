@@ -131,6 +131,10 @@ body {
 /* Archivo's width axis is the type system: expanded for display and badges, normal for reading. */
 .font-x { font-variation-settings: "wdth" 115; }
 .font-xx { font-variation-settings: "wdth" 125; }
+/* Trader badges. A code is an instrument symbol, so it is set in mono: even
+   rhythm whether it is two letters or three, and it stops the plates competing
+   with the Archivo headings they sit beside. */
+.font-code { font-family: var(--font-mono); letter-spacing: 0.02em; }
 
 ::selection { background: var(--jacket); color: var(--jacket-ink); }
 

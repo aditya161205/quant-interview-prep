@@ -37,7 +37,7 @@ function TrackJacket({ track: t }: { track: Track }) {
   return (
     <section className="flex flex-col rounded-2xl p-7 text-white shadow-(--shadow-card) sm:p-9" style={{ background: look.color }}>
       <div className="flex items-center gap-5">
-        <span className="font-xx grid h-16 min-w-[5.5rem] place-items-center rounded-[4px] bg-white text-2xl font-black" style={{ color: look.color }}>
+        <span className="font-code grid h-16 min-w-[5.5rem] place-items-center rounded-[4px] bg-white text-2xl font-black" style={{ color: look.color }}>
           {look.code}
         </span>
         <h2 className="font-xx text-[2.2rem] font-black leading-[0.95] tracking-[-0.02em]">{t.title}</h2>

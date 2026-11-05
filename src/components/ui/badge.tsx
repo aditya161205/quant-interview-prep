@@ -36,7 +36,7 @@ export function CodePlate({ code, className, style }: { code: string; className?
       aria-hidden
       style={style}
       className={cn(
-        "font-xx inline-grid h-12 min-w-[4.25rem] shrink-0 place-items-center rounded-[4px] bg-white px-2 text-lg font-black tracking-[0.04em] text-[#0f131a] shadow-(--shadow-raised)",
+        "font-code inline-grid h-12 min-w-[4.25rem] shrink-0 place-items-center rounded-[4px] bg-white px-2 text-lg font-black tracking-[0.04em] text-[#0f131a] shadow-(--shadow-raised)",
         className,
       )}
     >

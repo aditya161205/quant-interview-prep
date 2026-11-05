@@ -80,7 +80,7 @@ export function GameFrame({
           <Link href="/market-making" className="text-sm font-bold opacity-80 hover:opacity-100 sm:hidden">
             ← All games
           </Link>
-          <span className="font-xx grid h-20 w-28 shrink-0 place-items-center rounded-[4px] bg-[#1a1300] text-3xl font-black tracking-[0.04em] text-gold">
+          <span className="font-code grid h-20 w-28 shrink-0 place-items-center rounded-[4px] bg-[#1a1300] text-3xl font-black tracking-[0.04em] text-gold">
             {code}
           </span>
           <div className="min-w-0">
