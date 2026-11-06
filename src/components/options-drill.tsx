@@ -100,7 +100,7 @@ function Playing({ settings, onEnd }: { settings: Settings; onEnd: (logs: Log[])
       <TimerBar left={left} total={settings.seconds} label="Time left" />
 
       <section className="overflow-hidden rounded-2xl bg-surface shadow-(--shadow-card)">
-        <div className="border-b-[3px] border-jacket px-6 py-3">
+        <div className="border-b-[3px] border-(--jacket-text) px-6 py-3">
           <span className="font-x text-xs font-extrabold uppercase tracking-[0.1em] text-muted">{q.topic}</span>
         </div>
         <div className="space-y-6 p-6 sm:p-8">

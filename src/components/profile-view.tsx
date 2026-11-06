@@ -185,7 +185,7 @@ export function ProfileView() {
 function Sheet({ title, note, action, children }: { title: string; note?: string; action?: React.ReactNode; children: React.ReactNode }) {
   return (
     <section className="overflow-hidden rounded-2xl bg-surface shadow-(--shadow-card)">
-      <div className="flex items-end justify-between gap-3 border-b-[3px] border-jacket px-5 py-4">
+      <div className="flex items-end justify-between gap-3 border-b-[3px] border-(--jacket-text) px-5 py-4">
         <div>
           <h2 className="font-x text-lg font-black uppercase">{title}</h2>
           {note && <p className="text-xs text-muted">{note}</p>}

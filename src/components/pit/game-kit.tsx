@@ -186,7 +186,7 @@ export function Panel({
   return (
     <section className={cn("overflow-hidden rounded-2xl bg-surface shadow-(--shadow-card)", className)}>
       {title && (
-        <div className="flex flex-wrap items-center justify-between gap-3 border-b-[3px] border-jacket px-5 py-4">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b-[3px] border-(--jacket-text) px-5 py-4">
           <h2 className="font-x text-lg font-black uppercase">{title}</h2>
           {meta}
         </div>

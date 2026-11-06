@@ -387,7 +387,7 @@ export function ProblemBrowser() {
           emptyState
         ) : (
           <div className="overflow-hidden rounded-2xl bg-surface shadow-(--shadow-card)">
-            <div className="font-x grid grid-cols-[2.5rem_minmax(0,1fr)_5rem_2.5rem] gap-4 border-b-[3px] border-jacket px-5 py-3 text-xs font-extrabold uppercase tracking-[0.08em] text-muted md:grid-cols-[3rem_8.5rem_minmax(0,1fr)_5.5rem_2.5rem]">
+            <div className="font-x grid grid-cols-[2.5rem_minmax(0,1fr)_5rem_2.5rem] gap-4 border-b-[3px] border-(--jacket-text) px-5 py-3 text-xs font-extrabold uppercase tracking-[0.08em] text-muted md:grid-cols-[3rem_8.5rem_minmax(0,1fr)_5.5rem_2.5rem]">
               <span>#</span>
               <span className="hidden md:block">Asked at</span>
               <span>Problem</span>

@@ -111,8 +111,11 @@
   --radius-lg: 0.35rem;
 }
 
-* {
-  border-color: var(--border);
+/* In the base layer so Tailwind's border-* colour utilities can override it. */
+@layer base {
+  * {
+    border-color: var(--border);
+  }
 }
 
 /* The whole UI is sized in rem, so this sets the site's default scale (125%, 20px per rem). */

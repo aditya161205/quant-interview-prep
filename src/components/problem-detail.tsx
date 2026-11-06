@@ -242,7 +242,7 @@ export function ProblemDetail({ id }: { id: string }) {
 
         {/* The ticket: everything you do with the problem, in one fixed place. */}
         <aside className="overflow-hidden rounded-2xl bg-surface shadow-(--shadow-card) lg:sticky lg:top-24">
-          <div className="border-b-[3px] border-jacket px-5 py-4">
+          <div className="border-b-[3px] border-(--jacket-text) px-5 py-4">
             <span className="font-x text-lg font-black uppercase">Ticket</span>
           </div>
           <div className="space-y-5 p-5">

@@ -209,7 +209,7 @@ function Book({ g, values, run }: { g: Figgie; values: Record<Suit, number> | nu
 
   return (
     <section aria-label="Order book" className="overflow-hidden rounded-2xl bg-surface shadow-(--shadow-card)">
-      <div className="font-x hidden grid-cols-[3.5rem_4.5rem_minmax(0,1fr)_minmax(0,1fr)_4rem_minmax(0,15rem)] gap-4 border-b-[3px] border-jacket px-5 py-3 text-xs font-extrabold uppercase tracking-[0.08em] text-muted lg:grid">
+      <div className="font-x hidden grid-cols-[3.5rem_4.5rem_minmax(0,1fr)_minmax(0,1fr)_4rem_minmax(0,15rem)] gap-4 border-b-[3px] border-(--jacket-text) px-5 py-3 text-xs font-extrabold uppercase tracking-[0.08em] text-muted lg:grid">
         <span>Suit</span>
         <span>Held</span>
         <span>Best bid</span>

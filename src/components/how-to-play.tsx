@@ -16,7 +16,7 @@ export function HowToPlay({ subtitle = "How this game works.", children }: { sub
       <button
         onClick={() => setOpen((v) => !v)}
         aria-expanded={open}
-        className="flex w-full items-center gap-3 border-b-[3px] border-jacket p-5 text-left xl:cursor-default"
+        className="flex w-full items-center gap-3 border-b-[3px] border-(--jacket-text) p-5 text-left xl:cursor-default"
       >
         <div className="flex-1">
           <div className="font-x text-lg font-black uppercase tracking-[0.02em]">Rules</div>

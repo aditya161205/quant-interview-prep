@@ -143,7 +143,7 @@ function Playing({ settings, onEnd }: { settings: Settings; onEnd: (log: Played[
       />
 
       <section key={i} className="overflow-hidden rounded-2xl bg-surface shadow-(--shadow-card)">
-        <div className="border-b-[3px] border-jacket px-6 py-3">
+        <div className="border-b-[3px] border-(--jacket-text) px-6 py-3">
           <span className="font-x text-xs font-extrabold uppercase tracking-[0.1em] text-muted">{TYPE_LABEL[q.type]}</span>
         </div>
         <div className="space-y-5 p-6">

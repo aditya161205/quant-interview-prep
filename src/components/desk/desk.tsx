@@ -74,7 +74,7 @@ function Journey({ role, setRole, pro, onStart }: { role: Role; setRole: (r: Rol
 
       {LEVELS.map((lv) => (
         <section key={lv.week} className="rounded-2xl bg-surface shadow-(--shadow-card)">
-          <div className="flex flex-wrap items-baseline justify-between gap-2 border-b-[3px] border-jacket px-5 py-4">
+          <div className="flex flex-wrap items-baseline justify-between gap-2 border-b-[3px] border-(--jacket-text) px-5 py-4">
             <h2 className="font-x text-lg font-black uppercase">
               Week {lv.week} · {lv.title}
             </h2>
@@ -255,7 +255,7 @@ function TaskCard({
   const ready = q.kind === "multi" ? true : value !== null && value !== "";
   return (
     <article className="overflow-hidden rounded-2xl bg-surface shadow-(--shadow-card)">
-      <div className="flex flex-wrap items-baseline justify-between gap-2 border-b-[3px] border-jacket px-5 py-3">
+      <div className="flex flex-wrap items-baseline justify-between gap-2 border-b-[3px] border-(--jacket-text) px-5 py-3">
         <span className="font-x text-xs font-extrabold uppercase tracking-[0.1em] text-muted">
           {task.time} · {task.where}
         </span>
@@ -352,7 +352,7 @@ function TaskCard({
 }
 
 function BlockView({ b }: { b: Block }) {
-  if (b.kind === "text") return <p className="rounded-[6px] border-l-4 border-jacket bg-surface-2 px-4 py-3 text-sm">{b.text}</p>;
+  if (b.kind === "text") return <p className="rounded-[6px] border-l-4 border-(--jacket-text) bg-surface-2 px-4 py-3 text-sm">{b.text}</p>;
   if (b.kind === "kv")
     return (
       <dl className="grid grid-cols-2 gap-2 sm:grid-cols-3">
@@ -430,7 +430,7 @@ function Recap({ day, done, metric, score, pro, onLeave, onPlay }: { day: Day; d
           </div>
         </div>
         <div className="space-y-4 p-6 sm:p-8">
-          <blockquote className="rounded-[8px] border-l-4 border-jacket bg-surface-2 px-4 py-3">
+          <blockquote className="rounded-[8px] border-l-4 border-(--jacket-text) bg-surface-2 px-4 py-3">
             <p className="text-[0.95rem]">&ldquo;{NOTES[day.role][g]}&rdquo;</p>
             <footer className="mt-1 text-xs font-bold text-muted">{boss}</footer>
           </blockquote>
