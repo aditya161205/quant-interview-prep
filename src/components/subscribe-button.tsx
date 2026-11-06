@@ -32,7 +32,7 @@ async function post<T>(action: string, body?: unknown): Promise<T> {
   return data as T;
 }
 
-export function SubscribeButton() {
+export function SubscribeButton({ price }: { price: string }) {
   const [busy, setBusy] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
 
@@ -50,7 +50,7 @@ export function SubscribeButton() {
         name: "QuantPrep Pro",
         description: "Monthly subscription",
         prefill: { email: s.email },
-        theme: { color: "#7c5cff" },
+        theme: { color: "#1b2a4a" },
         handler: async (resp: RazorpayResponse) => {
           try {
             await post("verify", resp);
@@ -70,18 +70,20 @@ export function SubscribeButton() {
 
   return (
     <div className="space-y-3">
-      <Button size="lg" className="w-full bg-white! text-[#1b2a4a]!" onClick={start} disabled={busy}>
-        {busy && <Loader2 className="h-4 w-4 animate-spin" />} Subscribe
+      <Button size="lg" className="w-full whitespace-nowrap max-sm:px-3 max-sm:text-sm" onClick={start} disabled={busy}>
+        {busy && <Loader2 className="h-4 w-4 animate-spin" />} Subscribe for {price}/month
       </Button>
-      {error && <p className="text-sm text-[#ffb3bd]">{error}</p>}
+      {error && <p role="alert" className="text-sm text-[#b3261e]">{error}</p>}
     </div>
   );
 }
 
+// The ticket is white paper in both themes, so these buttons name their ink instead of using theme tokens.
+const paperOutline = "border-[#0f131a]! text-[#0f131a]! hover:bg-[#0f131a]! hover:text-white!";
+
 export function CancelButton() {
-  const [state, setState] = React.useState("idle"); // "idle", "busy" or an error message
+  const [state, setState] = React.useState("idle"); // "idle", "confirm", "busy" or an error message
   const cancel = async () => {
-    if (!confirm("Cancel Pro? You keep access until the end of the month you've paid for.")) return;
     setState("busy");
     try {
       await post("cancel");
@@ -90,12 +92,28 @@ export function CancelButton() {
       setState(e instanceof Error ? e.message : String(e));
     }
   };
-  return (
-    <div className="space-y-2">
-      <Button variant="outline" size="sm" className="border-white! text-white! hover:bg-white! hover:text-[#1b2a4a]!" onClick={cancel} disabled={state === "busy"}>
+
+  if (state === "idle") {
+    return (
+      <Button variant="outline" size="sm" className={paperOutline} onClick={() => setState("confirm")}>
         Cancel subscription
       </Button>
-      {state !== "idle" && state !== "busy" && <p className="text-sm text-[#ffb3bd]">{state}</p>}
+    );
+  }
+
+  const failed = state !== "confirm" && state !== "busy";
+  return (
+    <div className="space-y-3">
+      <p className="text-sm text-[#535c6a]">Cancel Pro? You keep access until the end of the month you&apos;ve paid for.</p>
+      <div className="flex flex-wrap gap-2">
+        <Button variant="outline" size="sm" className={paperOutline} onClick={cancel} disabled={state === "busy"}>
+          {state === "busy" && <Loader2 className="h-4 w-4 animate-spin" />} Yes, cancel
+        </Button>
+        <Button size="sm" autoFocus onClick={() => setState("idle")} disabled={state === "busy"}>
+          Keep Pro
+        </Button>
+      </div>
+      {failed && <p role="alert" className="text-sm text-[#b3261e]">{state}</p>}
     </div>
   );
 }
