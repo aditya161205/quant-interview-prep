@@ -19,6 +19,13 @@ export function DeskApp({ pro }: { pro: boolean }) {
   const [role, setRole] = React.useState<Role>("trader");
   // Each start is a new run with a fresh seed; the run number remounts the day so nothing carries over.
   const [run, setRun] = React.useState<{ day: Day; id: number } | null>(null);
+
+  // A day in progress gets the bar to itself, like a game or a question.
+  React.useEffect(() => {
+    if (!run) return;
+    document.documentElement.setAttribute("data-focus", "");
+    return () => document.documentElement.removeAttribute("data-focus");
+  }, [run]);
   const start = (r: Role, n: number) => setRun((prev) => ({ day: makeDay(r, n, Math.floor(Math.random() * 2 ** 31)), id: (prev?.id ?? 0) + 1 }));
 
   if (!mounted) return <div className="h-96" />;

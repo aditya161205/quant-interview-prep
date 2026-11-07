@@ -15,6 +15,14 @@ export const dynamic = "force-dynamic";
 
 const json = (body: unknown, status = 200) => NextResponse.json(body, { status });
 
+/** What the account menu needs to label the plan link: nothing about payments, only yes or no. */
+export async function GET(_request: Request, { params }: { params: Promise<{ action: string }> }) {
+  const { action } = await params;
+  if (action !== "status") return json({ error: "not found" }, 404);
+  const { pro } = await getAccess();
+  return json({ billing: billingEnabled, pro });
+}
+
 export async function POST(request: Request, { params }: { params: Promise<{ action: string }> }) {
   const { action } = await params;
   if (!billingEnabled) return json({ error: "Payments aren't set up yet." }, 503);

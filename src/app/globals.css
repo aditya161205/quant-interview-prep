@@ -142,6 +142,9 @@ body {
 ::selection { background: var(--jacket); color: var(--jacket-ink); }
 
 /* A band that runs edge to edge whatever container it sits in. */
+/* Set while a Desk day is running: the bar drops its links, like other focus pages. */
+:root[data-focus] [data-main-nav] { display: none; }
+
 .full-bleed { width: 100vw; margin-left: calc(50% - 50vw); }
 
 /* Thin custom scrollbar */

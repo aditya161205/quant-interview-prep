@@ -5,6 +5,7 @@ import { ThemeProvider } from "@/components/theme-provider";
 import { Navbar } from "@/components/navbar";
 import { ProgressSync } from "@/components/progress-sync";
 import { SectionJacket } from "@/components/section-jacket";
+import { SiteFooter } from "@/components/site-footer";
 
 const archivo = Archivo({ variable: "--font-archivo", subsets: ["latin"], axes: ["wdth"] });
 
@@ -46,6 +47,7 @@ export default function RootLayout({
           <main id="main-content" tabIndex={-1} className="mx-auto w-full max-w-[96rem] flex-1 px-4 pb-16 focus:outline-none sm:px-6">
             {children}
           </main>
+          <SiteFooter />
         </ThemeProvider>
       </body>
     </html>

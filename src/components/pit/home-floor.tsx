@@ -23,6 +23,18 @@ export function HomeFloor({ pro }: { pro: boolean }) {
   const researcher = data?.tracks.find((t) => t.id === "researcher");
   const pct = (t?: PathsState["tracks"][number]) => (t ? `${Math.round(100 * trackPct(t))}%` : "–");
 
+  // Returning users get one way back in: the path they're furthest along, else whatever they've been doing.
+  const started = (data?.tracks ?? []).filter((t) => trackPct(t) > 0 && trackPct(t) < 1).sort((a, b) => trackPct(b) - trackPct(a))[0];
+  const comeback = !mounted
+    ? null
+    : started
+      ? { href: `/paths/${started.id}/${nextStep(started).id}`, label: `Continue: ${nextStep(started).title}` }
+      : solved > 0
+        ? { href: "/practice", label: "Continue practising" }
+        : games > 0
+          ? { href: "/market-making", label: "Back to the games" }
+          : null;
+
   const book = [
     { n: mounted ? String(solved) : "–", label: "Problems solved" },
     { n: pct(trader), label: "Quant Trader path" },
@@ -46,18 +58,29 @@ export function HomeFloor({ pro }: { pro: boolean }) {
               Interview problems from the firms that ask them, two step-by-step paths, {GAMES.length} market-making games and poker.
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
-              <Link
-                href={trader ? `/paths/trader/${nextStep(trader).id}` : "/paths"}
-                className="font-x inline-flex h-12 items-center gap-2 rounded-[6px] bg-jacket-ink px-7 font-bold text-jacket transition hover:brightness-95"
-              >
-                {trader && trackPct(trader) > 0 ? "Continue your path" : "Start a path"} <ArrowRight className="h-4 w-4" />
-              </Link>
-              <Link
-                href="/practice"
-                className="font-x inline-flex h-12 items-center rounded-[6px] border-[1.5px] border-jacket-ink px-7 font-bold transition hover:bg-jacket-ink hover:text-jacket"
-              >
-                Practice problems
-              </Link>
+              {comeback ? (
+                <Link
+                  href={comeback.href}
+                  className="font-x inline-flex min-h-12 items-center gap-2 rounded-[6px] bg-jacket-ink px-7 py-2 font-bold text-jacket transition hover:brightness-95"
+                >
+                  {comeback.label} <ArrowRight className="h-4 w-4 shrink-0" />
+                </Link>
+              ) : (
+                <>
+                  <Link
+                    href={trader ? `/paths/trader/${nextStep(trader).id}` : "/paths"}
+                    className="font-x inline-flex h-12 items-center gap-2 rounded-[6px] bg-jacket-ink px-7 font-bold text-jacket transition hover:brightness-95"
+                  >
+                    Start a path <ArrowRight className="h-4 w-4" />
+                  </Link>
+                  <Link
+                    href="/practice"
+                    className="font-x inline-flex h-12 items-center rounded-[6px] border-[1.5px] border-jacket-ink px-7 font-bold transition hover:bg-jacket-ink hover:text-jacket"
+                  >
+                    Practice problems
+                  </Link>
+                </>
+              )}
             </div>
           </div>
           <dl className="grid grid-cols-2 self-end overflow-hidden rounded-[6px] bg-black/20">
@@ -147,9 +170,9 @@ export function HomeFloor({ pro }: { pro: boolean }) {
 
         <section className="min-w-0 rounded-2xl bg-[#0c6b45] p-5 text-white sm:p-7 shadow-(--shadow-card) lg:col-span-12">
           <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1">
-            <h2 className="font-xx text-2xl font-black uppercase tracking-[-0.01em] sm:text-3xl">Market making</h2>
+            <h2 className="font-xx text-2xl font-black uppercase tracking-[-0.01em] sm:text-3xl">Games</h2>
             <Link href="/market-making" className="text-sm font-bold opacity-85 hover:opacity-100">
-              The pits →
+              All games →
             </Link>
           </div>
           <ul className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">

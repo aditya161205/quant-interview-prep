@@ -33,6 +33,9 @@ export const GAMES = [
   { href: "/market-making/strategies", code: "STR", title: "Options Strategies", kind: "Options · Memory", blurb: "Iron condors to calendars: name the curve, sign the Greeks, pick the trade for the situation, build it from legs." },
 ] as const;
 
+/** Poker sits on the Games page but isn't a market-making game, and it has no paywall. */
+export const POKER = { href: "/poker", code: "PKR", title: "Poker", kind: "No-limit Hold'em", blurb: "Play Texas Hold'em against bots that each get a fresh style, read the odds and adapt to how you play." };
+
 /** The first two games are free; the rest need Pro (enforced on each game page). */
 export const FREE_GAMES = 2;
 

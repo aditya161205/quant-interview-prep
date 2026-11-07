@@ -12,7 +12,7 @@ export function PathsHub() {
   return (
     <Gate load={load}>
       {(s) => (
-        <div className="grid gap-5 lg:grid-cols-2">
+        <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
           {s.tracks.map((t) => (
             <TrackJacket key={t.id} track={t} />
           ))}
@@ -35,18 +35,18 @@ function TrackJacket({ track: t }: { track: Track }) {
   ] as const;
 
   return (
-    <section className="flex flex-col rounded-2xl p-7 text-white shadow-(--shadow-card) sm:p-9" style={{ background: look.color }}>
-      <div className="flex items-center gap-5">
-        <span className="font-code grid h-16 min-w-[5.5rem] place-items-center rounded-[4px] bg-white text-2xl font-black" style={{ color: look.color }}>
+    <section className="flex min-w-0 flex-col rounded-2xl p-7 text-white shadow-(--shadow-card) sm:p-9" style={{ background: look.color }}>
+      <div className="flex flex-wrap items-center gap-5 sm:flex-nowrap">
+        <span className="font-code grid h-16 min-w-[5.5rem] shrink-0 place-items-center rounded-[4px] bg-white text-2xl font-black" style={{ color: look.color }}>
           {look.code}
         </span>
-        <h2 className="font-xx text-[2.2rem] font-black leading-[0.95] tracking-[-0.02em]">{t.title}</h2>
+        <h2 className="font-xx min-w-0 text-[1.7rem] font-black leading-[0.95] tracking-[-0.02em] sm:text-[2rem] lg:text-[1.7rem] xl:text-[2rem]">{t.title}</h2>
       </div>
       <p className="mt-5 max-w-lg leading-relaxed opacity-90">{t.tagline}</p>
 
-      <dl className="mt-7 grid grid-cols-4 overflow-hidden rounded-[6px] bg-black/20">
+      <dl className="mt-7 grid grid-cols-2 overflow-hidden sm:grid-cols-4 rounded-[6px] bg-black/20">
         {stats.map(([n, label], i) => (
-          <div key={label} className={`px-3 py-4 ${i ? "border-l border-white/15" : ""}`}>
+          <div key={label} className={`px-3 py-4 ${i ? "sm:border-l sm:border-white/15" : ""}`}>
             <dd className="font-xx text-2xl font-black tabular-nums">{n}</dd>
             <dt className="mt-1 text-[0.65rem] font-bold uppercase tracking-[0.08em] opacity-80">{label}</dt>
           </div>

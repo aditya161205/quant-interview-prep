@@ -6,6 +6,7 @@ import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import {
   Search,
   X,
+  ChevronDown,
   ChevronLeft,
   ChevronRight,
   ChevronsLeft,
@@ -82,6 +83,9 @@ export function ProblemBrowser() {
   const [status, setStatus] = React.useState<StatusFilter>((sp.get("status") as StatusFilter) ?? "All");
   const [pageSize, setPageSize] = React.useState(Number(sp.get("size")) || 25);
   const [page, setPage] = React.useState(Number(sp.get("page")) || 1);
+  const hiddenOn = [status !== "All", category !== "All", company !== "All"].filter(Boolean).length;
+  // Stays out of the way unless a link arrived with one of these filters already set.
+  const [moreOpen, setMoreOpen] = React.useState(hiddenOn > 0);
 
   React.useEffect(() => {
     fetch("/api/problems/facets")
@@ -324,6 +328,19 @@ export function ProblemBrowser() {
         </div>
 
         <FilterList label="Level" options={DIFFS} value={difficulty} onChange={setDifficulty} />
+
+        <button
+          type="button"
+          aria-expanded={moreOpen}
+          aria-controls="more-filters"
+          onClick={() => setMoreOpen((o) => !o)}
+          className="font-x flex w-full cursor-pointer items-center justify-between rounded-[6px] bg-surface-2 px-3 py-2.5 text-sm font-bold transition-colors hover:bg-border"
+        >
+          <span>Filters{hiddenOn > 0 ? ` (${hiddenOn})` : ""}</span>
+          <ChevronDown className={cn("h-4 w-4 transition-transform", moreOpen && "rotate-180")} />
+        </button>
+
+        <div id="more-filters" hidden={!moreOpen} className="space-y-6">
         <FilterList label="Status" options={STATUSES} value={status} onChange={(v) => setStatus(v as StatusFilter)} />
         {facets.categories.length > 0 && (
           <FilterList label="Topic" options={["All", ...facets.categories]} value={category} onChange={setCategory} />
@@ -350,6 +367,7 @@ export function ProblemBrowser() {
             {company !== "All" && <p className="mt-2 text-xs text-muted">{company}</p>}
           </fieldset>
         )}
+        </div>
 
         {filtersOn && (
           <button onClick={clearAll} className="font-x inline-flex items-center gap-1.5 text-sm font-bold text-jacket-text hover:underline">

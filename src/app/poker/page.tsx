@@ -13,6 +13,8 @@ export default function PokerPage() {
         title="Poker"
         description="No-limit Texas Hold'em against bots that each get a fresh playing style, read the odds and adapt to how you play."
         compact
+        backHref="/market-making"
+        backLabel="All games"
       />
       <PokerGame />
     </div>
