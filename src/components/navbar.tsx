@@ -32,7 +32,7 @@ export function Navbar() {
                   href={s.href}
                   aria-current={active ? "page" : undefined}
                   className={cn(
-                    "font-x shrink-0 rounded-[4px] px-2 py-2 text-center text-xs font-extrabold uppercase transition-colors sm:px-3 sm:text-sm sm:tracking-[0.06em]",
+                    "font-x shrink-0 rounded-[4px] px-1 py-2 text-center text-[0.7rem] font-extrabold uppercase transition-colors min-[26rem]:px-2 min-[26rem]:text-xs sm:px-3 sm:text-sm sm:tracking-[0.06em]",
                     active ? "bg-jacket-ink text-jacket" : "opacity-85 hover:bg-jacket-ink/15 hover:opacity-100",
                   )}
                 >
